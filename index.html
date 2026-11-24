@@ -224,9 +224,9 @@
       line-height: 1;
     }
     .choice span { display: block; margin-top: 6px; color: var(--muted); font-size: 0.78rem; line-height: 1.2; }
-    .choice.is-on { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
-    .choice.is-on span { color: var(--choice-on-span); }
-    .choice.is-on .badge { background: var(--choice-badge-bg); color: var(--chalk); }
+    .choice.is-on { background: var(--chalk); color: var(--on-chalk); border-color: var(--chalk); }
+    .choice.is-on span { color: var(--on-chalk); opacity: 0.9; }
+    .choice.is-on .badge { background: var(--on-chalk); color: var(--chalk); }
     .badge {
       position: absolute;
       top: 8px;
@@ -447,7 +447,7 @@
       background: var(--ghost-bg);
       font-size: 0.86rem;
     }
-    .nav-btn.is-on { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+    .nav-btn.is-on { background: var(--chalk); color: var(--on-chalk); border-color: var(--chalk); font-weight: 700; }
     .header-tools { display: flex; align-items: center; gap: 8px; }
     .pending-pill {
       min-height: 28px;
@@ -512,11 +512,35 @@
     .weight-list div { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
     .subnav { display: flex; gap: 8px; margin: 0 0 14px; }
     .subnav button { flex: 1; }
-    .subnav button.is-on, .day-picks button.is-on {
-      background: var(--ink);
-      color: var(--on-ink);
-      border-color: var(--ink);
+    .subnav, .theme-picks, .day-picks {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--card-2);
     }
+    .subnav button, .theme-picks button {
+      flex: 1;
+    }
+    .theme-picks button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .ghost.is-on,
+    .subnav button.is-on,
+    .day-picks button.is-on,
+    .theme-picks button.is-on {
+      background: var(--chalk);
+      color: var(--on-chalk);
+      border-color: var(--chalk);
+      font-weight: 800;
+    }
+    .seg-check { margin-right: 4px; font-weight: 800; }
     .day-picks { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
     .day-picks button {
       flex: 1 1 calc(14% - 6px);
@@ -627,8 +651,7 @@
     .report-table th, .report-table td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
     .report-table td:last-child, .report-table th:last-child { text-align: right; }
     
-    .theme-picks { display: flex; gap: 8px; margin: 8px 0 0; }
-    .theme-picks button { flex: 1; }
+    .theme-picks { margin: 8px 0 0; }
     .howto-frame {
       position: relative;
       width: 100%;
@@ -679,7 +702,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v2.7</span></h1>
+          <h1>Palestra <span class="ver">v2.7.1</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -1660,7 +1683,8 @@
       var picks = days.map(function (item) {
         var on = day && sameWeekday(item.name, day.name) ? " is-on" : "";
         var short = String(item.name || "").slice(0, 3);
-        return '<button class="ghost' + on + '" type="button" data-action="meal-day" data-day="' + esc(item.name) + '">' + esc(short) + "</button>";
+        var selected = !!on;
+        return '<button class="ghost' + on + '" type="button" data-action="meal-day" data-day="' + esc(item.name) + '" aria-pressed="' + (selected ? "true" : "false") + '" aria-selected="' + (selected ? "true" : "false") + '">' + esc(short) + "</button>";
       }).join("");
       var note = plan.note ? '<p class="plan-note">' + esc(plan.note) + "</p>" : "";
       var totals = day && day.totals ? '<p class="plan-totals">Totale ' + esc(day.name) + ": " + esc(formatMacros(day.totals)) + "</p>" : "";
@@ -1704,8 +1728,8 @@
     function paintWeight() {
       if (!mealDay && data && data.today) mealDay = weekdayNameIt(data.today);
       var pianoOn = weightSub !== "peso";
-      var tabs = '<div class="subnav"><button class="ghost' + (pianoOn ? " is-on" : "") + '" type="button" data-action="view-piano">Piano</button>' +
-        '<button class="ghost' + (pianoOn ? "" : " is-on") + '" type="button" data-action="view-peso">Peso</button></div>';
+      var tabs = '<div class="subnav" role="tablist" aria-label="Peso e dieta"><button class="ghost' + (pianoOn ? " is-on" : "") + '" type="button" role="tab" data-action="view-piano" aria-selected="' + (pianoOn ? "true" : "false") + '" aria-pressed="' + (pianoOn ? "true" : "false") + '">Piano</button>' +
+        '<button class="ghost' + (pianoOn ? "" : " is-on") + '" type="button" role="tab" data-action="view-peso" aria-selected="' + (pianoOn ? "false" : "true") + '" aria-pressed="' + (pianoOn ? "false" : "true") + '">Peso</button></div>';
       var alert = errorText && view === "weight" && pianoOn ? '<p class="alert">' + esc(errorText) + "</p>" : "";
       return '<section class="history"><div class="history-top"><h2>Peso e dieta</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
         tabs + alert + (pianoOn ? paintMealPlan() : paintWeightLog()) + "</section>";
@@ -2351,11 +2375,13 @@
       }).join("");
       var themePref = loadThemePref();
       function themeBtn(id, label) {
-        return '<button class="ghost' + (themePref === id ? " is-on" : "") + '" type="button" data-action="theme" data-theme="' + id + '">' + label + "</button>";
+        var on = themePref === id;
+        return '<button class="seg-btn' + (on ? " is-on" : "") + '" type="button" role="radio" data-action="theme" data-theme="' + id + '" aria-checked="' + (on ? "true" : "false") + '" aria-pressed="' + (on ? "true" : "false") + '">' +
+          (on ? '<span class="seg-check" aria-hidden="true">✓</span>' : "") + esc(label) + "</button>";
       }
       return '<section class="history"><div class="history-top"><h2>Promemoria e altro</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
         '<article class="card"><h3>Tema</h3><p class="muted">Scegli come appare l’app. Auto segue le impostazioni del telefono.</p>' +
-        '<div class="theme-picks">' + themeBtn("auto", "Auto") + themeBtn("light", "Chiaro") + themeBtn("dark", "Scuro") + "</div></article>" +
+        '<div class="theme-picks" role="radiogroup" aria-label="Tema">' + themeBtn("auto", "Auto") + themeBtn("light", "Chiaro") + themeBtn("dark", "Scuro") + "</div></article>" +
         '<article class="card"><h3>Promemoria</h3>' +
         '<p class="limit-note">Le notifiche dell’app arrivano in modo affidabile solo mentre Palestra è aperta (o almeno in esecuzione). Su Android, senza un servizio di push, il telefono non può svegliarsi da solo a un orario fissato. Per non perdere i pasti o la pesata, aggiungi gli orari al calendario: funziona anche a telefono spento.</p>' +
         '<p class="muted">Permesso notifiche: ' + esc(permLabel) + ".</p>" +

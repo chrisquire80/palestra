@@ -1,6 +1,6 @@
-/* Palestra service worker v2.7 */
-const APP_VERSION = 'v2.7';
-const CACHE = 'palestra-shell-v2.7';
+/* Palestra service worker v2.7.1 */
+const APP_VERSION = 'v2.7.1';
+const CACHE = 'palestra-shell-v2.7.1';
 const SHELL = [
   './',
   './index.html',
