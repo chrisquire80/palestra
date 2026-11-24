@@ -75,6 +75,18 @@
       text-transform: uppercase;
     }
     h1 { margin: 0; font-size: 1.55rem; letter-spacing: -0.03em; }
+    .ver {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--chalk);
+      color: #1b2208;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      vertical-align: middle;
+    }
     .ghost, .text-btn, .step, .icon-btn, .choice, .primary, .secondary {
       border: 0;
       background: transparent;
@@ -408,7 +420,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra</h1>
+          <h1>Palestra <span class="ver">v2</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -1291,7 +1303,8 @@
     storeQueue(loadQueue());
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js").then(function (reg) {
+      navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(function (reg) {
+        reg.update();
         if (reg.waiting) document.getElementById("updateBanner").hidden = false;
         reg.addEventListener("updatefound", function () {
           var incoming = reg.installing;

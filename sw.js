@@ -1,3 +1,5 @@
+/* Palestra service worker v2 */
+const APP_VERSION = 'v2';
 const CACHE = 'palestra-shell-v2';
 const SHELL = [
   './',
@@ -23,7 +25,7 @@ self.addEventListener('activate', function (event) {
       }));
     }).then(function () { return self.clients.claim(); }).then(function () {
       return self.clients.matchAll({ type: 'window' }).then(function (clients) {
-        clients.forEach(function (client) { client.postMessage({ type: 'sw-updated' }); });
+        clients.forEach(function (client) { client.postMessage({ type: 'sw-updated', version: APP_VERSION }); });
       });
     })
   );
@@ -34,6 +36,8 @@ self.addEventListener('fetch', function (event) {
   if (request.method !== 'GET') return;
   var url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  // Never intercept the worker script: the browser must always see fresh bytes.
+  if (/\/sw\.js$/.test(url.pathname)) return;
   var path = url.pathname;
   var isShell = request.mode === 'navigate' || /\/$|index\.html$|manifest\.webmanifest$/.test(path);
   if (isShell) {
