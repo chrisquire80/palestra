@@ -173,6 +173,33 @@
       color: var(--ink);
     }
     .last-line { margin: 0 0 14px; color: var(--muted); font-size: 0.92rem; }
+    .rest-set {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 14px;
+      padding: 6px 8px 6px 12px;
+      border-radius: 16px;
+      background: var(--card);
+      border: 1px solid var(--line);
+    }
+    .rest-set .rest-label {
+      margin-right: auto;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .rest-set strong {
+      min-width: 3.4rem;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      font-size: 1.15rem;
+      letter-spacing: -0.03em;
+    }
+    .rest-set button {
+      min-width: 44px;
+      min-height: 44px;
+      flex: none;
+    }
     .card {
       background: var(--card);
       border: 1px solid var(--line);
@@ -439,7 +466,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v2.2</span></h1>
+          <h1>Palestra <span class="ver">v2.3</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -799,15 +826,32 @@
       return sign + itNum(item.delta) + " kg rispetto al " + itDate(item.previous.date) + ".";
     }
 
+    var REST_MIN = 30;
+    var REST_MAX = 300;
+    var REST_STEP = 15;
+
+    function clampRest(n) {
+      n = Math.round(Number(n) / REST_STEP) * REST_STEP;
+      if (!Number.isFinite(n)) return 90;
+      if (n < REST_MIN) return REST_MIN;
+      if (n > REST_MAX) return REST_MAX;
+      return n;
+    }
+
     function loadRestDefault() {
       try {
         var n = Number(localStorage.getItem(REST_KEY));
-        if (n >= 15 && n <= 600) restDefault = n;
+        if (Number.isFinite(n) && n > 0) restDefault = clampRest(n);
       } catch (err) {}
     }
 
     function storeRestDefault() {
       try { localStorage.setItem(REST_KEY, String(restDefault)); } catch (err) {}
+    }
+
+    function adjustRestDefault(delta) {
+      restDefault = clampRest(restDefault + delta);
+      storeRestDefault();
     }
 
     function formatRest(sec) {
@@ -934,7 +978,13 @@
         preview = '<span class="' + cls + '"> · ' + sign + itNum(delta) + " kg</span>";
       }
       var cards = list.map(paintExercise).join("");
+      var restMinusOff = restDefault <= REST_MIN ? " disabled" : "";
+      var restPlusOff = restDefault >= REST_MAX ? " disabled" : "";
+      var restRow = '<div class="rest-set"><span class="rest-label">Riposo: <strong id="restDefaultLabel">' + esc(formatRest(restDefault)) + "</strong></span>" +
+        '<button class="ghost" type="button" data-action="rest-default-minus" aria-label="Togli 15 secondi di riposo"' + restMinusOff + ">−</button>" +
+        '<button class="ghost" type="button" data-action="rest-default-plus" aria-label="Aggiungi 15 secondi di riposo"' + restPlusOff + ">+</button></div>";
       return '<section class="editor"><div class="date-row"><label class="date">Data<input type="date" id="sessionDate" value="' + esc(dateValue) + '"></label></div>' +
+        restRow +
         '<div class="choices">' + choices + "</div>" +
         '<p class="focus">' + esc(workout ? workout.focus : "") + "</p>" +
         '<p class="last-line">' + last + "</p>" +
@@ -1156,17 +1206,23 @@
         render(true);
         return;
       }
+      if (action === "rest-default-minus") {
+        adjustRestDefault(-REST_STEP);
+        render(true);
+        return;
+      }
+      if (action === "rest-default-plus") {
+        adjustRestDefault(REST_STEP);
+        render(true);
+        return;
+      }
       if (action === "rest-minus") {
-        restDefault = Math.max(15, restDefault - 15);
-        if (restRunning) restLeft = Math.max(1, restLeft - 15);
-        storeRestDefault();
+        if (restRunning) restLeft = Math.max(1, restLeft - REST_STEP);
         paintTimer();
         return;
       }
       if (action === "rest-plus") {
-        restDefault = Math.min(600, restDefault + 15);
-        if (restRunning) restLeft += 15;
-        storeRestDefault();
+        if (restRunning) restLeft += REST_STEP;
         paintTimer();
         return;
       }
