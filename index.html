@@ -420,7 +420,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v2</span></h1>
+          <h1>Palestra <span class="ver">v2.1</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -1302,37 +1302,54 @@
     loadRestDefault();
     storeQueue(loadQueue());
 
+    var swReg = null;
+    var swRefreshing = false;
+
+    function updateBannerShouldShow(reg) {
+      return !!(reg && reg.waiting && navigator.serviceWorker.controller);
+    }
+
+    function syncUpdateBanner(reg) {
+      var banner = document.getElementById("updateBanner");
+      if (!banner) return;
+      banner.hidden = !updateBannerShouldShow(reg || swReg);
+    }
+
+    function applyIncomingWorker(reg, worker) {
+      if (!worker) return;
+      worker.addEventListener("statechange", function () {
+        if (worker.state === "installed") syncUpdateBanner(reg);
+      });
+    }
+
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(function (reg) {
+        swReg = reg;
+        syncUpdateBanner(reg);
         reg.update();
-        if (reg.waiting) document.getElementById("updateBanner").hidden = false;
+        if (reg.installing) applyIncomingWorker(reg, reg.installing);
+        if (reg.waiting) applyIncomingWorker(reg, reg.waiting);
         reg.addEventListener("updatefound", function () {
-          var incoming = reg.installing;
-          if (!incoming) return;
-          incoming.addEventListener("statechange", function () {
-            if (incoming.state === "installed" && navigator.serviceWorker.controller) {
-              document.getElementById("updateBanner").hidden = false;
-            }
-          });
+          applyIncomingWorker(reg, reg.installing);
         });
         setInterval(function () { reg.update(); }, 15 * 60 * 1000);
       }).catch(function () {});
-      var refreshing = false;
       navigator.serviceWorker.addEventListener("controllerchange", function () {
-        if (refreshing) return;
-        if (sessionStorage.getItem("palestra-reloaded") === "1") return;
-        refreshing = true;
-        try { sessionStorage.setItem("palestra-reloaded", "1"); } catch (err) {}
+        if (swRefreshing) return;
+        swRefreshing = true;
         window.location.reload();
       });
-      navigator.serviceWorker.addEventListener("message", function (event) {
-        if (event.data && event.data.type === "sw-updated") {
-          document.getElementById("updateBanner").hidden = false;
-        }
-      });
     }
-    document.getElementById("reloadApp").addEventListener("click", function () {
-      try { sessionStorage.removeItem("palestra-reloaded"); } catch (err) {}
+    document.getElementById("reloadApp").addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      var banner = document.getElementById("updateBanner");
+      var waiting = swReg && swReg.waiting;
+      if (waiting) {
+        waiting.postMessage({ type: "SKIP_WAITING" });
+        return;
+      }
+      if (banner) banner.hidden = true;
       window.location.reload();
     });
 

@@ -1,6 +1,6 @@
-/* Palestra service worker v2 */
-const APP_VERSION = 'v2';
-const CACHE = 'palestra-shell-v2';
+/* Palestra service worker v2.1 */
+const APP_VERSION = 'v2.1';
+const CACHE = 'palestra-shell-v2.1';
 const SHELL = [
   './',
   './index.html',
@@ -10,11 +10,19 @@ const SHELL = [
 ];
 
 self.addEventListener('install', function (event) {
+  // Activate this version for clients still on v2 whose Aggiorna button
+  // only reloads and does not send SKIP_WAITING.
   event.waitUntil(
     caches.open(CACHE).then(function (cache) { return cache.addAll(SHELL); }).then(function () {
       return self.skipWaiting();
     })
   );
+});
+
+self.addEventListener('message', function (event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', function (event) {
@@ -23,11 +31,7 @@ self.addEventListener('activate', function (event) {
       return Promise.all(keys.filter(function (key) { return key !== CACHE; }).map(function (key) {
         return caches.delete(key);
       }));
-    }).then(function () { return self.clients.claim(); }).then(function () {
-      return self.clients.matchAll({ type: 'window' }).then(function (clients) {
-        clients.forEach(function (client) { client.postMessage({ type: 'sw-updated', version: APP_VERSION }); });
-      });
-    })
+    }).then(function () { return self.clients.claim(); })
   );
 });
 
@@ -36,7 +40,6 @@ self.addEventListener('fetch', function (event) {
   if (request.method !== 'GET') return;
   var url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-  // Never intercept the worker script: the browser must always see fresh bytes.
   if (/\/sw\.js$/.test(url.pathname)) return;
   var path = url.pathname;
   var isShell = request.mode === 'navigate' || /\/$|index\.html$|manifest\.webmanifest$/.test(path);
