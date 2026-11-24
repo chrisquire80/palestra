@@ -30,6 +30,7 @@
   </script>
   <meta name="apple-mobile-web-app-title" content="Palestra">
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preload" href="vendor/fonts/outfit-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>Palestra</title>
@@ -511,6 +512,20 @@
       display: inline-flex;
       align-items: center;
     }
+    .refresh-pill {
+      min-height: 28px;
+      padding: 0 8px;
+      border-radius: var(--r-full);
+      background: var(--ghost-bg);
+      color: var(--muted);
+      border: 1px solid var(--line);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+    }
     .timer {
       display: flex;
       align-items: center;
@@ -802,11 +817,12 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.0</span></h1>
+          <h1>Palestra <span class="ver">v3.1</span></h1>
         </div>
       </div>
       <div class="header-tools">
         <span id="pendingPill" class="pending-pill" hidden></span>
+        <span id="refreshPill" class="refresh-pill" hidden>Aggiorno…</span>
         <button class="icon-link" type="button" data-action="settings" aria-label="Promemoria e altre opzioni">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09A1.65 1.65 0 0 0 19.4 15z"/></svg>
         </button>
@@ -881,12 +897,6 @@
     <p id="errorToastText"></p>
     <button class="ghost" type="button" id="errorToastDismiss">Ok</button>
   </div>
-  <script src="vendor/pdfjs/pdf.min.js"></script>
-  <script>
-    if (window.pdfjsLib) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdfjs/pdf.worker.min.js";
-    }
-  </script>
   <script>
     function showErrorToast(raw) {
       var text = "";
@@ -1067,6 +1077,7 @@
       if (!dateValue) dateValue = state.today;
       if (!selected) selected = state.suggested || "A";
       if (!weightDate) weightDate = state.today;
+      invalidateViews();
     }
 
     async function flushQueue() {
@@ -1371,9 +1382,43 @@
       }
     }
 
+    var viewRoots = {};
+    var viewNeedsPaint = {};
+
+    function invalidateViews() {
+      var key;
+      for (key in viewRoots) {
+        if (Object.prototype.hasOwnProperty.call(viewRoots, key)) viewNeedsPaint[key] = true;
+      }
+    }
+
+    function setRefreshing(on) {
+      var el = document.getElementById("refreshPill");
+      if (el) el.hidden = !on;
+    }
+
     function render(keepScroll) {
       var y = keepScroll ? window.scrollY : 0;
-      document.getElementById("app").innerHTML = paint();
+      var app = document.getElementById("app");
+      var key;
+      var rebuild = !!keepScroll || !viewRoots[view] || viewNeedsPaint[view];
+      for (key in viewRoots) {
+        if (Object.prototype.hasOwnProperty.call(viewRoots, key) && viewRoots[key]) {
+          viewRoots[key].hidden = key !== view;
+        }
+      }
+      if (rebuild) {
+        var root = viewRoots[view];
+        if (!root) {
+          root = document.createElement("div");
+          root.setAttribute("data-view-root", view);
+          app.appendChild(root);
+          viewRoots[view] = root;
+        }
+        root.hidden = false;
+        root.innerHTML = paint();
+        viewNeedsPaint[view] = false;
+      }
       syncNav();
       paintTimer();
       storeQueue(loadQueue());
@@ -1658,12 +1703,37 @@
       }).filter(Boolean).join("\n");
     }
 
+    var pdfJsLoading = null;
+    function loadPdfJs() {
+      if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+      if (pdfJsLoading) return pdfJsLoading;
+      pdfJsLoading = new Promise(function (resolve, reject) {
+        var script = document.createElement("script");
+        script.src = "vendor/pdfjs/pdf.min.js";
+        script.async = true;
+        script.onload = function () {
+          if (!window.pdfjsLib) {
+            pdfJsLoading = null;
+            reject(new Error("Lettore PDF non disponibile. Aggiorna l’app e riprova."));
+            return;
+          }
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdfjs/pdf.worker.min.js";
+          resolve(window.pdfjsLib);
+        };
+        script.onerror = function () {
+          pdfJsLoading = null;
+          reject(new Error("Lettore PDF non disponibile. Aggiorna l’app e riprova."));
+        };
+        document.head.appendChild(script);
+      });
+      return pdfJsLoading;
+    }
+
     function extractMealPlanPdf(file) {
-      if (!window.pdfjsLib) {
-        return Promise.reject(new Error("Lettore PDF non disponibile. Aggiorna l’app e riprova."));
-      }
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdfjs/pdf.worker.min.js";
-      return file.arrayBuffer().then(function (buf) {
+      return loadPdfJs().then(function () {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdfjs/pdf.worker.min.js";
+        return file.arrayBuffer();
+      }).then(function (buf) {
         return pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
       }).then(function (doc) {
         var pages = [];
@@ -2278,6 +2348,7 @@
       if (bar) bar.setAttribute("content", mode === "light" ? "default" : "black-translucent");
       var manifest = document.querySelector('link[rel="manifest"]');
       if (manifest) manifest.setAttribute("href", mode === "light" ? "manifest-light.webmanifest" : "manifest.webmanifest");
+      invalidateViews();
     }
 
     function startThemeWatch() {
@@ -3168,36 +3239,65 @@
     }
 
     async function boot() {
-      view = "loading";
       errorText = "";
-      render();
+      var cached = readCachedState();
+      var showedCache = false;
+      var cachedSuggested = cached && cached.suggested;
+      var cachedToday = cached && cached.today;
+      if (cached && (cached.workouts || cached.suggested)) {
+        applyState(cached, false);
+        if (!dateValue) dateValue = cached.today;
+        if (!selected) selected = cached.suggested || "A";
+        view = "editor";
+        showedCache = true;
+        render();
+        setRefreshing(!!navigator.onLine);
+      } else {
+        view = "loading";
+        render();
+      }
       try {
         var state;
         if (!navigator.onLine) {
-          state = readCachedState();
-          if (!state) throw new Error("Sei offline e non ho una scheda salvata sul telefono.");
+          if (!cached) throw new Error("Sei offline e non ho una scheda salvata sul telefono.");
+          setRefreshing(false);
+          errorText = "Sei offline: mostro l’ultima scheda salvata sul telefono.";
+          render(true);
         } else {
           state = await rpc("getState");
-        }
-        if (!state || state.ok === false) throw new Error((state && state.error) || "Non riesco a leggere il foglio.");
-        applyState(state, false);
-        if (!dateValue) dateValue = state.today;
-        selected = state.suggested || "A";
-        view = "editor";
-      } catch (err) {
-        var cached = readCachedState();
-        if (cached) {
-          applyState(cached, false);
+          if (!state || state.ok === false) throw new Error((state && state.error) || "Non riesco a leggere il foglio.");
+          var keepDrafts = showedCache;
+          var keepSelection = showedCache && selected && selected !== cachedSuggested;
+          var keepDate = showedCache && dateValue && dateValue !== cachedToday;
+          applyState(state, keepDrafts);
+          if (!keepDate) dateValue = state.today || dateValue;
+          if (!keepSelection) selected = state.suggested || selected || "A";
           view = "editor";
-          errorText = "Sei offline: mostro l’ultima scheda salvata sul telefono.";
+          errorText = "";
+          setRefreshing(false);
+          render();
+        }
+      } catch (err) {
+        setRefreshing(false);
+        if (showedCache) {
+          errorText = "Non riesco ad aggiornare: mostro l’ultima scheda salvata sul telefono.";
+          render(true);
+        } else if (cached) {
+          applyState(cached, false);
+          if (!dateValue) dateValue = cached.today;
+          if (!selected) selected = cached.suggested || "A";
+          view = "editor";
+          errorText = "Non riesco ad aggiornare: mostro l’ultima scheda salvata sul telefono.";
+          render();
         } else {
           view = "error";
           errorText = (err && err.message) || "Non riesco a leggere il foglio.";
+          render();
         }
       }
-      render();
       flushQueue();
       startReminderClock();
+      if (pendingCount) setTimeout(function () { flushQueue(); }, 4000);
     }
 
     document.body.addEventListener("click", onClick);
@@ -3260,7 +3360,12 @@
         });
         setInterval(function () { reg.update(); }, 15 * 60 * 1000);
       }).catch(function () {});
+      var alreadyControlled = !!navigator.serviceWorker.controller;
       navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (!alreadyControlled) {
+          alreadyControlled = true;
+          return;
+        }
         if (swRefreshing) return;
         swRefreshing = true;
         window.location.reload();

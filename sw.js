@@ -1,6 +1,6 @@
-/* Palestra service worker v3.0 */
-const APP_VERSION = 'v3.0';
-const CACHE = 'palestra-shell-v3.0';
+/* Palestra service worker v3.1 */
+const APP_VERSION = 'v3.1';
+const CACHE = 'palestra-shell-v3.1';
 const SHELL = [
   './',
   './index.html',
@@ -8,8 +8,6 @@ const SHELL = [
   './manifest-light.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './vendor/pdfjs/pdf.min.js',
-  './vendor/pdfjs/pdf.worker.min.js',
   './vendor/fonts/outfit-latin-wght.woff2'
 ];
 
