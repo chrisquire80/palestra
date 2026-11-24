@@ -1,6 +1,6 @@
-/* Palestra service worker v2.5 */
-const APP_VERSION = 'v2.5';
-const CACHE = 'palestra-shell-v2.5';
+/* Palestra service worker v2.6 */
+const APP_VERSION = 'v2.6';
+const CACHE = 'palestra-shell-v2.6';
 const SHELL = [
   './',
   './index.html',
@@ -71,6 +71,19 @@ self.addEventListener('fetch', function (event) {
         }
         return response;
       });
+    })
+  );
+});
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
+      var i;
+      for (i = 0; i < clientList.length; i++) {
+        if (clientList[i].url && 'focus' in clientList[i]) return clientList[i].focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow('./');
     })
   );
 });

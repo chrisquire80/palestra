@@ -492,6 +492,83 @@
     }
     .error-toast p { margin: 0; flex: 1; word-break: break-word; }
     .error-toast button { flex: none; }
+    .icon-link {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      font-size: 0.82rem;
+    }
+    .ex-cue {
+      display: block;
+      width: 100%;
+      margin: 6px 0 0;
+      min-height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 6px 8px;
+      color: inherit;
+      font-size: 0.86rem;
+    }
+    .macro-today { margin: 0 0 14px; }
+    .macro-today h3 { margin: 0 0 6px; }
+    .macro-bar {
+      height: 8px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .macro-bar > span {
+      display: block;
+      height: 100%;
+      background: var(--chalk);
+      border-radius: 99px;
+    }
+    .macro-split { margin: 0; color: var(--muted); font-size: 0.86rem; }
+    .session-actions { display: flex; gap: 8px; margin: 10px 0 0; }
+    .session-actions button { flex: 1; }
+    .remind-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 0;
+      border-top: 1px solid var(--line);
+    }
+    .remind-row label { display: flex; align-items: center; gap: 8px; margin: 0; }
+    .remind-row input[type="time"] {
+      min-height: 44px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      padding: 0 10px;
+      color: inherit;
+    }
+    .limit-note { font-size: 0.88rem; color: var(--muted); }
+    .report-block { margin: 0 0 16px; }
+    .report-block h3 { margin: 0 0 8px; }
+    .report-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .report-table th, .report-table td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+    .report-table td:last-child, .report-table th:last-child { text-align: right; }
+    @media print {
+      header, nav, .banner, .timer, .header-tools, .no-print, #errorToast, #modal,
+      #pendingBanner, #setupBanner, #installBanner, #updateBanner { display: none !important; }
+      body { background: #fff; color: #111; padding: 12px; }
+      .shell { max-width: none; }
+      .card, .chart-card, article, .session {
+        background: #fff;
+        color: #111;
+        border: 1px solid #ccc;
+        box-shadow: none;
+        break-inside: avoid;
+      }
+      .muted, .plan-totals, .macro-split { color: #444; }
+      .chart { height: 160px; }
+    }
   </style>
 </head>
 <body>
@@ -501,11 +578,12 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v2.5</span></h1>
+          <h1>Palestra <span class="ver">v2.6</span></h1>
         </div>
       </div>
       <div class="header-tools">
         <span id="pendingPill" class="pending-pill" hidden></span>
+        <button class="icon-link" type="button" data-action="settings" aria-label="Promemoria e altre opzioni">Altro</button>
       </div>
     </header>
     <nav class="nav" aria-label="Sezioni">
@@ -589,6 +667,8 @@
     var QUEUE_KEY = "palestra-queue";
     var STATE_KEY = "palestra-state";
     var REST_KEY = "palestra-rest-default";
+    var REMINDER_KEY = "palestra-reminders";
+    var REMINDER_FIRED_KEY = "palestra-reminders-fired";
     var data = null;
     var view = "loading";
     var selected = "";
@@ -614,6 +694,22 @@
     var mealDay = "";
     var mealUpload = { phase: "", message: "", fileName: "", text: "", metaTitle: "", preview: null, warnings: [], canConfirm: false, error: "" };
     var flushing = false;
+    var editSession = null;
+    var editDraft = null;
+    var reportMonth = "";
+    var reminderTimer = null;
+    var reminderVisBound = false;
+    var noteTimers = {};
+    var DEFAULT_MEAL_TIMES = {
+      "Colazione": "08:00",
+      "Spuntino mattutino": "10:30",
+      "Pranzo": "13:00",
+      "Spuntino pomeridiano": "16:30",
+      "Spuntino": "16:30",
+      "Cena": "20:00",
+      "Cena (LIBERA)": "20:00",
+      "Spuntino serale": "21:30"
+    };
 
     function captureToken() {
       var hash = String(window.location.hash || "");
@@ -773,6 +869,11 @@
           if (res.mealPlan) {
             if (!data) data = {};
             data.mealPlan = res.mealPlan;
+            cacheState(data);
+          }
+          if (res.exerciseNotes) {
+            if (!data) data = {};
+            data.exerciseNotes = res.exerciseNotes;
             cacheState(data);
           }
         } catch (err) {
@@ -986,7 +1087,7 @@
     }
 
     function syncNav() {
-      var map = { editor: "view-editor", history: "history", charts: "charts", weight: "weight", records: "records", confirm: "view-editor" };
+      var map = { editor: "view-editor", history: "history", charts: "charts", weight: "weight", records: "records", confirm: "view-editor", settings: "settings", report: "history", "session-edit": "history" };
       var current = map[view] || "";
       var buttons = document.querySelectorAll(".nav-btn");
       var i;
@@ -1008,6 +1109,9 @@
       if (view === "charts") return paintCharts();
       if (view === "weight") return paintWeight();
       if (view === "records") return paintRecords();
+      if (view === "settings") return paintSettings();
+      if (view === "report") return paintReport();
+      if (view === "session-edit") return paintSessionEdit();
       if (view === "confirm") return paintConfirm();
       return paintEditor();
     }
@@ -1076,7 +1180,8 @@
       }).join("");
       var source = ex.source === "log" ? "Come l’ultima volta" : "Dalla scheda: nel diario non c’è ancora";
       var hint = ex.hint ? '<p class="hint">' + esc(ex.hint) + "</p>" : "";
-      return '<article class="card"><div class="card-top"><div><p class="muscle">' + esc(ex.muscle || "Extra") + "</p><h3>" + esc(ex.name) + "</h3>" + hint + "</div>" +
+      var cue = '<input class="ex-cue" data-exname="' + esc(ex.name) + '" value="' + esc(exerciseNoteOf(ex.name)) + '" placeholder="Nota rapida (es. sedile a 4)" maxlength="200" aria-label="Nota per ' + esc(ex.name) + '">';
+      return '<article class="card"><div class="card-top"><div><p class="muscle">' + esc(ex.muscle || "Extra") + "</p><h3>" + esc(ex.name) + "</h3>" + hint + cue + "</div>" +
         '<button class="text-btn" type="button" data-action="skip" data-ex="' + index + '">Salta</button></div>' +
         last + hintProg +
         '<p class="source">' + source + "</p>" + sets +
@@ -1109,13 +1214,17 @@
 
     function paintHistory() {
       var sessions = (data && data.recent) || [];
-      var body = sessions.length ? sessions.map(function (session) {
+      var body = sessions.length ? sessions.map(function (session, idx) {
         var lines = (session.detail || []).map(function (item) {
           return "<div><span>" + esc(item.name) + "</span><span>" + item.sets + " × · " + esc(itNum(item.tonnage)) + " kg</span></div>";
         }).join("");
-        return '<details class="session"><summary><strong>' + esc(session.code) + " · " + esc(itDate(session.date)) + '</strong><span class="muted">' + esc(seriesWord(session.sets)) + " · " + esc(itNum(session.tonnage)) + " kg</span></summary><div class=\"detail\">" + lines + "</div></details>";
+        return '<details class="session"><summary><strong>' + esc(session.code) + " · " + esc(itDate(session.date)) + '</strong><span class="muted">' + esc(seriesWord(session.sets)) + " · " + esc(itNum(session.tonnage)) + " kg</span></summary><div class=\"detail\">" + lines +
+          '<div class="session-actions"><button class="secondary" type="button" data-action="edit-session" data-index="' + idx + '">Modifica</button>' +
+          '<button class="ghost" type="button" data-action="delete-session" data-index="' + idx + '">Elimina</button></div></div></details>';
       }).join("") : '<p class="muted">Nessuna sessione nel diario.</p>';
-      return '<section class="history"><div class="history-top"><h2>Ultime sessioni</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' + body + "</section>";
+      return '<section class="history"><div class="history-top"><h2>Ultime sessioni</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+        '<div class="session-actions no-print" style="margin:0 0 14px"><button class="secondary" type="button" data-action="report">Esporta riepilogo</button></div>' +
+        body + "</section>";
     }
 
     function svgChart(points, key, color) {
@@ -1443,6 +1552,7 @@
       var note = plan.note ? '<p class="plan-note">' + esc(plan.note) + "</p>" : "";
       var totals = day && day.totals ? '<p class="plan-totals">Totale ' + esc(day.name) + ": " + esc(formatMacros(day.totals)) + "</p>" : "";
       var intro = '<p class="muted">' + (isToday ? "Piano di oggi, " : "Piano del ") + esc(day ? day.name : "") + ".</p>";
+      var todayMacros = isToday ? paintTodayMacros(day) : "";
       var uploadUi = paintMealPlanUpload();
       var meals = ((day && day.meals) || []).map(function (meal) {
         var done = isToday && mealIsDone(meal.name);
@@ -1458,7 +1568,7 @@
           (meal.note ? '<p class="meal-note">' + esc(meal.note) + "</p>" : "") +
           "</article>";
       }).join("");
-      return intro + '<div class="day-picks" role="tablist" aria-label="Giorno del piano">' + picks + "</div>" + note + totals + uploadUi + (meals || '<p class="muted">Nessun pasto in questo giorno.</p>');
+      return intro + '<div class="day-picks" role="tablist" aria-label="Giorno del piano">' + picks + "</div>" + note + totals + todayMacros + uploadUi + (meals || '<p class="muted">Nessun pasto in questo giorno.</p>');
     }
 
     function paintWeightLog() {
@@ -1500,6 +1610,629 @@
       return '<section class="history"><div class="history-top"><h2>Record personali</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' + body + "</section>";
     }
 
+
+    function exerciseNoteOf(name) {
+      var notes = (data && data.exerciseNotes) || [];
+      var i;
+      for (i = 0; i < notes.length; i++) {
+        if (notes[i].name === name) return notes[i].note || "";
+      }
+      return "";
+    }
+
+    function setLocalExerciseNote(name, note) {
+      if (!data) data = {};
+      var notes = ((data.exerciseNotes) || []).slice();
+      var i;
+      var found = false;
+      for (i = 0; i < notes.length; i++) {
+        if (notes[i].name === name) {
+          notes[i] = { name: name, note: note, id: notes[i].id || exerciseNoteId(name) };
+          found = true;
+          break;
+        }
+      }
+      if (!found) notes.push({ name: name, note: note, id: exerciseNoteId(name) });
+      data.exerciseNotes = notes;
+      cacheState(data);
+    }
+
+    function exerciseNoteId(name) {
+      return "exnote-" + String(name || "").replace(/\s+/g, "-").slice(0, 80);
+    }
+
+    function scheduleExerciseNoteSave(name, note) {
+      if (!name) return;
+      setLocalExerciseNote(name, note);
+      if (noteTimers[name]) clearTimeout(noteTimers[name]);
+      noteTimers[name] = setTimeout(function () {
+        saveExerciseNote(name, note);
+      }, 700);
+    }
+
+    async function saveExerciseNote(name, note) {
+      var payload = { requestId: exerciseNoteId(name), name: name, note: note };
+      try {
+        if (!navigator.onLine) throw new Error("offline");
+        var res = await rpc("saveExerciseNote", payload);
+        if (res && res.ok && res.exerciseNotes) {
+          data.exerciseNotes = res.exerciseNotes;
+          cacheState(data);
+        } else if (res && !res.ok) {
+          errorText = res.error || "Non ho salvato la nota.";
+          render(true);
+        }
+      } catch (err) {
+        queueOrThrow("saveExerciseNote", payload, err);
+      }
+    }
+
+    function addMacros(a, b) {
+      return {
+        kcal: (a.kcal || 0) + (b.kcal || 0),
+        prot: (a.prot || 0) + (b.prot || 0),
+        carb: (a.carb || 0) + (b.carb || 0),
+        fat: (a.fat || 0) + (b.fat || 0)
+      };
+    }
+
+    function doneMacrosForDay(day, dateIso) {
+      var sum = { kcal: 0, prot: 0, carb: 0, fat: 0 };
+      var meals = (day && day.meals) || [];
+      var i;
+      for (i = 0; i < meals.length; i++) {
+        if (mealIsDone(meals[i].name, dateIso) && meals[i].macros) sum = addMacros(sum, meals[i].macros);
+      }
+      return sum;
+    }
+
+    function paintTodayMacros(day) {
+      if (!day) return "";
+      var date = (data && data.today) || "";
+      var done = doneMacrosForDay(day, date);
+      var tot = day.totals || {};
+      var kcalDone = Math.round(done.kcal || 0);
+      var kcalTot = Math.round(tot.kcal || 0);
+      var pct = kcalTot > 0 ? Math.max(0, Math.min(100, Math.round((kcalDone / kcalTot) * 100))) : 0;
+      return '<article class="card macro-today"><h3>Macro di oggi</h3>' +
+        "<p><strong>" + esc(itNum(kcalDone)) + (kcalTot ? " / " + esc(itNum(kcalTot)) : "") + " kcal</strong></p>" +
+        '<div class="macro-bar" aria-hidden="true"><span style="width:' + pct + '%"></span></div>' +
+        '<p class="macro-split">Prot ' + esc(itNum(Math.round(done.prot || 0))) + (tot.prot != null ? " / " + esc(itNum(tot.prot)) : "") +
+        " · Carb " + esc(itNum(Math.round(done.carb || 0))) + (tot.carb != null ? " / " + esc(itNum(tot.carb)) : "") +
+        " · Grassi " + esc(itNum(Math.round(done.fat || 0))) + (tot.fat != null ? " / " + esc(itNum(tot.fat)) : "") +
+        "</p><p class=\"muted\">Somma dei pasti già segnati come fatti, rispetto al totale del piano.</p></article>";
+    }
+
+    function nowPartsRome(d) {
+      var parts = {};
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Rome",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      }).formatToParts(d || new Date()).forEach(function (p) {
+        if (p.type !== "literal") parts[p.type] = p.value;
+      });
+      return { date: parts.year + "-" + parts.month + "-" + parts.day, hm: parts.hour + ":" + parts.minute };
+    }
+
+    function monthValueRome(d) {
+      var p = nowPartsRome(d);
+      return p.date.slice(0, 7);
+    }
+
+    function minutesOf(hm) {
+      var bits = String(hm || "").split(":");
+      var h = Number(bits[0]);
+      var m = Number(bits[1]);
+      if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+      return h * 60 + m;
+    }
+
+    function mealNamesFromPlan() {
+      var names = [];
+      var seen = {};
+      var days = (data && data.mealPlan && data.mealPlan.days) || [];
+      var i;
+      var j;
+      for (i = 0; i < days.length; i++) {
+        var meals = days[i].meals || [];
+        for (j = 0; j < meals.length; j++) {
+          var name = meals[j].name;
+          if (name && !seen[name]) {
+            seen[name] = true;
+            names.push(name);
+          }
+        }
+      }
+      if (!names.length) names = Object.keys(DEFAULT_MEAL_TIMES);
+      return names;
+    }
+
+    function defaultMealTime(name) {
+      if (DEFAULT_MEAL_TIMES[name]) return DEFAULT_MEAL_TIMES[name];
+      var lower = String(name || "").toLowerCase();
+      var key;
+      for (key in DEFAULT_MEAL_TIMES) {
+        if (lower.indexOf(key.toLowerCase()) !== -1) return DEFAULT_MEAL_TIMES[key];
+      }
+      return "13:00";
+    }
+
+    function loadReminders() {
+      var cfg = { enabled: true, weighIn: { enabled: true, time: "07:30" }, meals: {} };
+      try {
+        var saved = JSON.parse(localStorage.getItem(REMINDER_KEY) || "null");
+        if (saved && typeof saved === "object") {
+          if (saved.enabled === false) cfg.enabled = false;
+          if (saved.weighIn) {
+            cfg.weighIn.enabled = saved.weighIn.enabled !== false;
+            if (saved.weighIn.time) cfg.weighIn.time = saved.weighIn.time;
+          }
+          if (saved.meals && typeof saved.meals === "object") cfg.meals = saved.meals;
+        }
+      } catch (err) {}
+      var names = mealNamesFromPlan();
+      var i;
+      for (i = 0; i < names.length; i++) {
+        var name = names[i];
+        if (!cfg.meals[name]) cfg.meals[name] = { enabled: true, time: defaultMealTime(name) };
+        if (!cfg.meals[name].time) cfg.meals[name].time = defaultMealTime(name);
+      }
+      return cfg;
+    }
+
+    function storeReminders(cfg) {
+      try { localStorage.setItem(REMINDER_KEY, JSON.stringify(cfg)); } catch (err) {}
+    }
+
+    function notificationAllowed() {
+      return typeof Notification !== "undefined" && Notification.permission === "granted";
+    }
+
+    async function requestReminderPermission() {
+      if (typeof Notification === "undefined") {
+        errorText = "Questo browser non supporta le notifiche dell’app.";
+        render(true);
+        return;
+      }
+      try {
+        var perm = await Notification.requestPermission();
+        if (perm !== "granted") errorText = "Notifiche non concesse. Puoi comunque aggiungere i promemoria al calendario.";
+        else errorText = "Notifiche attive: arriveranno mentre l’app è aperta.";
+      } catch (err) {
+        errorText = "Non sono riuscito a chiedere il permesso per le notifiche.";
+      }
+      render(true);
+    }
+
+    function loadFiredReminders() {
+      try { return JSON.parse(localStorage.getItem(REMINDER_FIRED_KEY) || "null") || { date: "", tags: [] }; } catch (err) { return { date: "", tags: [] }; }
+    }
+
+    function storeFiredReminders(pack) {
+      try { localStorage.setItem(REMINDER_FIRED_KEY, JSON.stringify(pack)); } catch (err) {}
+    }
+
+    function showReminder(tag, title, body) {
+      var opts = { body: body, tag: tag, icon: "./icons/icon-192.png", badge: "./icons/icon-192.png", lang: "it" };
+      if (swReg && swReg.showNotification) {
+        swReg.showNotification(title, opts);
+        return;
+      }
+      try { new Notification(title, opts); } catch (err) {}
+    }
+
+    function tickReminders() {
+      if (typeof Notification === "undefined") return;
+      if (Notification.permission !== "granted") return;
+      var cfg = loadReminders();
+      if (!cfg.enabled) return;
+      var now = nowPartsRome();
+      var nowMin = minutesOf(now.hm);
+      if (nowMin == null) return;
+      var fired = loadFiredReminders();
+      if (fired.date !== now.date) fired = { date: now.date, tags: [] };
+      var due = [];
+      if (cfg.weighIn && cfg.weighIn.enabled) {
+        due.push({ tag: "weigh-in", time: cfg.weighIn.time, title: "Palestra", body: "Pesata del mattino." });
+      }
+      var name;
+      for (name in cfg.meals) {
+        if (!Object.prototype.hasOwnProperty.call(cfg.meals, name)) continue;
+        var meal = cfg.meals[name];
+        if (meal && meal.enabled) due.push({ tag: "meal-" + name, time: meal.time, title: "Palestra", body: "È ora di: " + name + "." });
+      }
+      var i;
+      var changed = false;
+      for (i = 0; i < due.length; i++) {
+        var item = due[i];
+        if (fired.tags.indexOf(item.tag) !== -1) continue;
+        var when = minutesOf(item.time);
+        if (when == null) continue;
+        var lag = nowMin - when;
+        if (lag >= 0 && lag <= 20) {
+          showReminder(item.tag, item.title, item.body);
+          fired.tags.push(item.tag);
+          changed = true;
+        }
+      }
+      if (changed) storeFiredReminders(fired);
+    }
+
+    function startReminderClock() {
+      tickReminders();
+      if (reminderTimer) clearInterval(reminderTimer);
+      reminderTimer = setInterval(tickReminders, 20000);
+      if (!reminderVisBound) {
+        reminderVisBound = true;
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "visible") tickReminders();
+        });
+      }
+    }
+
+    function icsEscape(value) {
+      return String(value || "").replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+    }
+
+    function icsTime(hm) {
+      var bits = String(hm || "08:00").split(":");
+      var h = String(Number(bits[0]) || 0);
+      var m = String(Number(bits[1]) || 0);
+      if (h.length < 2) h = "0" + h;
+      if (m.length < 2) m = "0" + m;
+      return h + m + "00";
+    }
+
+    function foldIcs(line) {
+      if (line.length <= 75) return line;
+      var out = line.slice(0, 75);
+      var rest = line.slice(75);
+      while (rest.length) {
+        out += "\r\n " + rest.slice(0, 74);
+        rest = rest.slice(74);
+      }
+      return out;
+    }
+
+    function downloadRemindersIcs() {
+      var cfg = loadReminders();
+      var startDate = (data && data.today) || nowPartsRome().date;
+      var day = startDate.replace(/-/g, "");
+      var lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Palestra//Promemoria//IT",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH"
+      ];
+      function addEvent(uid, hm, title) {
+        if (!hm) return;
+        lines.push("BEGIN:VEVENT");
+        lines.push("UID:" + uid);
+        lines.push("DTSTAMP:" + day + "T" + icsTime(nowPartsRome().hm) + "Z");
+        lines.push("DTSTART;TZID=Europe/Rome:" + day + "T" + icsTime(hm));
+        lines.push("DURATION:PT15M");
+        lines.push("RRULE:FREQ=DAILY");
+        lines.push(foldIcs("SUMMARY:" + icsEscape(title)));
+        lines.push("END:VEVENT");
+      }
+      if (cfg.weighIn && cfg.weighIn.enabled) addEvent("palestra-pesata@chrisquire80", cfg.weighIn.time, "Pesata del mattino");
+      var names = mealNamesFromPlan();
+      var i;
+      for (i = 0; i < names.length; i++) {
+        var meal = cfg.meals[names[i]];
+        if (meal && meal.enabled) addEvent("palestra-pasto-" + i + "@chrisquire80", meal.time, names[i]);
+      }
+      lines.push("END:VCALENDAR");
+      var blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "palestra-promemoria.ics";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }
+
+    function paintSettings() {
+      var cfg = loadReminders();
+      var perm = typeof Notification === "undefined" ? "non supportate" : Notification.permission;
+      var permLabel = perm === "granted" ? "concesse" : perm === "denied" ? "bloccate" : "non ancora chieste";
+      var names = mealNamesFromPlan();
+      var rows = names.map(function (name) {
+        var meal = cfg.meals[name] || { enabled: true, time: defaultMealTime(name) };
+        return '<div class="remind-row"><label><input type="checkbox" data-remind-meal="' + esc(name) + '" data-field="enabled"' + (meal.enabled ? " checked" : "") + "> " + esc(name) + "</label>" +
+          '<input type="time" data-remind-meal="' + esc(name) + '" data-field="time" value="' + esc(meal.time || defaultMealTime(name)) + '" aria-label="Orario ' + esc(name) + '"></div>';
+      }).join("");
+      return '<section class="history"><div class="history-top"><h2>Promemoria e altro</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+        '<article class="card"><h3>Promemoria</h3>' +
+        '<p class="limit-note">Le notifiche dell’app arrivano in modo affidabile solo mentre Palestra è aperta (o almeno in esecuzione). Su Android, senza un servizio di push, il telefono non può svegliarsi da solo a un orario fissato. Per non perdere i pasti o la pesata, aggiungi gli orari al calendario: funziona anche a telefono spento.</p>' +
+        '<p class="muted">Permesso notifiche: ' + esc(permLabel) + ".</p>" +
+        '<div class="session-actions"><button class="secondary" type="button" data-action="notify-ask">Consenti notifiche</button>' +
+        '<button class="primary" type="button" data-action="reminders-ics">Aggiungi al calendario</button></div>' +
+        '<div class="remind-row"><label><input type="checkbox" id="remindEnabled"' + (cfg.enabled ? " checked" : "") + "> Promemoria attivi (con l’app aperta)</label></div>" +
+        '<div class="remind-row"><label><input type="checkbox" id="weighEnabled"' + (cfg.weighIn.enabled ? " checked" : "") + "> Pesata del mattino</label>" +
+        '<input type="time" id="weighTime" value="' + esc(cfg.weighIn.time || "07:30") + '" aria-label="Orario pesata"></div>' +
+        "<h3>Pasti</h3><p class=\"muted\">Orari precompilati dal piano. Puoi cambiarli.</p>" + rows +
+        "</article>" +
+        '<article class="card"><h3>Riepilogo mensile</h3><p class="muted">Genera una pagina da salvare come PDF, con sessioni, carichi, peso e aderenza ai pasti.</p>' +
+        '<button class="secondary" type="button" data-action="report">Apri il riepilogo</button></article></section>';
+    }
+
+    function sessionsInMonth(yearMonth) {
+      var sessions = (data && data.recent) || [];
+      return sessions.filter(function (session) { return String(session.date || "").slice(0, 7) === yearMonth; }).slice().reverse();
+    }
+
+    function monthLabelIt(yearMonth) {
+      if (!yearMonth) return "";
+      var d = new Date(yearMonth + "-01T12:00:00");
+      var label = new Intl.DateTimeFormat("it-IT", { month: "long", year: "numeric", timeZone: "Europe/Rome" }).format(d);
+      return label ? label.charAt(0).toUpperCase() + label.slice(1) : yearMonth;
+    }
+
+    function prsInMonth(yearMonth) {
+      var history = (data && data.history) || [];
+      var out = [];
+      var i;
+      var j;
+      for (i = 0; i < history.length; i++) {
+        var points = history[i].points || [];
+        var best = -1;
+        for (j = 0; j < points.length; j++) {
+          var p = points[j];
+          if (p.maxLoad == null || !isFinite(p.maxLoad)) continue;
+          var inMonth = String(p.date || "").slice(0, 7) === yearMonth;
+          if (p.maxLoad > best) {
+            if (inMonth) out.push({ name: history[i].name, value: p.maxLoad, date: p.date, kind: "carico" });
+            best = p.maxLoad;
+          }
+        }
+      }
+      return out;
+    }
+
+    function mealAdherence(yearMonth) {
+      var plan = data && data.mealPlan;
+      var days = (plan && plan.days) || [];
+      var checks = (data && data.mealChecks) || [];
+      var today = (data && data.today) || nowPartsRome().date;
+      if (!days.length || !yearMonth) return null;
+      var start = new Date(yearMonth + "-01T12:00:00");
+      if (isNaN(start.getTime())) return null;
+      var planned = 0;
+      var done = 0;
+      var rows = [];
+      var d;
+      for (d = 1; d <= 31; d++) {
+        var iso = yearMonth + "-" + String(d).padStart(2, "0");
+        var dt = new Date(iso + "T12:00:00");
+        if (isNaN(dt.getTime()) || dt.getMonth() !== start.getMonth()) break;
+        if (iso > today) break;
+        var name = weekdayNameIt(iso);
+        var day = null;
+        var i;
+        for (i = 0; i < days.length; i++) {
+          if (sameWeekday(days[i].name, name)) { day = days[i]; break; }
+        }
+        if (!day || !(day.meals || []).length) continue;
+        var mealCount = day.meals.length;
+        var doneCount = 0;
+        var j;
+        for (j = 0; j < day.meals.length; j++) {
+          if (mealIsDone(day.meals[j].name, iso)) doneCount += 1;
+        }
+        planned += mealCount;
+        done += doneCount;
+        rows.push({ date: iso, done: doneCount, planned: mealCount });
+      }
+      return { planned: planned, done: done, rows: rows };
+    }
+
+    function monthWeightPoints(yearMonth) {
+      return ((data && data.weights) || []).filter(function (item) {
+        return String(item.date || "").slice(0, 7) === yearMonth;
+      }).map(function (item) { return { date: item.date, kg: item.kg }; });
+    }
+
+    function monthLoadPoints(yearMonth, exerciseName) {
+      var history = (data && data.history) || [];
+      var current = history.find(function (item) { return item.name === exerciseName; });
+      if (!current) return [];
+      return (current.points || []).filter(function (p) { return String(p.date || "").slice(0, 7) === yearMonth; });
+    }
+
+    function paintReport() {
+      if (!reportMonth) reportMonth = monthValueRome();
+      var label = monthLabelIt(reportMonth);
+      var sessions = sessionsInMonth(reportMonth);
+      var prs = prsInMonth(reportMonth);
+      var adh = mealAdherence(reportMonth);
+      var weights = monthWeightPoints(reportMonth);
+      var history = (data && data.history) || [];
+      if (!chartExercise && history.length) chartExercise = history[0].name;
+      var currentName = chartExercise || (history[0] && history[0].name) || "";
+      var loadPoints = currentName ? monthLoadPoints(reportMonth, currentName) : [];
+      var sessionRows = sessions.length ? '<table class="report-table"><thead><tr><th>Data</th><th>Scheda</th><th>Serie</th><th>Tonnellaggio</th></tr></thead><tbody>' +
+        sessions.map(function (session) {
+          return "<tr><td>" + esc(itDate(session.date)) + "</td><td>" + esc(session.code) + "</td><td>" + esc(session.sets) + "</td><td>" + esc(itNum(session.tonnage)) + " kg</td></tr>";
+        }).join("") + "</tbody></table>" : '<p class="muted">Nessuna sessione in questo mese (l’app tiene le ultime 60).</p>';
+      var prBody = prs.length ? "<ul>" + prs.map(function (pr) {
+        return "<li><strong>" + esc(pr.name) + "</strong>: " + esc(itNum(pr.value)) + " kg · " + esc(itDate(pr.date)) + "</li>";
+      }).join("") + "</ul>" : '<p class="muted">Nessun nuovo record di carico in questo mese.</p>';
+      var adhBody = "";
+      if (!adh) adhBody = '<p class="muted">Piano alimentare non disponibile.</p>';
+      else if (!adh.planned) adhBody = '<p class="muted">Nessun giorno da confrontare in questo mese.</p>';
+      else adhBody = "<p><strong>" + esc(adh.done) + " / " + esc(adh.planned) + " pasti</strong> segnati come fatti (" + Math.round((adh.done / adh.planned) * 100) + "%).</p>" +
+        (adh.done === 0 ? '<p class="muted">Se non hai usato «Segna fatto» in questo mese, l’aderenza risulta vuota.</p>' : "");
+      var options = history.map(function (item) {
+        return '<option value="' + esc(item.name) + '"' + (item.name === currentName ? " selected" : "") + ">" + esc(item.name) + "</option>";
+      }).join("");
+      return '<section class="history"><div class="history-top no-print"><h2>Riepilogo</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+        '<div class="no-print form-grid" style="margin-bottom:16px"><label>Mese<input type="month" id="reportMonth" value="' + esc(reportMonth) + '"></label>' +
+        '<p class="limit-note">Per salvare il PDF: tocca «Stampa / Salva come PDF» e, in Chrome, scegli «Salva come PDF» come stampante.</p>' +
+        '<button class="primary" type="button" data-action="print-report">Stampa / Salva come PDF</button></div>' +
+        "<h2>Riepilogo " + esc(label) + "</h2>" +
+        '<div class="report-block"><h3>Sessioni</h3>' + sessionRows + "</div>" +
+        '<div class="report-block"><h3>Nuovi record di carico</h3>' + prBody + "</div>" +
+        (options ? '<div class="report-block"><h3>Carichi · ' + esc(currentName) + '</h3><label class="date no-print">Esercizio<select id="chartExercise">' + options + "</select></label>" +
+          (loadPoints.length ? svgChart(loadPoints, "maxLoad", "#ff4d2e") : '<p class="muted">Nessun carico di questo esercizio nel mese.</p>') + "</div>" : "") +
+        '<div class="report-block"><h3>Andamento del peso</h3>' + (weights.length ? svgChart(weights, "kg", "#d6ef6a") : '<p class="muted">Nessuna pesata in questo mese.</p>') + "</div>" +
+        '<div class="report-block"><h3>Aderenza ai pasti</h3>' + adhBody + "</div></section>";
+    }
+
+    function paintSessionEdit() {
+      if (!editSession || !editDraft) return paintHistory();
+      var cards = editDraft.map(function (ex, index) {
+        var sets = (ex.sets || []).map(function (set, setIndex) {
+          return '<div class="set"><div class="set-top"><span>Serie ' + (set.serie || (setIndex + 1)) + "</span></div>" +
+            '<div class="grids"><div class="field"><span>Rip</span><input inputmode="decimal" data-edit-ex="' + index + '" data-edit-set="' + setIndex + '" data-field="reps" value="' + esc(set.reps) + '" aria-label="Ripetizioni serie ' + (setIndex + 1) + '"></div>' +
+            '<div class="field"><span>Kg</span><input inputmode="decimal" data-edit-ex="' + index + '" data-edit-set="' + setIndex + '" data-field="kg" value="' + esc(set.kg == null ? "" : set.kg) + '" aria-label="Chilogrammi serie ' + (setIndex + 1) + '"></div></div>' +
+            '<div class="extra"><input data-edit-ex="' + index + '" data-edit-set="' + setIndex + '" data-field="rir" value="' + esc(set.rir || "") + '" placeholder="RIR" maxlength="24" aria-label="RIR serie ' + (setIndex + 1) + '">' +
+            '<input data-edit-ex="' + index + '" data-edit-set="' + setIndex + '" data-field="note" value="' + esc(set.note || "") + '" placeholder="Nota" maxlength="300" aria-label="Nota serie ' + (setIndex + 1) + '"></div></div>';
+        }).join("");
+        return '<article class="card"><div class="card-top"><div><h3>' + esc(ex.name) + "</h3></div></div>" + sets + "</article>";
+      }).join("");
+      return '<section class="history"><div class="history-top"><h2>Modifica sessione</h2><button class="ghost" type="button" data-action="back">Annulla</button></div>' +
+        "<p><strong>" + esc(editSession.code) + " · " + esc(itDate(editSession.date)) + "</strong></p>" +
+        (errorText ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
+        cards +
+        '<div class="confirm-actions"><button class="primary" type="button" data-action="save-session-edit"' + (saving ? " disabled" : "") + ">" + (saving ? "Salvo…" : "Salva modifiche") + "</button></div>" +
+        '<div class="confirm-actions"><button class="ghost" type="button" data-action="delete-session-edit">Elimina sessione</button></div></section>';
+    }
+
+    function openSessionEdit(index) {
+      var session = ((data && data.recent) || [])[Number(index)];
+      if (!session || !session.rowIds || !session.rowIds.length) {
+        errorText = "Non ho i dettagli di questa sessione. Ricarica quando sei connesso.";
+        render(true);
+        return;
+      }
+      editSession = session;
+      editDraft = (session.items || []).map(function (item) {
+        return {
+          name: item.name,
+          sets: (item.sets || []).map(function (set) {
+            return { id: set.id, serie: set.serie, reps: set.reps, kg: set.kg, rir: set.rir || "", note: set.note || "" };
+          })
+        };
+      });
+      errorText = "";
+      view = "session-edit";
+      render();
+    }
+
+    async function saveSessionEdit() {
+      if (saving || !editSession || !editDraft) return;
+      var sets = [];
+      var i;
+      var j;
+      for (i = 0; i < editDraft.length; i++) {
+        for (j = 0; j < editDraft[i].sets.length; j++) {
+          var set = editDraft[i].sets[j];
+          sets.push({ id: set.id, reps: set.reps, kg: set.kg, rir: set.rir, note: set.note });
+        }
+      }
+      var payload = { requestId: newRequestId(), rowIds: editSession.rowIds.slice(), sets: sets };
+      saving = true;
+      errorText = "";
+      render(true);
+      try {
+        if (!navigator.onLine) throw new Error("offline");
+        var res = await rpc("updateSession", payload);
+        saving = false;
+        if (!res || !res.ok) {
+          errorText = (res && res.error) || "Modifica non riuscita.";
+          render(true);
+          return;
+        }
+        if (res.state) mergeState(res.state);
+        editSession = null;
+        editDraft = null;
+        view = "history";
+        errorText = "Sessione aggiornata.";
+        render();
+      } catch (err) {
+        saving = false;
+        errorText = queueOrThrow("updateSession", payload, err);
+        render(true);
+      }
+    }
+
+    async function deleteSessionByIndex(index, alreadyConfirmed) {
+      var session = view === "session-edit" && editSession ? editSession : ((data && data.recent) || [])[Number(index)];
+      if (!session || !session.rowIds || !session.rowIds.length) {
+        errorText = "Non ho i dettagli di questa sessione.";
+        render(true);
+        return;
+      }
+      if (!alreadyConfirmed) {
+        var yes = await ask("Vuoi eliminare la sessione " + session.code + " del " + itDate(session.date) + "? Le serie spariscono dal diario. Non si può annullare.");
+        if (!yes) return;
+      }
+      var payload = { requestId: newRequestId(), rowIds: session.rowIds.slice(), confirm: true };
+      saving = true;
+      errorText = "";
+      render(true);
+      try {
+        if (!navigator.onLine) throw new Error("offline");
+        var res = await rpc("deleteSession", payload);
+        saving = false;
+        if (!res || !res.ok) {
+          errorText = (res && res.error) || "Eliminazione non riuscita.";
+          render(true);
+          return;
+        }
+        if (res.state) mergeState(res.state);
+        editSession = null;
+        editDraft = null;
+        view = "history";
+        errorText = res.replayed ? "Questa sessione era già stata tolta." : "Sessione eliminata.";
+        render();
+      } catch (err) {
+        saving = false;
+        errorText = queueOrThrow("deleteSession", payload, err);
+        render(true);
+      }
+    }
+
+    function mergeState(state) {
+      if (!state) return;
+      var keepNotes = data && data.exerciseNotes;
+      var keepWeights = data && data.weights;
+      var keepPlan = data && data.mealPlan;
+      var keepChecks = data && data.mealChecks;
+      applyState(state, true);
+      if (!data.exerciseNotes && keepNotes) data.exerciseNotes = keepNotes;
+      if (!data.weights && keepWeights) data.weights = keepWeights;
+      if (!data.mealPlan && keepPlan) data.mealPlan = keepPlan;
+      if (!data.mealChecks && keepChecks) data.mealChecks = keepChecks;
+      cacheState(data);
+    }
+
+    function updateReminderFromInput(input) {
+      var cfg = loadReminders();
+      if (input.id === "remindEnabled") cfg.enabled = !!input.checked;
+      else if (input.id === "weighEnabled") cfg.weighIn.enabled = !!input.checked;
+      else if (input.id === "weighTime") cfg.weighIn.time = input.value || "07:30";
+      else if (input.dataset && input.dataset.remindMeal) {
+        var name = input.dataset.remindMeal;
+        if (!cfg.meals[name]) cfg.meals[name] = { enabled: true, time: defaultMealTime(name) };
+        if (input.dataset.field === "enabled") cfg.meals[name].enabled = !!input.checked;
+        if (input.dataset.field === "time") cfg.meals[name].time = input.value || defaultMealTime(name);
+      } else {
+        return false;
+      }
+      storeReminders(cfg);
+      return true;
+    }
+
     function onInput(event) {
       var input = event.target;
       if (input.id === "sessionDate") { dateValue = input.value; return; }
@@ -1507,6 +2240,19 @@
       if (input.id === "weightKg") { weightKg = input.value; return; }
       if (input.id === "weightNote") { weightNote = input.value; return; }
       if (input.id === "chartExercise") { chartExercise = input.value; render(true); return; }
+      if (input.id === "reportMonth") { reportMonth = input.value; render(true); return; }
+      if (updateReminderFromInput(input)) return;
+      if (input.classList && input.classList.contains("ex-cue")) {
+        scheduleExerciseNoteSave(input.getAttribute("data-exname"), input.value);
+        return;
+      }
+      if (input.dataset && input.dataset.editEx != null) {
+        if (!editDraft) return;
+        var editEx = editDraft[Number(input.dataset.editEx)];
+        if (!editEx) return;
+        editEx.sets[Number(input.dataset.editSet)][input.dataset.field] = input.value;
+        return;
+      }
       if (!input.dataset || input.dataset.ex == null) return;
       var set = ensureDraft(selected)[Number(input.dataset.ex)].sets[Number(input.dataset.set)];
       set[input.dataset.field] = input.value;
@@ -1517,11 +2263,29 @@
       if (!button) return;
       var action = button.dataset.action;
       if (action === "view-editor" || action === "back" || action === "again") {
+        if (!data && action !== "back") { view = "error"; render(); return; }
+        if (action === "back" && view === "session-edit") {
+          editSession = null; editDraft = null; view = "history"; errorText = ""; render(); return;
+        }
+        if (action === "back" && view === "report") { view = "history"; errorText = ""; render(); return; }
+        if (action === "back" && view === "settings") { view = "editor"; errorText = ""; render(); return; }
         if (!data) { view = "error"; render(); return; }
         view = "editor"; errorText = ""; prs = [];
         if (action === "again") requestId = "";
         render(); return;
       }
+      if (action === "settings") { view = "settings"; errorText = ""; render(); return; }
+      if (action === "report") {
+        if (!reportMonth) reportMonth = monthValueRome();
+        view = "report"; errorText = ""; render(); return;
+      }
+      if (action === "print-report") { window.print(); return; }
+      if (action === "notify-ask") { requestReminderPermission(); return; }
+      if (action === "reminders-ics") { downloadRemindersIcs(); return; }
+      if (action === "edit-session") { openSessionEdit(button.dataset.index); return; }
+      if (action === "delete-session") { deleteSessionByIndex(button.dataset.index, false); return; }
+      if (action === "delete-session-edit") { deleteSessionByIndex(null, false); return; }
+      if (action === "save-session-edit") { saveSessionEdit(); return; }
       if (action === "history") { view = "history"; errorText = ""; render(); return; }
       if (action === "charts") { view = "charts"; errorText = ""; render(); return; }
       if (action === "weight") { view = "weight"; errorText = ""; if (!mealDay && data && data.today) mealDay = weekdayNameIt(data.today); render(); return; }
@@ -1807,6 +2571,7 @@
       }
       render();
       flushQueue();
+      startReminderClock();
     }
 
     document.body.addEventListener("click", onClick);
@@ -1829,6 +2594,7 @@
     captureToken();
     loadRestDefault();
     storeQueue(loadQueue());
+    startReminderClock();
 
     var swReg = null;
     var swRefreshing = false;
