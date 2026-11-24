@@ -7,13 +7,34 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script>
+    (function () {
+      var KEY = "palestra-theme";
+      var pref = "auto";
+      try { pref = localStorage.getItem(KEY) || "auto"; } catch (err) {}
+      if (pref !== "light" && pref !== "dark" && pref !== "auto") pref = "auto";
+      var mode = pref;
+      if (pref === "auto") {
+        try { mode = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; } catch (err) { mode = "dark"; }
+      }
+      document.documentElement.setAttribute("data-theme", mode);
+      document.documentElement.setAttribute("data-theme-pref", pref);
+      var color = mode === "light" ? "#f4f0e6" : "#10110e";
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute("content", color);
+      var bar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+      if (bar) bar.setAttribute("content", mode === "light" ? "default" : "black-translucent");
+      var manifest = document.querySelector('link[rel="manifest"]');
+      if (manifest) manifest.setAttribute("href", mode === "light" ? "manifest-light.webmanifest" : "manifest.webmanifest");
+    })();
+  </script>
   <meta name="apple-mobile-web-app-title" content="Palestra">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>Palestra</title>
   <style>
-    :root {
+    :root, html[data-theme="dark"] {
       --bg: #10110e;
       --card: #1b1d17;
       --card-2: #24271f;
@@ -26,14 +47,65 @@
       --chalk: #d6ef6a;
       --down: #ffb199;
       --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      --ghost-bg: rgba(255, 255, 255, 0.03);
+      --banner-bg: #2a2418;
+      --banner-ink: #f3e6c4;
+      --on-ink: #16140f;
+      --choice-on-span: #4d493f;
+      --choice-badge-bg: #16140f;
+      --on-chalk: #1b2208;
+      --field-bg: #12140f;
+      --bar-fade: linear-gradient(to top, #10110e 72%, rgba(16, 17, 14, 0));
+      --modal-scrim: rgba(0, 0, 0, 0.62);
+      --modal-bg: #26291f;
+      --alert: #ffd0c4;
+      --done-bg: #222a12;
+      --toast-bg: #3a120c;
+      --toast-ink: #ffd7cc;
+      --bar-track: rgba(255, 255, 255, 0.08);
+      --chart-label: #b3ad9f;
+      --glow: rgba(255, 77, 46, 0.18);
       color-scheme: dark;
+    }
+    html[data-theme="light"] {
+      --bg: #f4f0e6;
+      --card: #fffdf8;
+      --card-2: #efe8d6;
+      --line: rgba(22, 20, 15, 0.16);
+      --ink: #16140f;
+      --muted: #5a5448;
+      --faint: #736c60;
+      --red: #c42f18;
+      --red-ink: #fff5f1;
+      --chalk: #3a6a10;
+      --down: #9a3412;
+      --shadow: 0 18px 40px rgba(40, 30, 10, 0.12);
+      --ghost-bg: rgba(22, 20, 15, 0.05);
+      --banner-bg: #f3e6c4;
+      --banner-ink: #3a2c0c;
+      --on-ink: #f4f0e6;
+      --choice-on-span: #d9d2c3;
+      --choice-badge-bg: #f4f0e6;
+      --on-chalk: #f4f0e6;
+      --field-bg: #ffffff;
+      --bar-fade: linear-gradient(to top, #f4f0e6 72%, rgba(244, 240, 230, 0));
+      --modal-scrim: rgba(40, 30, 10, 0.45);
+      --modal-bg: #fffdf8;
+      --alert: #8a1f0c;
+      --done-bg: #e7f0c8;
+      --toast-bg: #f8d8d0;
+      --toast-ink: #5a140c;
+      --bar-track: rgba(22, 20, 15, 0.12);
+      --chart-label: #5a5448;
+      --glow: rgba(196, 47, 24, 0.14);
+      color-scheme: light;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
       min-height: 100vh;
       background:
-        radial-gradient(1200px 420px at 50% -10%, rgba(255, 77, 46, 0.18), transparent 55%),
+        radial-gradient(1200px 420px at 50% -10%, var(--glow), transparent 55%),
         var(--bg);
       color: var(--ink);
       font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
@@ -81,7 +153,7 @@
       padding: 2px 8px;
       border-radius: 999px;
       background: var(--chalk);
-      color: #1b2208;
+      color: var(--on-chalk);
       font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.06em;
@@ -97,14 +169,14 @@
       padding: 0 14px;
       border-radius: 999px;
       border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.03);
+      background: var(--ghost-bg);
     }
     .banner {
       margin: 0 0 8px;
       padding: 8px 12px;
       border-radius: 16px;
-      background: #2a2418;
-      color: #f3e6c4;
+      background: var(--banner-bg);
+      color: var(--banner-ink);
       display: flex;
       gap: 10px;
       align-items: center;
@@ -133,7 +205,7 @@
       background: var(--card);
       padding: 0 12px;
       color: inherit;
-      color-scheme: dark;
+      color-scheme: inherit;
     }
     .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .choice {
@@ -152,15 +224,15 @@
       line-height: 1;
     }
     .choice span { display: block; margin-top: 6px; color: var(--muted); font-size: 0.78rem; line-height: 1.2; }
-    .choice.is-on { background: var(--ink); color: #16140f; border-color: var(--ink); }
-    .choice.is-on span { color: #4d493f; }
-    .choice.is-on .badge { background: #16140f; color: var(--chalk); }
+    .choice.is-on { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+    .choice.is-on span { color: var(--choice-on-span); }
+    .choice.is-on .badge { background: var(--choice-badge-bg); color: var(--chalk); }
     .badge {
       position: absolute;
       top: 8px;
       right: 8px;
       background: var(--chalk);
-      color: #1b2208;
+      color: var(--on-chalk);
       border-radius: 999px;
       padding: 2px 6px;
       font-size: 0.65rem;
@@ -254,7 +326,7 @@
       align-items: center;
       min-height: 56px;
       border-radius: 14px;
-      background: #12140f;
+      background: var(--field-bg);
       overflow: hidden;
     }
     .step { font-size: 1.5rem; background: transparent; }
@@ -274,7 +346,7 @@
       padding: 0 12px;
       font-size: 1rem;
       border-radius: 12px;
-      background: #12140f;
+      background: var(--field-bg);
     }
     .card-actions { display: flex; gap: 8px; margin-top: 10px; }
     .card-actions .text-btn { flex: 1; }
@@ -287,7 +359,7 @@
       bottom: 0;
       width: min(560px, 100%);
       padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
-      background: linear-gradient(to top, #10110e 72%, rgba(16, 17, 14, 0));
+      background: var(--bar-fade);
     }
     .bar p { margin: 0 0 8px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
     .primary {
@@ -338,7 +410,7 @@
     .modal {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.62);
+      background: var(--modal-scrim);
       display: grid;
       place-items: end center;
       padding: 16px;
@@ -346,14 +418,14 @@
     }
     .modal-card {
       width: min(520px, 100%);
-      background: #26291f;
+      background: var(--modal-bg);
       border-radius: 22px;
       padding: 18px;
       margin-bottom: calc(8px + env(safe-area-inset-bottom));
     }
     .modal-card p { margin: 0 0 14px; font-size: 1.1rem; }
     .modal-actions { display: grid; grid-template-columns: 1fr 1fr; }
-    .alert { color: #ffd0c4; margin: 8px 0 0; }
+    .alert { color: var(--alert); margin: 8px 0 0; }
     @media (min-width: 900px) {
       body { padding: 28px 0 40px; }
       .shell { padding-top: 8px; }
@@ -372,17 +444,17 @@
       padding: 0 10px;
       border-radius: 999px;
       border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.03);
+      background: var(--ghost-bg);
       font-size: 0.86rem;
     }
-    .nav-btn.is-on { background: var(--ink); color: #16140f; border-color: var(--ink); }
+    .nav-btn.is-on { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
     .header-tools { display: flex; align-items: center; gap: 8px; }
     .pending-pill {
       min-height: 28px;
       padding: 0 8px;
       border-radius: 999px;
       background: var(--chalk);
-      color: #1b2208;
+      color: var(--on-chalk);
       font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.04em;
@@ -408,7 +480,7 @@
     }
     .timer .timer-actions { margin-left: auto; display: flex; gap: 6px; }
     .timer .timer-actions button { min-width: 48px; min-height: 44px; }
-    .timer.is-done { border-color: var(--chalk); background: #222a12; }
+    .timer.is-done { border-color: var(--chalk); background: var(--done-bg); }
     .set.is-done { box-shadow: inset 0 0 0 1px var(--chalk); }
     .last-load, .progress-hint { margin: 0 0 8px; color: var(--muted); font-size: 0.88rem; }
     .progress-hint.up { color: var(--chalk); }
@@ -416,7 +488,7 @@
       margin: 0 0 14px;
       padding: 14px;
       border-radius: 20px;
-      background: #222a12;
+      background: var(--done-bg);
       border: 1px solid var(--chalk);
     }
     .celebrate h3 { margin: 0 0 8px; color: var(--chalk); }
@@ -442,7 +514,7 @@
     .subnav button { flex: 1; }
     .subnav button.is-on, .day-picks button.is-on {
       background: var(--ink);
-      color: #16140f;
+      color: var(--on-ink);
       border-color: var(--ink);
     }
     .day-picks { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
@@ -485,8 +557,8 @@
       align-items: flex-start;
       padding: 10px 12px;
       border-radius: 16px;
-      background: #3a120c;
-      color: #ffd7cc;
+      background: var(--toast-bg);
+      color: var(--toast-ink);
       font-size: 0.88rem;
       box-shadow: var(--shadow);
     }
@@ -498,7 +570,7 @@
       padding: 0 12px;
       border-radius: 999px;
       border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.03);
+      background: var(--ghost-bg);
       font-size: 0.82rem;
     }
     .ex-cue {
@@ -508,7 +580,7 @@
       min-height: 40px;
       border-radius: 10px;
       border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.03);
+      background: var(--ghost-bg);
       padding: 6px 8px;
       color: inherit;
       font-size: 0.86rem;
@@ -518,7 +590,7 @@
     .macro-bar {
       height: 8px;
       border-radius: 99px;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--bar-track);
       overflow: hidden;
       margin: 8px 0;
     }
@@ -554,7 +626,36 @@
     .report-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
     .report-table th, .report-table td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
     .report-table td:last-child, .report-table th:last-child { text-align: right; }
+    
+    .theme-picks { display: flex; gap: 8px; margin: 8px 0 0; }
+    .theme-picks button { flex: 1; }
+    .howto-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--field-bg);
+      margin: 0 0 12px;
+    }
+    .howto-frame iframe, .howto-frame img.howto-shot {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      object-fit: cover;
+    }
+    .howto-photo { margin: 0 0 12px; }
+    .howto-photo img {
+      width: 100%;
+      border-radius: 16px;
+      display: block;
+    }
+    .howto-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+    .howto-actions button { flex: 1 1 calc(50% - 8px); }
     @media print {
+      html, html[data-theme="dark"], html[data-theme="light"] { color-scheme: light; }
+
       header, nav, .banner, .timer, .header-tools, .no-print, #errorToast, #modal,
       #pendingBanner, #setupBanner, #installBanner, #updateBanner { display: none !important; }
       body { background: #fff; color: #111; padding: 12px; }
@@ -578,7 +679,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v2.6</span></h1>
+          <h1>Palestra <span class="ver">v2.7</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -669,6 +770,7 @@
     var REST_KEY = "palestra-rest-default";
     var REMINDER_KEY = "palestra-reminders";
     var REMINDER_FIRED_KEY = "palestra-reminders-fired";
+    var THEME_KEY = "palestra-theme";
     var data = null;
     var view = "loading";
     var selected = "";
@@ -700,6 +802,9 @@
     var reminderTimer = null;
     var reminderVisBound = false;
     var noteTimers = {};
+    var howtoName = "";
+    var howtoVideoDraft = "";
+    var howtoPhotoUrl = "";
     var DEFAULT_MEAL_TIMES = {
       "Colazione": "08:00",
       "Spuntino mattutino": "10:30",
@@ -874,6 +979,11 @@
           if (res.exerciseNotes) {
             if (!data) data = {};
             data.exerciseNotes = res.exerciseNotes;
+            cacheState(data);
+          }
+          if (res.exerciseMedia) {
+            if (!data) data = {};
+            data.exerciseMedia = res.exerciseMedia;
             cacheState(data);
           }
         } catch (err) {
@@ -1087,7 +1197,7 @@
     }
 
     function syncNav() {
-      var map = { editor: "view-editor", history: "history", charts: "charts", weight: "weight", records: "records", confirm: "view-editor", settings: "settings", report: "history", "session-edit": "history" };
+      var map = { editor: "view-editor", history: "history", charts: "charts", weight: "weight", records: "records", confirm: "view-editor", settings: "settings", report: "history", "session-edit": "history", howto: "view-editor" };
       var current = map[view] || "";
       var buttons = document.querySelectorAll(".nav-btn");
       var i;
@@ -1112,6 +1222,7 @@
       if (view === "settings") return paintSettings();
       if (view === "report") return paintReport();
       if (view === "session-edit") return paintSessionEdit();
+      if (view === "howto") return paintHowto();
       if (view === "confirm") return paintConfirm();
       return paintEditor();
     }
@@ -1157,7 +1268,8 @@
     function paintExercise(ex, index) {
       if (ex.skipped) {
         return '<article class="card is-skipped"><div class="card-top"><div><p class="muscle">' + esc(ex.muscle || "Extra") + "</p><h3>" + esc(ex.name) + "</h3></div>" +
-          '<button class="text-btn" type="button" data-action="skip" data-ex="' + index + '">Riprendi</button></div></article>';
+          '<button class="text-btn" type="button" data-action="skip" data-ex="' + index + '">Riprendi</button></div>' +
+          '<div class="card-actions"><button class="text-btn" type="button" data-action="howto" data-name="' + esc(ex.name) + '">Come si fa</button></div></article>';
       }
       var cardio = ex.kind === "cardio";
       var last = "";
@@ -1185,7 +1297,8 @@
         '<button class="text-btn" type="button" data-action="skip" data-ex="' + index + '">Salta</button></div>' +
         last + hintProg +
         '<p class="source">' + source + "</p>" + sets +
-        '<div class="card-actions"><button class="text-btn" type="button" data-action="add" data-ex="' + index + '">Aggiungi serie</button></div></article>';
+        '<div class="card-actions"><button class="text-btn" type="button" data-action="add" data-ex="' + index + '">Aggiungi serie</button>' +
+        '<button class="text-btn" type="button" data-action="howto" data-name="' + esc(ex.name) + '">Come si fa</button></div></article>';
     }
 
     function paintConfirm() {
@@ -1253,8 +1366,8 @@
       return '<svg class="chart" viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="Andamento">' +
         '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>' +
         '<circle cx="' + X(last.x).toFixed(1) + '" cy="' + Y(last.y).toFixed(1) + '" r="3.5" fill="' + color + '"></circle>' +
-        '<text x="' + pad + '" y="14" fill="#b3ad9f" font-size="10">' + esc(itDate(first.date)) + "</text>" +
-        '<text x="' + (w - pad) + '" y="14" fill="#b3ad9f" font-size="10" text-anchor="end">' + esc(itNum(last.y)) + "</text>" +
+        '<text x="' + pad + '" y="14" fill="' + cssVar("--chart-label", "#b3ad9f") + '" font-size="10">' + esc(itDate(first.date)) + "</text>" +
+        '<text x="' + (w - pad) + '" y="14" fill="' + cssVar("--chart-label", "#b3ad9f") + '" font-size="10" text-anchor="end">' + esc(itNum(last.y)) + "</text>" +
         "</svg>";
     }
 
@@ -1268,8 +1381,8 @@
       }).join("");
       return '<section class="history"><div class="history-top"><h2>Grafici</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
         '<label class="date">Esercizio<select id="chartExercise">' + options + "</select></label>" +
-        '<article class="card chart-card"><h3>Carico massimo</h3>' + svgChart(current.points, "maxLoad", "#ff4d2e") + "</article>" +
-        '<article class="card chart-card"><h3>Volume (serie × rip × kg)</h3>' + svgChart(current.points, "volume", "#d6ef6a") + "</article></section>";
+        '<article class="card chart-card"><h3>Carico massimo</h3>' + svgChart(current.points, "maxLoad", cssVar("--red", "#ff4d2e")) + "</article>" +
+        '<article class="card chart-card"><h3>Volume (serie × rip × kg)</h3>' + svgChart(current.points, "volume", cssVar("--chalk", "#d6ef6a")) + "</article></section>";
     }
 
     function weekdayNameIt(iso) {
@@ -1574,7 +1687,7 @@
     function paintWeightLog() {
       var weights = (data && data.weights) || [];
       var points = weights.map(function (item) { return { date: item.date, kg: item.kg }; });
-      var chart = points.length ? '<article class="card chart-card"><h3>Andamento del peso</h3>' + svgChart(points, "kg", "#d6ef6a") + "</article>" : '<p class="muted">Ancora nessun peso nel diario.</p>';
+      var chart = points.length ? '<article class="card chart-card"><h3>Andamento del peso</h3>' + svgChart(points, "kg", cssVar("--chalk", "#d6ef6a")) + "</article>" : '<p class="muted">Ancora nessun peso nel diario.</p>';
       var rows = weights.slice().reverse().slice(0, 12).map(function (item) {
         return "<div><span>" + esc(itDate(item.date)) + "</span><span>" + (item.kg != null ? esc(itNum(item.kg)) + " kg" : "—") + (item.note ? " · " + esc(item.note) : "") + "</span></div>";
       }).join("");
@@ -1940,6 +2053,292 @@
       setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     }
 
+
+    function cssVar(name, fallback) {
+      try {
+        var value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || fallback;
+      } catch (err) {
+        return fallback;
+      }
+    }
+
+    function resolveThemeMode(pref) {
+      if (pref === "light" || pref === "dark") return pref;
+      try { return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; } catch (err) { return "dark"; }
+    }
+
+    function loadThemePref() {
+      try {
+        var pref = localStorage.getItem(THEME_KEY) || "auto";
+        if (pref === "light" || pref === "dark" || pref === "auto") return pref;
+      } catch (err) {}
+      return "auto";
+    }
+
+    function applyTheme(pref) {
+      if (pref !== "light" && pref !== "dark" && pref !== "auto") pref = "auto";
+      try { localStorage.setItem(THEME_KEY, pref); } catch (err) {}
+      var mode = resolveThemeMode(pref);
+      document.documentElement.setAttribute("data-theme", mode);
+      document.documentElement.setAttribute("data-theme-pref", pref);
+      var color = mode === "light" ? "#f4f0e6" : "#10110e";
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute("content", color);
+      var bar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+      if (bar) bar.setAttribute("content", mode === "light" ? "default" : "black-translucent");
+      var manifest = document.querySelector('link[rel="manifest"]');
+      if (manifest) manifest.setAttribute("href", mode === "light" ? "manifest-light.webmanifest" : "manifest.webmanifest");
+    }
+
+    function startThemeWatch() {
+      try {
+        var mq = window.matchMedia("(prefers-color-scheme: light)");
+        var onChange = function () {
+          if (loadThemePref() === "auto") {
+            applyTheme("auto");
+            if (view === "charts" || view === "report" || view === "weight" || view === "settings") render(true);
+          }
+        };
+        if (mq.addEventListener) mq.addEventListener("change", onChange);
+        else if (mq.addListener) mq.addListener(onChange);
+      } catch (err) {}
+    }
+
+    function exerciseMediaOf(name) {
+      var list = (data && data.exerciseMedia) || [];
+      var i;
+      for (i = 0; i < list.length; i++) {
+        if (list[i].name === name) return list[i];
+      }
+      return null;
+    }
+
+    function exerciseMediaId(name) {
+      return "media-" + String(name || "").replace(/\s+/g, "-").replace(/[^A-Za-z0-9_\-]/g, "").slice(0, 80);
+    }
+
+    function parseVideoUrl(url) {
+      var text = String(url || "").trim();
+      if (!text) return null;
+      var m = text.match(/(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/|youtube-nocookie\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+      if (m) return { kind: "youtube", id: m[1], src: "https://www.youtube-nocookie.com/embed/" + m[1], open: "https://www.youtube.com/watch?v=" + m[1] };
+      m = text.match(/(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/);
+      if (m) return { kind: "vimeo", id: m[1], src: "https://player.vimeo.com/video/" + m[1], open: "https://vimeo.com/" + m[1] };
+      return null;
+    }
+
+    function isAllowedVideoUrl(url) {
+      var text = String(url || "").trim();
+      if (!text) return true;
+      return !!parseVideoUrl(text);
+    }
+
+    function openPhotoDb() {
+      return new Promise(function (resolve, reject) {
+        if (!window.indexedDB) {
+          reject(new Error("Questo telefono non salva le foto in locale."));
+          return;
+        }
+        var req = indexedDB.open("palestra-media", 1);
+        req.onupgradeneeded = function () {
+          var db = req.result;
+          if (!db.objectStoreNames.contains("photos")) db.createObjectStore("photos");
+        };
+        req.onsuccess = function () { resolve(req.result); };
+        req.onerror = function () { reject(req.error || new Error("Archivio foto non disponibile.")); };
+      });
+    }
+
+    async function loadHowtoPhoto(name) {
+      howtoPhotoUrl = "";
+      try {
+        var db = await openPhotoDb();
+        var blob = await new Promise(function (resolve, reject) {
+          var tx = db.transaction("photos", "readonly");
+          var get = tx.objectStore("photos").get(name);
+          get.onsuccess = function () { resolve(get.result || null); };
+          get.onerror = function () { reject(get.error); };
+        });
+        db.close();
+        if (blob) howtoPhotoUrl = URL.createObjectURL(blob);
+      } catch (err) {
+        howtoPhotoUrl = "";
+      }
+    }
+
+    async function storeHowtoPhoto(name, blob) {
+      var db = await openPhotoDb();
+      await new Promise(function (resolve, reject) {
+        var tx = db.transaction("photos", "readwrite");
+        var put = tx.objectStore("photos").put(blob, name);
+        put.onsuccess = function () { resolve(); };
+        put.onerror = function () { reject(put.error); };
+      });
+      db.close();
+    }
+
+    async function deleteHowtoPhoto(name) {
+      var db = await openPhotoDb();
+      await new Promise(function (resolve, reject) {
+        var tx = db.transaction("photos", "readwrite");
+        var del = tx.objectStore("photos").delete(name);
+        del.onsuccess = function () { resolve(); };
+        del.onerror = function () { reject(del.error); };
+      });
+      db.close();
+    }
+
+    function resizeImageBlob(file, maxSide) {
+      return new Promise(function (resolve, reject) {
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function () {
+          var w = img.naturalWidth || img.width;
+          var h = img.naturalHeight || img.height;
+          var scale = Math.min(1, maxSide / Math.max(w, h));
+          var cw = Math.max(1, Math.round(w * scale));
+          var ch = Math.max(1, Math.round(h * scale));
+          var canvas = document.createElement("canvas");
+          canvas.width = cw;
+          canvas.height = ch;
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, cw, ch);
+          URL.revokeObjectURL(url);
+          canvas.toBlob(function (blob) {
+            if (!blob) reject(new Error("Non sono riuscito a preparare la foto."));
+            else resolve(blob);
+          }, "image/jpeg", 0.85);
+        };
+        img.onerror = function () {
+          URL.revokeObjectURL(url);
+          reject(new Error("Foto non leggibile."));
+        };
+        img.src = url;
+      });
+    }
+
+    async function openHowto(name) {
+      if (!name) return;
+      if (howtoPhotoUrl) {
+        try { URL.revokeObjectURL(howtoPhotoUrl); } catch (err) {}
+        howtoPhotoUrl = "";
+      }
+      howtoName = name;
+      var media = exerciseMediaOf(name);
+      howtoVideoDraft = media && media.videoUrl ? media.videoUrl : "";
+      errorText = "";
+      view = "howto";
+      await loadHowtoPhoto(name);
+      render();
+    }
+
+    function paintHowto() {
+      var name = howtoName;
+      if (!name) return paintEditor();
+      var media = exerciseMediaOf(name);
+      var videoUrl = howtoVideoDraft != null ? howtoVideoDraft : (media && media.videoUrl) || "";
+      var parsed = parseVideoUrl(videoUrl);
+      var online = navigator.onLine;
+      var videoBlock = "";
+      if (!parsed) {
+        videoBlock = '<p class="muted">Nessun video in scheda. Puoi incollare un link YouTube o Vimeo qui sotto.</p>';
+      } else if (!online) {
+        videoBlock = '<p class="muted">Per il video serve la connessione.</p><p><a class="text-btn" href="' + esc(parsed.open) + '" target="_blank" rel="noopener">Apri su ' + (parsed.kind === "vimeo" ? "Vimeo" : "YouTube") + " quando sei online</a></p>";
+      } else {
+        videoBlock = '<div class="howto-frame"><iframe src="' + esc(parsed.src) + '" title="Video: ' + esc(name) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>' +
+          '<p><a href="' + esc(parsed.open) + '" target="_blank" rel="noopener">Apri su ' + (parsed.kind === "vimeo" ? "Vimeo" : "YouTube") + "</a></p>";
+      }
+      var photoBlock = "";
+      if (howtoPhotoUrl) {
+        photoBlock = '<div class="howto-photo"><img alt="Foto di riferimento per ' + esc(name) + '" src="' + esc(howtoPhotoUrl) + '"></div>';
+      } else if (media && media.photoUrl && online) {
+        photoBlock = '<div class="howto-photo"><img alt="Foto di riferimento per ' + esc(name) + '" src="' + esc(media.photoUrl) + '"></div>';
+      }
+      return '<section class="history"><div class="history-top"><h2>Come si fa</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+        "<h3>" + esc(name) + "</h3>" +
+        (errorText ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
+        videoBlock +
+        photoBlock +
+        '<p class="limit-note">La foto che scatti o scegli dal telefono resta solo su questo telefono, non viene caricata sul foglio (Google Drive richiederebbe nuovi permessi).</p>' +
+        '<div class="howto-actions">' +
+        '<button class="secondary" type="button" data-action="howto-camera">Scatta una foto</button>' +
+        '<button class="secondary" type="button" data-action="howto-gallery">Scegli dalla galleria</button>' +
+        (howtoPhotoUrl ? '<button class="ghost" type="button" data-action="howto-photo-remove">Togli la foto da questo telefono</button>' : "") +
+        "</div>" +
+        '<input id="howtoCamera" type="file" accept="image/*" capture="environment" hidden>' +
+        '<input id="howtoGallery" type="file" accept="image/*" hidden>' +
+        '<div class="form-grid"><label>Link del video<input id="howtoVideo" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" value="' + esc(videoUrl) + '"></label>' +
+        '<button class="primary" type="button" data-action="howto-save-video"' + (saving ? " disabled" : "") + ">" + (saving ? "Salvo…" : "Salva il link sul foglio") + "</button></div></section>";
+    }
+
+    async function saveHowtoVideo() {
+      if (!howtoName || saving) return;
+      var url = ((document.getElementById("howtoVideo") || {}).value || howtoVideoDraft || "").trim();
+      if (url && !isAllowedVideoUrl(url)) {
+        errorText = "Usa un link YouTube o Vimeo, oppure lascia il campo vuoto.";
+        render(true);
+        return;
+      }
+      var payload = { requestId: exerciseMediaId(howtoName), name: howtoName, videoUrl: url };
+      saving = true;
+      errorText = "";
+      render(true);
+      try {
+        if (!navigator.onLine) throw new Error("offline");
+        var res = await rpc("saveExerciseMedia", payload);
+        saving = false;
+        if (!res || !res.ok) {
+          errorText = (res && res.error) || "Non ho salvato il link.";
+          render(true);
+          return;
+        }
+        if (res.exerciseMedia) {
+          if (!data) data = {};
+          data.exerciseMedia = res.exerciseMedia;
+          cacheState(data);
+        }
+        howtoVideoDraft = url;
+        errorText = res.replayed ? "Questo link era già salvato." : "Link salvato sul foglio.";
+        render();
+      } catch (err) {
+        saving = false;
+        errorText = queueOrThrow("saveExerciseMedia", payload, err);
+        render(true);
+      }
+    }
+
+    async function onHowtoPhoto(event) {
+      var input = event.target;
+      var file = input.files && input.files[0];
+      input.value = "";
+      if (!file || !howtoName) return;
+      try {
+        var blob = await resizeImageBlob(file, 800);
+        await storeHowtoPhoto(howtoName, blob);
+        if (howtoPhotoUrl) {
+          try { URL.revokeObjectURL(howtoPhotoUrl); } catch (err) {}
+        }
+        howtoPhotoUrl = URL.createObjectURL(blob);
+        errorText = "Foto salvata solo su questo telefono.";
+        render(true);
+      } catch (err) {
+        errorText = (err && err.message) || "Non sono riuscito a salvare la foto.";
+        render(true);
+      }
+    }
+
+    async function removeHowtoPhoto() {
+      if (!howtoName) return;
+      try { await deleteHowtoPhoto(howtoName); } catch (err) {}
+      if (howtoPhotoUrl) {
+        try { URL.revokeObjectURL(howtoPhotoUrl); } catch (err) {}
+        howtoPhotoUrl = "";
+      }
+      errorText = "Ho tolto la foto da questo telefono.";
+      render(true);
+    }
+
     function paintSettings() {
       var cfg = loadReminders();
       var perm = typeof Notification === "undefined" ? "non supportate" : Notification.permission;
@@ -1950,7 +2349,13 @@
         return '<div class="remind-row"><label><input type="checkbox" data-remind-meal="' + esc(name) + '" data-field="enabled"' + (meal.enabled ? " checked" : "") + "> " + esc(name) + "</label>" +
           '<input type="time" data-remind-meal="' + esc(name) + '" data-field="time" value="' + esc(meal.time || defaultMealTime(name)) + '" aria-label="Orario ' + esc(name) + '"></div>';
       }).join("");
+      var themePref = loadThemePref();
+      function themeBtn(id, label) {
+        return '<button class="ghost' + (themePref === id ? " is-on" : "") + '" type="button" data-action="theme" data-theme="' + id + '">' + label + "</button>";
+      }
       return '<section class="history"><div class="history-top"><h2>Promemoria e altro</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+        '<article class="card"><h3>Tema</h3><p class="muted">Scegli come appare l’app. Auto segue le impostazioni del telefono.</p>' +
+        '<div class="theme-picks">' + themeBtn("auto", "Auto") + themeBtn("light", "Chiaro") + themeBtn("dark", "Scuro") + "</div></article>" +
         '<article class="card"><h3>Promemoria</h3>' +
         '<p class="limit-note">Le notifiche dell’app arrivano in modo affidabile solo mentre Palestra è aperta (o almeno in esecuzione). Su Android, senza un servizio di push, il telefono non può svegliarsi da solo a un orario fissato. Per non perdere i pasti o la pesata, aggiungi gli orari al calendario: funziona anche a telefono spento.</p>' +
         '<p class="muted">Permesso notifiche: ' + esc(permLabel) + ".</p>" +
@@ -2082,8 +2487,8 @@
         '<div class="report-block"><h3>Sessioni</h3>' + sessionRows + "</div>" +
         '<div class="report-block"><h3>Nuovi record di carico</h3>' + prBody + "</div>" +
         (options ? '<div class="report-block"><h3>Carichi · ' + esc(currentName) + '</h3><label class="date no-print">Esercizio<select id="chartExercise">' + options + "</select></label>" +
-          (loadPoints.length ? svgChart(loadPoints, "maxLoad", "#ff4d2e") : '<p class="muted">Nessun carico di questo esercizio nel mese.</p>') + "</div>" : "") +
-        '<div class="report-block"><h3>Andamento del peso</h3>' + (weights.length ? svgChart(weights, "kg", "#d6ef6a") : '<p class="muted">Nessuna pesata in questo mese.</p>') + "</div>" +
+          (loadPoints.length ? svgChart(loadPoints, "maxLoad", cssVar("--red", "#ff4d2e")) : '<p class="muted">Nessun carico di questo esercizio nel mese.</p>') + "</div>" : "") +
+        '<div class="report-block"><h3>Andamento del peso</h3>' + (weights.length ? svgChart(weights, "kg", cssVar("--chalk", "#d6ef6a")) : '<p class="muted">Nessuna pesata in questo mese.</p>') + "</div>" +
         '<div class="report-block"><h3>Aderenza ai pasti</h3>' + adhBody + "</div></section>";
     }
 
@@ -2205,11 +2610,13 @@
     function mergeState(state) {
       if (!state) return;
       var keepNotes = data && data.exerciseNotes;
+      var keepMedia = data && data.exerciseMedia;
       var keepWeights = data && data.weights;
       var keepPlan = data && data.mealPlan;
       var keepChecks = data && data.mealChecks;
       applyState(state, true);
       if (!data.exerciseNotes && keepNotes) data.exerciseNotes = keepNotes;
+      if (!data.exerciseMedia && keepMedia) data.exerciseMedia = keepMedia;
       if (!data.weights && keepWeights) data.weights = keepWeights;
       if (!data.mealPlan && keepPlan) data.mealPlan = keepPlan;
       if (!data.mealChecks && keepChecks) data.mealChecks = keepChecks;
@@ -2241,6 +2648,7 @@
       if (input.id === "weightNote") { weightNote = input.value; return; }
       if (input.id === "chartExercise") { chartExercise = input.value; render(true); return; }
       if (input.id === "reportMonth") { reportMonth = input.value; render(true); return; }
+      if (input.id === "howtoVideo") { howtoVideoDraft = input.value; return; }
       if (updateReminderFromInput(input)) return;
       if (input.classList && input.classList.contains("ex-cue")) {
         scheduleExerciseNoteSave(input.getAttribute("data-exname"), input.value);
@@ -2269,12 +2677,28 @@
         }
         if (action === "back" && view === "report") { view = "history"; errorText = ""; render(); return; }
         if (action === "back" && view === "settings") { view = "editor"; errorText = ""; render(); return; }
+        if (action === "back" && view === "howto") { view = "editor"; howtoName = ""; errorText = ""; render(); return; }
         if (!data) { view = "error"; render(); return; }
         view = "editor"; errorText = ""; prs = [];
         if (action === "again") requestId = "";
         render(); return;
       }
       if (action === "settings") { view = "settings"; errorText = ""; render(); return; }
+      if (action === "theme") { applyTheme(button.getAttribute("data-theme") || "auto"); render(true); return; }
+      if (action === "howto") { openHowto(button.getAttribute("data-name") || ""); return; }
+      if (action === "howto-open") { return; }
+      if (action === "howto-save-video") { saveHowtoVideo(); return; }
+      if (action === "howto-photo-remove") { removeHowtoPhoto(); return; }
+      if (action === "howto-camera") {
+        var cam = document.getElementById("howtoCamera");
+        if (cam) cam.click();
+        return;
+      }
+      if (action === "howto-gallery") {
+        var gal = document.getElementById("howtoGallery");
+        if (gal) gal.click();
+        return;
+      }
       if (action === "report") {
         if (!reportMonth) reportMonth = monthValueRome();
         view = "report"; errorText = ""; render(); return;
@@ -2576,6 +3000,10 @@
 
     document.body.addEventListener("click", onClick);
     document.body.addEventListener("input", onInput);
+    document.body.addEventListener("change", function (event) {
+      var target = event.target;
+      if (target && (target.id === "howtoCamera" || target.id === "howtoGallery")) onHowtoPhoto(event);
+    });
     document.getElementById("modalYes").addEventListener("click", function () { closeModal(true); });
     document.getElementById("modalNo").addEventListener("click", function () { closeModal(false); });
     document.getElementById("mealPlanFile").addEventListener("change", function (event) {
@@ -2595,6 +3023,8 @@
     loadRestDefault();
     storeQueue(loadQueue());
     startReminderClock();
+    applyTheme(loadThemePref());
+    startThemeWatch();
 
     var swReg = null;
     var swRefreshing = false;

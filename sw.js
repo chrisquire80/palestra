@@ -1,10 +1,11 @@
-/* Palestra service worker v2.6 */
-const APP_VERSION = 'v2.6';
-const CACHE = 'palestra-shell-v2.6';
+/* Palestra service worker v2.7 */
+const APP_VERSION = 'v2.7';
+const CACHE = 'palestra-shell-v2.7';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './manifest-light.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './vendor/pdfjs/pdf.min.js',
