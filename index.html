@@ -114,12 +114,13 @@
       color: var(--muted);
       font-size: 0.86rem;
     }
-    input[type="date"] {
+    input[type="date"], select {
       min-height: 52px;
       border-radius: 14px;
       border: 1px solid var(--line);
       background: var(--card);
       padding: 0 12px;
+      color: inherit;
       color-scheme: dark;
     }
     .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -319,6 +320,85 @@
       .choices { gap: 12px; }
       .choice { min-height: 108px; }
     }
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0 0 12px;
+    }
+    .nav-btn {
+      flex: 1 1 calc(33% - 6px);
+      min-height: 44px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      font-size: 0.86rem;
+    }
+    .nav-btn.is-on { background: var(--ink); color: #16140f; border-color: var(--ink); }
+    .header-tools { display: flex; align-items: center; gap: 8px; }
+    .pending-pill {
+      min-height: 28px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: var(--chalk);
+      color: #1b2208;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+    }
+    .timer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 18px;
+      background: var(--card);
+      border: 1px solid var(--line);
+    }
+    .timer .time {
+      font-size: 1.7rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.04em;
+      min-width: 4.2rem;
+    }
+    .timer .timer-actions { margin-left: auto; display: flex; gap: 6px; }
+    .timer .timer-actions button { min-width: 48px; min-height: 44px; }
+    .timer.is-done { border-color: var(--chalk); background: #222a12; }
+    .set.is-done { box-shadow: inset 0 0 0 1px var(--chalk); }
+    .last-load, .progress-hint { margin: 0 0 8px; color: var(--muted); font-size: 0.88rem; }
+    .progress-hint.up { color: var(--chalk); }
+    .celebrate {
+      margin: 0 0 14px;
+      padding: 14px;
+      border-radius: 20px;
+      background: #222a12;
+      border: 1px solid var(--chalk);
+    }
+    .celebrate h3 { margin: 0 0 8px; color: var(--chalk); }
+    .celebrate li { margin: 0 0 6px; }
+    .chart-card h3 { margin: 0 0 8px; }
+    .chart-wrap { overflow: hidden; }
+    .chart { width: 100%; height: 150px; display: block; }
+    .chart-legend { display: flex; gap: 12px; margin: 6px 0 0; color: var(--muted); font-size: 0.8rem; }
+    .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 99px; margin-right: 4px; }
+    .form-grid { display: grid; gap: 10px; }
+    .form-grid label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 0.86rem; }
+    .form-grid input, .form-grid textarea {
+      min-height: 52px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      padding: 10px 12px;
+    }
+    .form-grid textarea { min-height: 88px; resize: vertical; }
+    .weight-list { margin-top: 16px; }
+    .weight-list div { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+    .records li { margin: 0 0 12px; }
   </style>
 </head>
 <body>
@@ -331,8 +411,17 @@
           <h1>Palestra</h1>
         </div>
       </div>
-      <button class="ghost" type="button" data-action="history">Storico</button>
+      <div class="header-tools">
+        <span id="pendingPill" class="pending-pill" hidden></span>
+      </div>
     </header>
+    <nav class="nav" aria-label="Sezioni">
+      <button class="nav-btn" type="button" data-action="view-editor">Scheda</button>
+      <button class="nav-btn" type="button" data-action="history">Storico</button>
+      <button class="nav-btn" type="button" data-action="charts">Grafici</button>
+      <button class="nav-btn" type="button" data-action="weight">Peso</button>
+      <button class="nav-btn" type="button" data-action="records">Record</button>
+    </nav>
     <div id="setupBanner" class="banner" hidden>
       <p>Per configurare l’app, apri dal telefono il link che trovi nel foglio Google, nella scheda App.</p>
     </div>
@@ -340,6 +429,26 @@
       <p>Su Android, in Chrome: menu in alto a destra, poi «Installa app» o «Aggiungi alla schermata Home». Su iPhone, in Safari: Condividi, poi «Aggiungi a Home».</p>
       <button class="ghost" type="button" id="installApp" hidden>Installa</button>
       <button class="ghost" type="button" id="hideInstall">Ok</button>
+    </div>
+    <div id="updateBanner" class="banner" hidden>
+      <p>C’è una nuova versione dell’app.</p>
+      <button class="ghost" type="button" id="reloadApp">Aggiorna</button>
+    </div>
+    <div id="pendingBanner" class="banner" hidden>
+      <p id="pendingLabel">Ci sono salvataggi in attesa di connessione.</p>
+      <button class="ghost" type="button" data-action="flush">Invia</button>
+    </div>
+    <div id="timerBar" class="timer" hidden>
+      <div>
+        <p class="eyebrow">Recupero</p>
+        <div class="time" id="timerValue">1:30</div>
+      </div>
+      <div class="timer-actions">
+        <button class="ghost" type="button" data-action="rest-minus" aria-label="Togli 15 secondi">−15s</button>
+        <button class="ghost" type="button" data-action="rest-plus" aria-label="Aggiungi 15 secondi">+15s</button>
+        <button class="ghost" type="button" data-action="rest-skip">Stop</button>
+      </div>
+      <span class="muted" id="timerDefault">1:30</span>
     </div>
     <main id="app"></main>
   </div>
@@ -353,81 +462,204 @@
     </div>
   </div>
   <script>
+    var API_URL = "https://script.google.com/macros/s/AKfycby5BbhGQxfGqEHD71yl8Z3csntO-mlf7LZrXSHkl1_fnCODC8oJUBCTf-2LIdjrZAE/exec";
+    var TOKEN_KEY = "palestra-token";
+    var QUEUE_KEY = "palestra-queue";
+    var STATE_KEY = "palestra-state";
+    var REST_KEY = "palestra-rest-default";
     var data = null;
-    var view = 'loading';
-    var selected = '';
-    var dateValue = '';
+    var view = "loading";
+    var selected = "";
+    var dateValue = "";
     var drafts = {};
     var summary = null;
+    var prs = [];
     var saving = false;
-    var requestId = '';
-    var errorText = '';
+    var requestId = "";
+    var errorText = "";
     var modalResolver = null;
-
-    var API_URL = "https://script.google.com/macros/s/AKfycby5BbhGQxfGqEHD71yl8Z3csntO-mlf7LZrXSHkl1_fnCODC8oJUBCTf-2LIdjrZAE/exec";
-    var TOKEN_KEY = 'palestra-token';
+    var pendingCount = 0;
+    var restDefault = 90;
+    var restLeft = 0;
+    var restRunning = false;
+    var restTimer = null;
+    var restJustFinished = false;
+    var chartExercise = "";
+    var weightDate = "";
+    var weightKg = "";
+    var weightNote = "";
+    var flushing = false;
 
     function captureToken() {
-      var hash = String(window.location.hash || '');
+      var hash = String(window.location.hash || "");
       if (!hash) return;
-      var raw = hash.charAt(0) === '#' ? hash.slice(1) : hash;
-      var parts = raw.split('&');
+      var raw = hash.charAt(0) === "#" ? hash.slice(1) : hash;
+      var parts = raw.split("&");
       var i;
       for (i = 0; i < parts.length; i++) {
         var pair = parts[i];
-        var eq = pair.indexOf('=');
+        var eq = pair.indexOf("=");
         var key = eq >= 0 ? pair.slice(0, eq) : pair;
-        var val = eq >= 0 ? pair.slice(eq + 1) : '';
-        if (key === 't' && val) {
+        var val = eq >= 0 ? pair.slice(eq + 1) : "";
+        if (key === "t" && val) {
           try { localStorage.setItem(TOKEN_KEY, decodeURIComponent(val)); } catch (err) {}
-          history.replaceState(null, '', window.location.pathname + window.location.search);
+          history.replaceState(null, "", window.location.pathname + window.location.search);
           return;
         }
       }
     }
 
     function getToken() {
-      try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (err) { return ''; }
+      try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (err) { return ""; }
     }
 
     function rpc(name, arg) {
       var token = getToken();
       if (!token) {
-        return Promise.reject(new Error('Per configurare l’app, apri dal telefono il link che trovi nel foglio Google, nella scheda App.'));
+        return Promise.reject(new Error("Per configurare l’app, apri dal telefono il link che trovi nel foglio Google, nella scheda App."));
       }
       var body = { token: token, action: name };
       if (arg !== undefined) body.payload = arg;
       return fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(body),
-        redirect: 'follow',
-        credentials: 'omit'
+        redirect: "follow",
+        credentials: "omit"
       }).then(function (res) {
         return res.text().then(function (text) {
-          var data;
-          try { data = JSON.parse(text); } catch (err) {
-            throw new Error(res.ok ? 'Risposta non valida dal foglio.' : 'Il server ha risposto ' + res.status + '.');
+          var parsed;
+          try { parsed = JSON.parse(text); } catch (err) {
+            throw new Error(res.ok ? "Risposta non valida dal foglio." : "Il server ha risposto " + res.status + ".");
           }
-          if (!res.ok && (!data || data.ok !== false)) {
-            throw new Error((data && data.error) || ('Il server ha risposto ' + res.status + '.'));
+          if (!res.ok && (!parsed || parsed.ok !== false)) {
+            throw new Error((parsed && parsed.error) || ("Il server ha risposto " + res.status + "."));
           }
-          return data;
+          return parsed;
         });
       });
     }
 
+    function loadQueue() {
+      try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]"); } catch (err) { return []; }
+    }
+
+    function storeQueue(items) {
+      pendingCount = items.length;
+      try { localStorage.setItem(QUEUE_KEY, JSON.stringify(items)); } catch (err) {}
+      var pill = document.getElementById("pendingPill");
+      var banner = document.getElementById("pendingBanner");
+      if (pill) {
+        pill.hidden = !items.length;
+        pill.textContent = items.length ? (items.length + " in attesa") : "";
+      }
+      if (banner) {
+        banner.hidden = !items.length;
+        var label = document.getElementById("pendingLabel");
+        if (label) {
+          label.textContent = items.length === 1
+            ? "C’è 1 salvataggio in attesa di connessione."
+            : "Ci sono " + items.length + " salvataggi in attesa di connessione.";
+        }
+      }
+    }
+
+    function enqueue(item) {
+      var items = loadQueue();
+      var i;
+      for (i = 0; i < items.length; i++) {
+        if (items[i].requestId && items[i].requestId === item.requestId && items[i].action === item.action) {
+          items[i] = item;
+          storeQueue(items);
+          return;
+        }
+      }
+      items.push(item);
+      storeQueue(items);
+    }
+
+    function cacheState(state) {
+      if (!state) return;
+      try { localStorage.setItem(STATE_KEY, JSON.stringify({ savedAt: Date.now(), state: state })); } catch (err) {}
+    }
+
+    function readCachedState() {
+      try {
+        var pack = JSON.parse(localStorage.getItem(STATE_KEY) || "null");
+        return pack && pack.state ? pack.state : null;
+      } catch (err) { return null; }
+    }
+
+    function applyState(state, keepDrafts) {
+      data = state;
+      cacheState(state);
+      if (!keepDrafts) drafts = {};
+      if (!dateValue) dateValue = state.today;
+      if (!selected) selected = state.suggested || "A";
+      if (!weightDate) weightDate = state.today;
+    }
+
+    async function flushQueue() {
+      if (flushing) return;
+      if (!navigator.onLine) return;
+      var items = loadQueue();
+      if (!items.length) return;
+      flushing = true;
+      var next = [];
+      var i;
+      for (i = 0; i < items.length; i++) {
+        var item = items[i];
+        try {
+          var res = await rpc(item.action, item.payload);
+          if (res && res.needsConfirm) {
+            next.push(item);
+            if (!modalResolver) {
+              var yes = await ask(res.message || "Confermi il salvataggio?");
+              if (yes) {
+                item.payload.confirmDuplicate = true;
+                try {
+                  res = await rpc(item.action, item.payload);
+                } catch (err2) {
+                  next.push(item);
+                  continue;
+                }
+              } else {
+                continue;
+              }
+            } else {
+              continue;
+            }
+          }
+          if (!res || res.ok === false) {
+            next.push(item);
+            continue;
+          }
+          if (res.state) applyState(res.state, true);
+          if (res.weights) {
+            if (!data) data = {};
+            data.weights = res.weights;
+            cacheState(data);
+          }
+        } catch (err) {
+          next.push(item);
+        }
+      }
+      storeQueue(next);
+      flushing = false;
+      if (view !== "loading") render(true);
+    }
+
     function esc(value) {
-      return String(value == null ? '' : value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
     }
 
     function parseNum(value) {
       if (value == null) return null;
-      var text = String(value).trim().replace(/\s/g, '').replace(',', '.');
+      var text = String(value).trim().replace(/\s/g, "").replace(",", ".");
       if (!text) return null;
       var n = Number(text);
       return Number.isFinite(n) ? n : null;
@@ -435,48 +667,52 @@
 
     function formatEditable(n) {
       var rounded = Math.round(Number(n) * 100) / 100;
-      if (!Number.isFinite(rounded)) return '';
-      return rounded.toFixed(2).replace(/\.?0+$/, '').replace('.', ',');
+      if (!Number.isFinite(rounded)) return "";
+      return rounded.toFixed(2).replace(/\.?0+$/, "").replace(".", ",");
     }
 
     function itNum(n) {
-      return new Intl.NumberFormat('it-IT', { maximumFractionDigits: 1 }).format(n);
+      return new Intl.NumberFormat("it-IT", { maximumFractionDigits: 1 }).format(n);
     }
 
     function itDate(iso) {
-      var parts = String(iso || '').split('-').map(Number);
-      if (parts.length !== 3) return iso || '';
-      return new Intl.DateTimeFormat('it-IT', {
-        weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Rome'
+      var parts = String(iso || "").split("-").map(Number);
+      if (parts.length !== 3) return iso || "";
+      return new Intl.DateTimeFormat("it-IT", {
+        weekday: "short", day: "numeric", month: "short", timeZone: "Europe/Rome"
       }).format(new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12)));
     }
 
     function newRequestId() {
       if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-      return 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+      return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
     }
 
     function workoutOf(code) {
-      return data.workouts.find(function (item) { return item.code === code; });
+      return data && data.workouts ? data.workouts.find(function (item) { return item.code === code; }) : null;
     }
 
     function ensureDraft(code) {
       if (drafts[code]) return drafts[code];
       var workout = workoutOf(code);
-      drafts[code] = workout.exercises.map(function (ex) {
+      drafts[code] = (workout.exercises || []).map(function (ex) {
         return {
           name: ex.name,
           muscle: ex.muscle,
           hint: ex.hint,
           kind: ex.kind,
           source: ex.source,
+          lastLine: ex.lastLine || "",
+          lastDate: ex.lastDate || "",
+          progression: ex.progression || { addKg: 0, text: "" },
           skipped: false,
           sets: ex.sets.map(function (set) {
             return {
-              reps: set.reps == null ? '' : formatEditable(set.reps),
-              kg: set.kg == null ? '' : formatEditable(set.kg),
-              rir: set.rir || '',
-              note: set.note || ''
+              reps: set.reps == null ? "" : formatEditable(set.reps),
+              kg: set.kg == null ? "" : formatEditable(set.kg),
+              rir: set.rir || "",
+              note: set.note || "",
+              done: false
             };
           })
         };
@@ -500,30 +736,123 @@
     }
 
     function seriesWord(n) {
-      return n === 1 ? '1 serie' : n + ' serie';
+      return n === 1 ? "1 serie" : n + " serie";
     }
 
     function deltaSentence(item) {
-      if (!item.previous) return 'Prima sessione di questo tipo nel diario.';
-      if (!item.delta) return 'Stesso tonnellaggio dell’ultima sessione.';
-      var sign = item.delta > 0 ? '+' : '';
-      return sign + itNum(item.delta) + ' kg rispetto al ' + itDate(item.previous.date) + '.';
+      if (!item.previous) return "Prima sessione di questo tipo nel diario.";
+      if (!item.delta) return "Stesso tonnellaggio dell’ultima sessione.";
+      var sign = item.delta > 0 ? "+" : "";
+      return sign + itNum(item.delta) + " kg rispetto al " + itDate(item.previous.date) + ".";
+    }
+
+    function loadRestDefault() {
+      try {
+        var n = Number(localStorage.getItem(REST_KEY));
+        if (n >= 15 && n <= 600) restDefault = n;
+      } catch (err) {}
+    }
+
+    function storeRestDefault() {
+      try { localStorage.setItem(REST_KEY, String(restDefault)); } catch (err) {}
+    }
+
+    function formatRest(sec) {
+      var s = Math.max(0, Math.round(sec));
+      var m = Math.floor(s / 60);
+      var r = s % 60;
+      return m + ":" + (r < 10 ? "0" : "") + r;
+    }
+
+    function beepAndVibrate() {
+      try {
+        if (navigator.vibrate) navigator.vibrate([220, 90, 220, 90, 360]);
+      } catch (err) {}
+      try {
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        var ctx = new Ctx();
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = 880;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.55);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.56);
+        setTimeout(function () { try { ctx.close(); } catch (e) {} }, 800);
+      } catch (err) {}
+    }
+
+    function stopRest() {
+      restRunning = false;
+      if (restTimer) { clearInterval(restTimer); restTimer = null; }
+    }
+
+    function startRest() {
+      stopRest();
+      restLeft = restDefault;
+      restRunning = true;
+      restJustFinished = false;
+      paintTimer();
+      restTimer = setInterval(function () {
+        restLeft -= 1;
+        if (restLeft <= 0) {
+          restLeft = 0;
+          stopRest();
+          restJustFinished = true;
+          beepAndVibrate();
+        }
+        paintTimer();
+      }, 1000);
+    }
+
+    function paintTimer() {
+      var bar = document.getElementById("timerBar");
+      if (!bar) return;
+      if (!restRunning && !restJustFinished && restLeft <= 0) {
+        bar.hidden = true;
+        return;
+      }
+      bar.hidden = false;
+      bar.className = "timer" + (restJustFinished ? " is-done" : "");
+      document.getElementById("timerValue").textContent = restJustFinished ? "Recupero finito" : formatRest(restLeft);
+      document.getElementById("timerDefault").textContent = formatRest(restDefault);
     }
 
     function render(keepScroll) {
       var y = keepScroll ? window.scrollY : 0;
-      document.getElementById('app').innerHTML = paint();
+      document.getElementById("app").innerHTML = paint();
+      syncNav();
+      paintTimer();
+      storeQueue(loadQueue());
       if (keepScroll) window.scrollTo(0, y);
       else window.scrollTo(0, 0);
     }
 
+    function syncNav() {
+      var map = { editor: "view-editor", history: "history", charts: "charts", weight: "weight", records: "records", confirm: "view-editor" };
+      var current = map[view] || "";
+      var buttons = document.querySelectorAll(".nav-btn");
+      var i;
+      for (i = 0; i < buttons.length; i++) {
+        buttons[i].classList.toggle("is-on", buttons[i].getAttribute("data-action") === current);
+      }
+    }
+
     function paint() {
-      if (view === 'loading') return '<section class="status"><h2>Carico la scheda…</h2><p class="muted">Leggo il diario e preparo i carichi dell’ultima volta.</p></section>';
-      if (view === 'error') {
+      if (view === "loading") return '<section class="status"><h2>Carico la scheda…</h2><p class="muted">Leggo il diario e preparo i carichi dell’ultima volta.</p></section>';
+      if (view === "error") {
         return '<section class="error-box"><h2>Qualcosa non ha risposto</h2><p>' + esc(errorText) + '</p><button class="primary" type="button" data-action="retry">Riprova</button></section>';
       }
-      if (view === 'history') return paintHistory();
-      if (view === 'confirm') return paintConfirm();
+      if (view === "history") return paintHistory();
+      if (view === "charts") return paintCharts();
+      if (view === "weight") return paintWeight();
+      if (view === "records") return paintRecords();
+      if (view === "confirm") return paintConfirm();
       return paintEditor();
     }
 
@@ -532,66 +861,87 @@
       var list = ensureDraft(selected);
       var stats = draftStats(list);
       var choices = data.workouts.map(function (item) {
-        var on = item.code === selected ? ' is-on' : '';
-        var badge = item.code === data.suggested ? '<em class="badge">Prossimo</em>' : '';
+        var on = item.code === selected ? " is-on" : "";
+        var badge = item.code === data.suggested ? '<span class="badge">Oggi</span>' : "";
         return '<button class="choice' + on + '" type="button" data-action="pick" data-code="' + item.code + '" aria-pressed="' + (item.code === selected) + '">' +
-          badge + '<strong>' + item.code + '</strong><span>' + esc(item.short) + '</span></button>';
-      }).join('');
-      var last = data.last
-        ? 'Ultimo nel diario: ' + esc(data.last.code) + ' · ' + esc(itDate(data.last.date)) + '. Adesso tocca a ' + esc(data.suggested) + '.'
-        : 'Nessuna sessione nel diario. Si parte dalla scheda A.';
-      var previous = workout.previous
-        ? 'Ultima volta ' + esc(itDate(workout.previous.date)) + ' · ' + esc(seriesWord(workout.previous.sets)) + ' · ' + esc(itNum(workout.previous.tonnage)) + ' kg'
-        : 'Questa scheda non è ancora nel diario.';
-      var cards = list.map(function (ex, index) { return paintExercise(ex, index); }).join('');
-      var preview = '';
-      if (workout.previous) {
+          badge + "<strong>" + esc(item.code) + "</strong><span>" + esc(item.short) + "</span></button>";
+      }).join("");
+      var last = workout && workout.previous
+        ? "Ultima volta: " + itDate(workout.previous.date) + " · " + seriesWord(workout.previous.sets) + " · " + itNum(workout.previous.tonnage) + " kg"
+        : "Prima volta di questa scheda.";
+      var preview = "";
+      if (workout && workout.previous && workout.previous.tonnage != null && stats.sets) {
         var delta = Math.round((stats.tonnage - workout.previous.tonnage) * 10) / 10;
-        var cls = delta > 0 ? 'up' : delta < 0 ? 'down' : '';
-        var sign = delta > 0 ? '+' : '';
-        preview = '<span class="' + cls + '"> · ' + sign + itNum(delta) + ' kg</span>';
+        var sign = delta > 0 ? "+" : "";
+        var cls = delta > 0 ? "up" : delta < 0 ? "down" : "";
+        preview = '<span class="' + cls + '"> · ' + sign + itNum(delta) + " kg</span>";
       }
-      var alert = errorText ? '<p class="alert" role="alert">' + esc(errorText) + '</p>' : '';
-      return '<section class="editor">' +
-        '<div class="date-row"><label class="date">Data<input id="session-date" name="data" type="date" data-field="date" value="' + esc(dateValue) + '"></label></div>' +
-        '<div class="choices" role="radiogroup" aria-label="Scheda">' + choices + '</div>' +
-        '<p class="focus">' + esc(workout.focus) + '</p>' +
-        '<p class="last-line">' + last + '<br>' + previous + '</p>' +
-        cards + alert +
-        '<div class="bar"><p id="barStats">' + esc(seriesWord(stats.sets)) + ' · ' + esc(itNum(stats.tonnage)) + ' kg' + preview + '</p>' +
-        '<button class="primary" id="saveBtn" type="button" data-action="save"' + (saving || stats.sets === 0 ? ' disabled' : '') + '>' +
-        (saving ? 'Salvo…' : 'Salva sessione') + '</button></div></section>';
+      var cards = list.map(paintExercise).join("");
+      return '<section class="editor"><div class="date-row"><label class="date">Data<input type="date" id="sessionDate" value="' + esc(dateValue) + '"></label></div>' +
+        '<div class="choices">' + choices + "</div>" +
+        '<p class="focus">' + esc(workout ? workout.focus : "") + "</p>" +
+        '<p class="last-line">' + last + "</p>" +
+        (errorText ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
+        cards +
+        '<div class="bar"><p>' + esc(seriesWord(stats.sets)) + " · " + esc(itNum(stats.tonnage)) + " kg" + preview + "</p>" +
+        '<button class="primary" id="saveBtn" type="button" data-action="save"' + (saving || stats.sets === 0 ? " disabled" : "") + ">" +
+        (saving ? "Salvo…" : "Salva sessione") + "</button></div></section>";
     }
 
     function paintExercise(ex, index) {
       if (ex.skipped) {
-        return '<article class="card is-skipped"><div class="card-top"><div><p class="muscle">' + esc(ex.muscle || 'Extra') + '</p><h3>' + esc(ex.name) + '</h3><p class="hint">Saltato, non va nel diario.</p></div>' +
+        return '<article class="card is-skipped"><div class="card-top"><div><p class="muscle">' + esc(ex.muscle || "Extra") + "</p><h3>" + esc(ex.name) + "</h3></div>" +
           '<button class="text-btn" type="button" data-action="skip" data-ex="' + index + '">Riprendi</button></div></article>';
       }
-      var cardio = ex.kind === 'cardio';
+      var cardio = ex.kind === "cardio";
+      var last = "";
+      if (ex.lastLine) {
+        last = '<p class="last-load">Ultima volta' + (ex.lastDate ? " (" + esc(itDate(ex.lastDate)) + ")" : "") + ": " + esc(ex.lastLine) + "</p>";
+      }
+      var hintProg = "";
+      if (ex.progression && ex.progression.text) {
+        hintProg = '<p class="progress-hint' + (ex.progression.addKg ? " up" : "") + '">' + esc(ex.progression.text) + "</p>";
+      }
       var sets = ex.sets.map(function (set, setIndex) {
-        var kg = cardio ? '' : '<div class="field"><span>Kg</span><div class="stepper"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" data-delta="-1" aria-label="Diminuisci il carico, serie ' + (setIndex + 1) + '">−</button><input name="kg-' + index + '-' + setIndex + '" inputmode="decimal" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" value="' + esc(set.kg) + '" aria-label="Chilogrammi serie ' + (setIndex + 1) + '"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" data-delta="1" aria-label="Aumenta il carico, serie ' + (setIndex + 1) + '">+</button></div></div>';
-        return '<div class="set"><div class="set-top"><span>Serie ' + (setIndex + 1) + '</span>' +
-          (ex.sets.length > 1 ? '<button class="icon-btn" type="button" data-action="remove" data-ex="' + index + '" data-set="' + setIndex + '" aria-label="Togli serie ' + (setIndex + 1) + '">×</button>' : '<span></span>') +
-          '</div><div class="grids' + (cardio ? ' one' : '') + '">' +
-          '<div class="field"><span>' + (cardio ? 'Minuti' : 'Rip') + '</span><div class="stepper"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="reps" data-delta="-1" aria-label="Diminuisci, serie ' + (setIndex + 1) + '">−</button><input name="rip-' + index + '-' + setIndex + '" inputmode="decimal" data-ex="' + index + '" data-set="' + setIndex + '" data-field="reps" value="' + esc(set.reps) + '" aria-label="' + (cardio ? 'Minuti' : 'Ripetizioni') + ' serie ' + (setIndex + 1) + '"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="reps" data-delta="1" aria-label="Aumenta, serie ' + (setIndex + 1) + '">+</button></div></div>' +
-          kg + '</div><div class="extra"><input name="rir-' + index + '-' + setIndex + '" data-ex="' + index + '" data-set="' + setIndex + '" data-field="rir" value="' + esc(set.rir) + '" placeholder="RIR" aria-label="RIR serie ' + (setIndex + 1) + '" maxlength="24"><input name="nota-' + index + '-' + setIndex + '" data-ex="' + index + '" data-set="' + setIndex + '" data-field="note" value="' + esc(set.note) + '" placeholder="' + (cardio ? 'Velocità, pendenza…' : 'Nota') + '" aria-label="Nota serie ' + (setIndex + 1) + '" maxlength="300"></div></div>';
-      }).join('');
-      var source = ex.source === 'log' ? 'Come l’ultima volta' : 'Dalla scheda: nel diario non c’è ancora';
-      var hint = ex.hint ? '<p class="hint">' + esc(ex.hint) + '</p>' : '';
-      return '<article class="card"><div class="card-top"><div><p class="muscle">' + esc(ex.muscle || 'Extra') + '</p><h3>' + esc(ex.name) + '</h3>' + hint + '</div>' +
+        var kg = cardio ? "" : '<div class="field"><span>Kg</span><div class="stepper"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" data-delta="-1" aria-label="Diminuisci il carico, serie ' + (setIndex + 1) + '">−</button><input name="kg-' + index + "-" + setIndex + '" inputmode="decimal" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" value="' + esc(set.kg) + '" aria-label="Chilogrammi serie ' + (setIndex + 1) + '"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" data-delta="1" aria-label="Aumenta il carico, serie ' + (setIndex + 1) + '">+</button></div></div>';
+        return '<div class="set' + (set.done ? " is-done" : "") + '"><div class="set-top"><span>Serie ' + (setIndex + 1) + (set.done ? " · fatta" : "") + "</span>" +
+          '<div>' +
+          '<button class="text-btn" type="button" data-action="done" data-ex="' + index + '" data-set="' + setIndex + '">' + (set.done ? "Annulla" : "Fatto") + "</button>" +
+          (ex.sets.length > 1 ? '<button class="icon-btn" type="button" data-action="remove" data-ex="' + index + '" data-set="' + setIndex + '" aria-label="Togli serie ' + (setIndex + 1) + '">×</button>' : "") +
+          "</div></div><div class=\"grids" + (cardio ? " one" : "") + "\">" +
+          '<div class="field"><span>' + (cardio ? "Minuti" : "Rip") + '</span><div class="stepper"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="reps" data-delta="-1" aria-label="Diminuisci, serie ' + (setIndex + 1) + '">−</button><input name="rip-' + index + "-" + setIndex + '" inputmode="decimal" data-ex="' + index + '" data-set="' + setIndex + '" data-field="reps" value="' + esc(set.reps) + '" aria-label="' + (cardio ? "Minuti" : "Ripetizioni") + " serie " + (setIndex + 1) + '"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="reps" data-delta="1" aria-label="Aumenta, serie ' + (setIndex + 1) + '">+</button></div></div>' +
+          kg + '</div><div class="extra"><input name="rir-' + index + "-" + setIndex + '" data-ex="' + index + '" data-set="' + setIndex + '" data-field="rir" value="' + esc(set.rir) + '" placeholder="RIR" aria-label="RIR serie ' + (setIndex + 1) + '" maxlength="24"><input name="nota-' + index + "-" + setIndex + '" data-ex="' + index + '" data-set="' + setIndex + '" data-field="note" value="' + esc(set.note) + '" placeholder="' + (cardio ? "Velocità, pendenza…" : "Nota") + '" aria-label="Nota serie ' + (setIndex + 1) + '" maxlength="300"></div></div>';
+      }).join("");
+      var source = ex.source === "log" ? "Come l’ultima volta" : "Dalla scheda: nel diario non c’è ancora";
+      var hint = ex.hint ? '<p class="hint">' + esc(ex.hint) + "</p>" : "";
+      return '<article class="card"><div class="card-top"><div><p class="muscle">' + esc(ex.muscle || "Extra") + "</p><h3>" + esc(ex.name) + "</h3>" + hint + "</div>" +
         '<button class="text-btn" type="button" data-action="skip" data-ex="' + index + '">Salta</button></div>' +
-        '<p class="source">' + source + '</p>' + sets +
+        last + hintProg +
+        '<p class="source">' + source + "</p>" + sets +
         '<div class="card-actions"><button class="text-btn" type="button" data-action="add" data-ex="' + index + '">Aggiungi serie</button></div></article>';
     }
 
     function paintConfirm() {
-      var cls = summary.delta > 0 ? 'up' : summary.delta < 0 ? 'down' : '';
-      return '<section class="confirm"><p class="eyebrow">Registrato</p><h2>' + esc(summary.code) + ' · ' + esc(itDate(summary.date)) + '</h2>' +
-        '<div class="stat"><b>' + esc(seriesWord(summary.sets)) + '</b><span class="muted">' + esc(itNum(summary.tonnage)) + ' kg di tonnellaggio</span></div>' +
-        '<p class="' + cls + '">' + esc(deltaSentence(summary)) + '</p>' +
-        '<p class="muted">Le serie sono in fondo al foglio Log, con le formule già compilate. Oggi e Storico si aggiornano da soli.</p>' +
+      var cls = summary.delta > 0 ? "up" : summary.delta < 0 ? "down" : "";
+      var celebrate = "";
+      if (prs && prs.length) {
+        var items = prs.map(function (pr) {
+          var bits = pr.items.map(function (item) {
+            var prev = item.previous != null ? " (prima " + itNum(item.previous) + " kg)" : "";
+            return esc(item.label) + ": " + itNum(item.value) + " kg" + prev;
+          }).join(" · ");
+          return "<li><strong>" + esc(pr.name) + "</strong><br>" + bits + "</li>";
+        }).join("");
+        celebrate = '<div class="celebrate"><h3>Nuovo record!</h3><ul>' + items + "</ul></div>";
+      }
+      return '<section class="confirm"><p class="eyebrow">Registrato</p><h2>' + esc(summary.code) + " · " + esc(itDate(summary.date)) + "</h2>" +
+        celebrate +
+        '<div class="stat"><b>' + esc(seriesWord(summary.sets)) + '</b><span class="muted">' + esc(itNum(summary.tonnage)) + " kg di tonnellaggio</span></div>" +
+        '<p class="' + cls + '">' + esc(deltaSentence(summary)) + "</p>" +
+        (summary.replayed ? '<p class="muted">Questo salvataggio era già nel diario: non ho aggiunto righe doppie.</p>' : "") +
+        (errorText ? '<p class="muted">' + esc(errorText) + "</p>" : '<p class="muted">Le serie sono in fondo al foglio Log, con le formule già compilate. Oggi e Storico si aggiornano da soli.</p>') +
         '<div class="confirm-actions"><button class="primary" type="button" data-action="again">Nuova sessione</button></div>' +
+        '<div class="confirm-actions"><button class="secondary" type="button" data-action="records">Vedi i record</button></div>' +
         '<div class="confirm-actions"><button class="secondary" type="button" data-action="history">Vedi lo storico</button></div></section>';
     }
 
@@ -599,99 +949,198 @@
       var sessions = (data && data.recent) || [];
       var body = sessions.length ? sessions.map(function (session) {
         var lines = (session.detail || []).map(function (item) {
-          return '<div><span>' + esc(item.name) + '</span><span>' + item.sets + ' × · ' + esc(itNum(item.tonnage)) + ' kg</span></div>';
-        }).join('');
-        return '<details class="session"><summary><strong>' + esc(session.code) + ' · ' + esc(itDate(session.date)) + '</strong><span class="muted">' + esc(seriesWord(session.sets)) + ' · ' + esc(itNum(session.tonnage)) + ' kg</span></summary><div class="detail">' + lines + '</div></details>';
-      }).join('') : '<p class="muted">Nessuna sessione nel diario.</p>';
-      return '<section class="history"><div class="history-top"><h2>Ultime sessioni</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' + body + '</section>';
+          return "<div><span>" + esc(item.name) + "</span><span>" + item.sets + " × · " + esc(itNum(item.tonnage)) + " kg</span></div>";
+        }).join("");
+        return '<details class="session"><summary><strong>' + esc(session.code) + " · " + esc(itDate(session.date)) + '</strong><span class="muted">' + esc(seriesWord(session.sets)) + " · " + esc(itNum(session.tonnage)) + " kg</span></summary><div class=\"detail\">" + lines + "</div></details>";
+      }).join("") : '<p class="muted">Nessuna sessione nel diario.</p>';
+      return '<section class="history"><div class="history-top"><h2>Ultime sessioni</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' + body + "</section>";
     }
 
-    function updateBar() {
-      var stats = draftStats(ensureDraft(selected));
-      var bar = document.getElementById('barStats');
-      var workout = workoutOf(selected);
-      if (!bar || !workout) return;
-      var preview = '';
-      if (workout.previous) {
-        var delta = Math.round((stats.tonnage - workout.previous.tonnage) * 10) / 10;
-        var sign = delta > 0 ? '+' : '';
-        preview = ' · ' + sign + itNum(delta) + ' kg';
+    function svgChart(points, key, color) {
+      var vals = [];
+      var i;
+      for (i = 0; i < points.length; i++) {
+        if (points[i][key] != null && isFinite(points[i][key])) vals.push({ x: i, y: points[i][key], date: points[i].date });
       }
-      bar.textContent = seriesWord(stats.sets) + ' · ' + itNum(stats.tonnage) + ' kg' + preview;
-      var button = document.getElementById('saveBtn');
-      if (button && !saving) button.disabled = stats.sets === 0;
+      if (vals.length < 1) return '<p class="muted">Ancora pochi dati per questo grafico.</p>';
+      var w = 320, h = 150, pad = 22;
+      var min = vals[0].y, max = vals[0].y;
+      for (i = 0; i < vals.length; i++) {
+        if (vals[i].y < min) min = vals[i].y;
+        if (vals[i].y > max) max = vals[i].y;
+      }
+      if (min === max) { min = min - 1; max = max + 1; }
+      var xMax = Math.max(points.length - 1, 1);
+      function X(idx) { return pad + (idx / xMax) * (w - pad * 2); }
+      function Y(v) { return h - pad - ((v - min) / (max - min)) * (h - pad * 2); }
+      var d = "";
+      for (i = 0; i < vals.length; i++) {
+        d += (i ? " L" : "M") + X(vals[i].x).toFixed(1) + " " + Y(vals[i].y).toFixed(1);
+      }
+      var last = vals[vals.length - 1];
+      var first = vals[0];
+      return '<svg class="chart" viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="Andamento">' +
+        '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>' +
+        '<circle cx="' + X(last.x).toFixed(1) + '" cy="' + Y(last.y).toFixed(1) + '" r="3.5" fill="' + color + '"></circle>' +
+        '<text x="' + pad + '" y="14" fill="#b3ad9f" font-size="10">' + esc(itDate(first.date)) + "</text>" +
+        '<text x="' + (w - pad) + '" y="14" fill="#b3ad9f" font-size="10" text-anchor="end">' + esc(itNum(last.y)) + "</text>" +
+        "</svg>";
+    }
+
+    function paintCharts() {
+      var history = (data && data.history) || [];
+      if (!history.length) return '<section class="history"><div class="history-top"><h2>Grafici</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div><p class="muted">Non ci sono ancora abbastanza dati.</p></section>';
+      if (!chartExercise) chartExercise = history[0].name;
+      var current = history.find(function (item) { return item.name === chartExercise; }) || history[0];
+      var options = history.map(function (item) {
+        return '<option value="' + esc(item.name) + '"' + (item.name === current.name ? " selected" : "") + ">" + esc(item.name) + "</option>";
+      }).join("");
+      return '<section class="history"><div class="history-top"><h2>Grafici</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+        '<label class="date">Esercizio<select id="chartExercise">' + options + "</select></label>" +
+        '<article class="card chart-card"><h3>Carico massimo</h3>' + svgChart(current.points, "maxLoad", "#ff4d2e") + "</article>" +
+        '<article class="card chart-card"><h3>Volume (serie × rip × kg)</h3>' + svgChart(current.points, "volume", "#d6ef6a") + "</article></section>";
+    }
+
+    function paintWeight() {
+      var weights = (data && data.weights) || [];
+      var points = weights.map(function (item) { return { date: item.date, kg: item.kg }; });
+      var chart = points.length ? '<article class="card chart-card"><h3>Andamento del peso</h3>' + svgChart(points, "kg", "#d6ef6a") + "</article>" : '<p class="muted">Ancora nessun peso nel diario.</p>';
+      var rows = weights.slice().reverse().slice(0, 12).map(function (item) {
+        return "<div><span>" + esc(itDate(item.date)) + "</span><span>" + (item.kg != null ? esc(itNum(item.kg)) + " kg" : "—") + (item.note ? " · " + esc(item.note) : "") + "</span></div>";
+      }).join("");
+      return '<section class="history"><div class="history-top"><h2>Peso e dieta</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+        '<form class="card form-grid" data-action="weight-form">' +
+        '<label>Data<input type="date" id="weightDate" value="' + esc(weightDate || (data && data.today) || "") + '"></label>' +
+        '<label>Peso (kg)<input id="weightKg" inputmode="decimal" value="' + esc(weightKg) + '" placeholder="es. 82,5"></label>' +
+        '<label>Note pasti<textarea id="weightNote" maxlength="400" placeholder="Colazione, pranzo, cena…">' + esc(weightNote) + "</textarea></label>" +
+        (errorText && view === "weight" ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
+        '<button class="primary" type="button" data-action="save-weight"' + (saving ? " disabled" : "") + ">" + (saving ? "Salvo…" : "Salva peso") + "</button></form>" +
+        chart +
+        '<div class="weight-list">' + (rows || "") + "</div></section>";
+    }
+
+    function paintRecords() {
+      var records = (data && data.records) || [];
+      var body = records.length ? "<ul>" + records.map(function (rec) {
+        return "<li><strong>" + esc(rec.name) + "</strong><br>Carico max: " + itNum(rec.maxLoad) + " kg" +
+          (rec.maxLoadReps != null ? " × " + rec.maxLoadReps + " rip" : "") +
+          (rec.maxLoadDate ? " · " + itDate(rec.maxLoadDate) : "") +
+          (rec.bestEpley != null ? "<br>1RM stimato: " + itNum(rec.bestEpley) + " kg" + (rec.bestEpleyDate ? " · " + itDate(rec.bestEpleyDate) : "") : "") +
+          "</li>";
+      }).join("") + "</ul>" : '<p class="muted">Non ci sono ancora record di carico.</p>';
+      return '<section class="history"><div class="history-top"><h2>Record personali</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' + body + "</section>";
     }
 
     function onInput(event) {
-      var target = event.target;
-      if (!target.dataset) return;
-      if (target.dataset.field === 'date') {
-        dateValue = target.value;
-        errorText = '';
-        return;
-      }
-      if (target.dataset.ex == null || target.dataset.set == null) return;
-      var list = ensureDraft(selected);
-      list[Number(target.dataset.ex)].sets[Number(target.dataset.set)][target.dataset.field] = target.value;
-      updateBar();
+      var input = event.target;
+      if (input.id === "sessionDate") { dateValue = input.value; return; }
+      if (input.id === "weightDate") { weightDate = input.value; return; }
+      if (input.id === "weightKg") { weightKg = input.value; return; }
+      if (input.id === "weightNote") { weightNote = input.value; return; }
+      if (input.id === "chartExercise") { chartExercise = input.value; render(true); return; }
+      if (!input.dataset || input.dataset.ex == null) return;
+      var set = ensureDraft(selected)[Number(input.dataset.ex)].sets[Number(input.dataset.set)];
+      set[input.dataset.field] = input.value;
     }
 
     function onClick(event) {
-      var button = event.target.closest('[data-action]');
-      if (!button || button.disabled) return;
+      var button = event.target.closest("[data-action]");
+      if (!button) return;
       var action = button.dataset.action;
-      if (action === 'history') { view = 'history'; errorText = ''; render(); return; }
-      if (action === 'back' || action === 'again') { view = 'editor'; errorText = ''; render(); return; }
-      if (action === 'retry') { boot(); return; }
-      if (action === 'pick') { selected = button.dataset.code; errorText = ''; render(true); return; }
-      if (action === 'skip') {
+      if (action === "view-editor" || action === "back" || action === "again") {
+        view = "editor"; errorText = ""; prs = [];
+        if (action === "again") requestId = "";
+        render(); return;
+      }
+      if (action === "history") { view = "history"; errorText = ""; render(); return; }
+      if (action === "charts") { view = "charts"; errorText = ""; render(); return; }
+      if (action === "weight") { view = "weight"; errorText = ""; render(); return; }
+      if (action === "records") { view = "records"; errorText = ""; render(); return; }
+      if (action === "retry") { boot(); return; }
+      if (action === "flush") { flushQueue(); return; }
+      if (action === "pick") { selected = button.dataset.code; errorText = ""; render(true); return; }
+      if (action === "skip") {
         var skipped = ensureDraft(selected)[Number(button.dataset.ex)];
         skipped.skipped = !skipped.skipped;
         render(true);
         return;
       }
-      if (action === 'add') {
+      if (action === "add") {
         var exercise = ensureDraft(selected)[Number(button.dataset.ex)];
-        var last = exercise.sets[exercise.sets.length - 1] || { reps: '', kg: '', rir: '', note: '' };
-        exercise.sets.push({ reps: last.reps, kg: last.kg, rir: last.rir, note: last.note });
+        var last = exercise.sets[exercise.sets.length - 1] || { reps: "", kg: "", rir: "", note: "" };
+        exercise.sets.push({ reps: last.reps, kg: last.kg, rir: last.rir, note: last.note, done: false });
         render(true);
         return;
       }
-      if (action === 'remove') {
+      if (action === "remove") {
         var target = ensureDraft(selected)[Number(button.dataset.ex)];
         if (target.sets.length < 2) return;
         target.sets.splice(Number(button.dataset.set), 1);
         render(true);
         return;
       }
-      if (action === 'step') {
-        var set = ensureDraft(selected)[Number(button.dataset.ex)].sets[Number(button.dataset.set)];
-        var field = button.dataset.field;
-        var current = parseNum(set[field]);
-        var next = (current == null ? 0 : current) + Number(button.dataset.delta);
-        if (next < 0) next = 0;
-        if (field === 'reps') next = Math.round(next);
-        else next = Math.round(next * 10) / 10;
-        set[field] = formatEditable(next);
+      if (action === "done") {
+        var doneSet = ensureDraft(selected)[Number(button.dataset.ex)].sets[Number(button.dataset.set)];
+        doneSet.done = !doneSet.done;
+        if (doneSet.done) startRest();
         render(true);
         return;
       }
-      if (action === 'save') save(false);
+      if (action === "step") {
+        var stepped = ensureDraft(selected)[Number(button.dataset.ex)].sets[Number(button.dataset.set)];
+        var field = button.dataset.field;
+        var current = parseNum(stepped[field]);
+        var next = (current == null ? 0 : current) + Number(button.dataset.delta);
+        if (next < 0) next = 0;
+        if (field === "reps") next = Math.round(next);
+        else next = Math.round(next * 10) / 10;
+        stepped[field] = formatEditable(next);
+        render(true);
+        return;
+      }
+      if (action === "rest-minus") {
+        restDefault = Math.max(15, restDefault - 15);
+        if (restRunning) restLeft = Math.max(1, restLeft - 15);
+        storeRestDefault();
+        paintTimer();
+        return;
+      }
+      if (action === "rest-plus") {
+        restDefault = Math.min(600, restDefault + 15);
+        if (restRunning) restLeft += 15;
+        storeRestDefault();
+        paintTimer();
+        return;
+      }
+      if (action === "rest-skip") {
+        stopRest();
+        restJustFinished = false;
+        restLeft = 0;
+        paintTimer();
+        return;
+      }
+      if (action === "save") save(false);
+      if (action === "save-weight") saveWeight();
     }
 
     function ask(message) {
       return new Promise(function (resolve) {
         modalResolver = resolve;
-        document.getElementById('modalText').textContent = message;
-        document.getElementById('modal').hidden = false;
+        document.getElementById("modalText").textContent = message;
+        document.getElementById("modal").hidden = false;
       });
     }
 
     function closeModal(answer) {
-      document.getElementById('modal').hidden = true;
+      document.getElementById("modal").hidden = true;
       var resolve = modalResolver;
       modalResolver = null;
       if (resolve) resolve(answer);
+    }
+
+    function queueOrThrow(actionName, payload, err) {
+      enqueue({ action: actionName, requestId: payload.requestId, payload: payload, queuedAt: Date.now() });
+      return "Salvato in attesa di connessione. Lo invio appena sei online.";
     }
 
     async function save(confirmDuplicate) {
@@ -700,29 +1149,34 @@
       if (!draftStats(list).sets) return;
       if (!requestId) requestId = newRequestId();
       saving = true;
-      errorText = '';
+      errorText = "";
       render(true);
+      var payload = {
+        requestId: requestId,
+        date: dateValue,
+        workout: selected,
+        confirmDuplicate: !!confirmDuplicate,
+        exercises: list.map(function (ex) {
+          return {
+            name: ex.name,
+            skipped: !!ex.skipped,
+            sets: ex.sets.map(function (set) {
+              return { reps: set.reps, kg: set.kg, rir: set.rir, note: set.note };
+            })
+          };
+        })
+      };
       var res;
       try {
-        res = await rpc('saveSession', {
-          requestId: requestId,
-          date: dateValue,
-          workout: selected,
-          confirmDuplicate: !!confirmDuplicate,
-          exercises: list.map(function (ex) {
-            return {
-              name: ex.name,
-              skipped: !!ex.skipped,
-              sets: ex.sets.map(function (set) {
-                return { reps: set.reps, kg: set.kg, rir: set.rir, note: set.note };
-              })
-            };
-          })
-        });
+        if (!navigator.onLine) throw new Error("offline");
+        res = await rpc("saveSession", payload);
       } catch (err) {
         saving = false;
-        errorText = (err && err.message) || 'Salvataggio non riuscito. Riprova: la stessa pressione non scrive due volte.';
-        render(true);
+        errorText = queueOrThrow("saveSession", payload, err);
+        view = "confirm";
+        summary = { code: selected, date: dateValue, sets: draftStats(list).sets, tonnage: draftStats(list).tonnage, delta: null, previous: workoutOf(selected) && workoutOf(selected).previous, replayed: false };
+        prs = [];
+        render();
         return;
       }
       if (res && res.needsConfirm) {
@@ -734,84 +1188,172 @@
       }
       saving = false;
       if (!res || !res.ok) {
-        errorText = (res && res.error) || 'Salvataggio non riuscito.';
+        errorText = (res && res.error) || "Salvataggio non riuscito.";
         render(true);
         return;
       }
       summary = res.summary;
+      prs = res.prs || [];
       delete drafts[selected];
       if (res.state) {
         var keepDate = dateValue;
-        data = res.state;
+        applyState(res.state, true);
         dateValue = keepDate;
         selected = data.suggested || selected;
       }
-      requestId = '';
-      view = 'confirm';
+      requestId = "";
+      view = "confirm";
       render();
+    }
+
+    async function saveWeight() {
+      if (saving) return;
+      var date = (document.getElementById("weightDate") || {}).value || weightDate;
+      var kg = (document.getElementById("weightKg") || {}).value || weightKg;
+      var note = (document.getElementById("weightNote") || {}).value || weightNote;
+      weightDate = date;
+      weightKg = kg;
+      weightNote = note;
+      if (!parseNum(kg)) {
+        errorText = "Inserisci il peso in chilogrammi.";
+        render(true);
+        return;
+      }
+      var payload = { requestId: newRequestId(), date: date, kg: kg, note: note };
+      saving = true;
+      errorText = "";
+      render(true);
+      try {
+        if (!navigator.onLine) throw new Error("offline");
+        var res = await rpc("saveWeight", payload);
+        saving = false;
+        if (!res || !res.ok) {
+          errorText = (res && res.error) || "Salvataggio non riuscito.";
+          render(true);
+          return;
+        }
+        if (!data) data = {};
+        data.weights = res.weights || data.weights;
+        cacheState(data);
+        weightNote = "";
+        errorText = res.replayed ? "Questa voce era già stata salvata." : "Peso salvato.";
+        render();
+      } catch (err) {
+        saving = false;
+        errorText = queueOrThrow("saveWeight", payload, err);
+        render(true);
+      }
     }
 
     async function boot() {
-      view = 'loading';
-      errorText = '';
+      view = "loading";
+      errorText = "";
       render();
       try {
-        var state = await rpc('getState');
-        if (!state || state.ok === false) throw new Error((state && state.error) || 'Non riesco a leggere il foglio.');
-        data = state;
+        var state;
+        if (!navigator.onLine) {
+          state = readCachedState();
+          if (!state) throw new Error("Sei offline e non ho una scheda salvata sul telefono.");
+        } else {
+          state = await rpc("getState");
+        }
+        if (!state || state.ok === false) throw new Error((state && state.error) || "Non riesco a leggere il foglio.");
+        applyState(state, false);
         if (!dateValue) dateValue = state.today;
-        selected = state.suggested || 'A';
-        view = 'editor';
+        selected = state.suggested || "A";
+        view = "editor";
       } catch (err) {
-        view = 'error';
-        errorText = (err && err.message) || 'Non riesco a leggere il foglio.';
+        var cached = readCachedState();
+        if (cached) {
+          applyState(cached, false);
+          view = "editor";
+          errorText = "Sei offline: mostro l’ultima scheda salvata sul telefono.";
+        } else {
+          view = "error";
+          errorText = (err && err.message) || "Non riesco a leggere il foglio.";
+        }
       }
       render();
+      flushQueue();
     }
 
-    document.body.addEventListener('click', onClick);
-    document.body.addEventListener('input', onInput);
-    document.getElementById('modalYes').addEventListener('click', function () { closeModal(true); });
-    document.getElementById('modalNo').addEventListener('click', function () { closeModal(false); });
-    document.getElementById('hideInstall').addEventListener('click', function () {
-      try { localStorage.setItem('palestra-install-off', '1'); } catch (err) {}
-      document.getElementById('installBanner').hidden = true;
+    document.body.addEventListener("click", onClick);
+    document.body.addEventListener("input", onInput);
+    document.getElementById("modalYes").addEventListener("click", function () { closeModal(true); });
+    document.getElementById("modalNo").addEventListener("click", function () { closeModal(false); });
+    document.getElementById("hideInstall").addEventListener("click", function () {
+      try { localStorage.setItem("palestra-install-off", "1"); } catch (err) {}
+      document.getElementById("installBanner").hidden = true;
     });
 
     captureToken();
+    loadRestDefault();
+    storeQueue(loadQueue());
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(function () {});
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").then(function (reg) {
+        if (reg.waiting) document.getElementById("updateBanner").hidden = false;
+        reg.addEventListener("updatefound", function () {
+          var incoming = reg.installing;
+          if (!incoming) return;
+          incoming.addEventListener("statechange", function () {
+            if (incoming.state === "installed" && navigator.serviceWorker.controller) {
+              document.getElementById("updateBanner").hidden = false;
+            }
+          });
+        });
+        setInterval(function () { reg.update(); }, 15 * 60 * 1000);
+      }).catch(function () {});
+      var refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (refreshing) return;
+        if (sessionStorage.getItem("palestra-reloaded") === "1") return;
+        refreshing = true;
+        try { sessionStorage.setItem("palestra-reloaded", "1"); } catch (err) {}
+        window.location.reload();
+      });
+      navigator.serviceWorker.addEventListener("message", function (event) {
+        if (event.data && event.data.type === "sw-updated") {
+          document.getElementById("updateBanner").hidden = false;
+        }
+      });
     }
+    document.getElementById("reloadApp").addEventListener("click", function () {
+      try { sessionStorage.removeItem("palestra-reloaded"); } catch (err) {}
+      window.location.reload();
+    });
 
     var deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', function (event) {
+    window.addEventListener("beforeinstallprompt", function (event) {
       event.preventDefault();
       deferredPrompt = event;
-      var installBtn = document.getElementById('installApp');
+      var installBtn = document.getElementById("installApp");
       if (installBtn) installBtn.hidden = false;
     });
-    document.getElementById('installApp').addEventListener('click', function () {
+    document.getElementById("installApp").addEventListener("click", function () {
       if (!deferredPrompt) return;
       deferredPrompt.prompt();
       deferredPrompt = null;
-      document.getElementById('installApp').hidden = true;
+      document.getElementById("installApp").hidden = true;
     });
 
-    var standalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+    window.addEventListener("online", function () { flushQueue(); });
+
+    var standalone = window.navigator.standalone || window.matchMedia("(display-mode: standalone)").matches;
     var mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     var installOff = false;
-    try { installOff = localStorage.getItem('palestra-install-off') === '1'; } catch (err) { installOff = false; }
-    if (mobile && !standalone && !installOff) document.getElementById('installBanner').hidden = false;
+    try { installOff = localStorage.getItem("palestra-install-off") === "1"; } catch (err) { installOff = false; }
+    if (mobile && !standalone && !installOff) document.getElementById("installBanner").hidden = false;
 
     if (!getToken()) {
-      document.getElementById('setupBanner').hidden = false;
-      view = 'error';
-      errorText = 'Per configurare l’app, apri dal telefono il link che trovi nel foglio Google, nella scheda App.';
+      document.getElementById("setupBanner").hidden = false;
+      view = "error";
+      errorText = "Per configurare l’app, apri dal telefono il link che trovi nel foglio Google, nella scheda App.";
       render();
     } else {
       boot();
     }
+
   </script>
 </body>
 </html>
