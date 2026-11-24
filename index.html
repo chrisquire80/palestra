@@ -438,6 +438,32 @@
     .form-grid textarea { min-height: 88px; resize: vertical; }
     .weight-list { margin-top: 16px; }
     .weight-list div { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+    .subnav { display: flex; gap: 8px; margin: 0 0 14px; }
+    .subnav button { flex: 1; }
+    .subnav button.is-on, .day-picks button.is-on {
+      background: var(--ink);
+      color: #16140f;
+      border-color: var(--ink);
+    }
+    .day-picks { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
+    .day-picks button {
+      flex: 1 1 calc(14% - 6px);
+      min-width: 40px;
+      min-height: 44px;
+      padding: 0 4px;
+      font-size: 0.82rem;
+    }
+    .plan-note, .plan-totals { margin: 0 0 12px; color: var(--muted); font-size: 0.9rem; }
+    .meal-card.is-done { border-color: var(--chalk); }
+    .meal-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+    .meal-head h3 { margin: 0; font-size: 1.15rem; }
+    .meal-macros { margin: 4px 0 0; color: var(--muted); font-size: 0.8rem; }
+    .foods { margin: 8px 0 0; padding: 0; list-style: none; }
+    .foods li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+    .foods .qty { color: var(--chalk); font-variant-numeric: tabular-nums; flex: none; }
+    .foods .food-note { display: block; color: var(--muted); font-size: 0.84rem; margin-top: 2px; }
+    .meal-note { margin: 8px 0 0; color: var(--muted); }
+    .check-meal { min-height: 44px; margin-top: 2px; flex: none; }
     .records li { margin: 0 0 12px; }
     .error-toast {
       position: fixed;
@@ -466,7 +492,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v2.3</span></h1>
+          <h1>Palestra <span class="ver">v2.4</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -568,6 +594,8 @@
     var weightDate = "";
     var weightKg = "";
     var weightNote = "";
+    var weightSub = "piano";
+    var mealDay = "";
     var flushing = false;
 
     function captureToken() {
@@ -718,6 +746,16 @@
           if (res.weights) {
             if (!data) data = {};
             data.weights = res.weights;
+            cacheState(data);
+          }
+          if (res.mealChecks || res.checks) {
+            if (!data) data = {};
+            data.mealChecks = res.mealChecks || res.checks;
+            cacheState(data);
+          }
+          if (res.mealPlan) {
+            if (!data) data = {};
+            data.mealPlan = res.mealPlan;
             cacheState(data);
           }
         } catch (err) {
@@ -1108,22 +1146,113 @@
         '<article class="card chart-card"><h3>Volume (serie × rip × kg)</h3>' + svgChart(current.points, "volume", "#d6ef6a") + "</article></section>";
     }
 
-    function paintWeight() {
+    function weekdayNameIt(iso) {
+      var value = iso || (data && data.today);
+      if (!value) return "";
+      var label = new Intl.DateTimeFormat("it-IT", { weekday: "long", timeZone: "Europe/Rome" }).format(new Date(value + "T12:00:00"));
+      return label ? label.charAt(0).toUpperCase() + label.slice(1) : "";
+    }
+
+    function sameWeekday(a, b) {
+      return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+    }
+
+    function planDayNames() {
+      var days = (data && data.mealPlan && data.mealPlan.days) || [];
+      return days.map(function (day) { return day.name; });
+    }
+
+    function selectedPlanDay() {
+      var days = (data && data.mealPlan && data.mealPlan.days) || [];
+      if (!days.length) return null;
+      var wanted = mealDay || weekdayNameIt((data && data.today) || "");
+      var i;
+      for (i = 0; i < days.length; i++) {
+        if (sameWeekday(days[i].name, wanted)) return days[i];
+      }
+      return days[0];
+    }
+
+    function mealIsDone(mealName, dateIso) {
+      var checks = (data && data.mealChecks) || [];
+      var date = dateIso || (data && data.today) || "";
+      var i;
+      for (i = 0; i < checks.length; i++) {
+        if (checks[i].date === date && checks[i].meal === mealName && checks[i].done) return true;
+      }
+      return false;
+    }
+
+    function formatMacros(macros) {
+      if (!macros) return "";
+      var parts = [];
+      if (macros.kcal != null) parts.push(itNum(macros.kcal) + " kcal");
+      if (macros.carb != null) parts.push(itNum(macros.carb) + " carb");
+      if (macros.prot != null) parts.push(itNum(macros.prot) + " prot");
+      if (macros.fat != null) parts.push(itNum(macros.fat) + " grassi");
+      return parts.join(" · ");
+    }
+
+    function paintMealPlan() {
+      var plan = data && data.mealPlan;
+      var days = (plan && plan.days) || [];
+      if (!days.length) {
+        return '<p class="muted">Il piano alimentare non è ancora disponibile offline. Riprova quando sei connesso.</p>';
+      }
+      if (!mealDay) mealDay = weekdayNameIt((data && data.today) || "");
+      var todayName = weekdayNameIt((data && data.today) || "");
+      var day = selectedPlanDay();
+      var isToday = day && sameWeekday(day.name, todayName);
+      var picks = days.map(function (item) {
+        var on = day && sameWeekday(item.name, day.name) ? " is-on" : "";
+        var short = String(item.name || "").slice(0, 3);
+        return '<button class="ghost' + on + '" type="button" data-action="meal-day" data-day="' + esc(item.name) + '">' + esc(short) + "</button>";
+      }).join("");
+      var note = plan.note ? '<p class="plan-note">' + esc(plan.note) + "</p>" : "";
+      var totals = day && day.totals ? '<p class="plan-totals">Totale ' + esc(day.name) + ": " + esc(formatMacros(day.totals)) + "</p>" : "";
+      var intro = '<p class="muted">' + (isToday ? "Piano di oggi, " : "Piano del ") + esc(day ? day.name : "") + ".</p>";
+      var meals = ((day && day.meals) || []).map(function (meal) {
+        var done = isToday && mealIsDone(meal.name);
+        var foods = (meal.foods || []).map(function (food) {
+          return "<li><span>" + esc(food.name || "") + (food.note ? '<span class="food-note">' + esc(food.note) + "</span>" : "") + '</span><span class="qty">' + esc(food.qty || "") + "</span></li>";
+        }).join("");
+        var check = isToday
+          ? '<button class="ghost check-meal" type="button" data-action="meal-check" data-meal="' + esc(meal.name) + '" aria-pressed="' + (done ? "true" : "false") + '">' + (done ? "Fatto ✓" : "Segna fatto") + "</button>"
+          : "";
+        return '<article class="card meal-card' + (done ? " is-done" : "") + '"><div class="meal-head"><div><h3>' + esc(meal.name) + "</h3>" +
+          (meal.macros ? '<p class="meal-macros">' + esc(formatMacros(meal.macros)) + "</p>" : "") + "</div>" + check + "</div>" +
+          (foods ? '<ul class="foods">' + foods + "</ul>" : "") +
+          (meal.note ? '<p class="meal-note">' + esc(meal.note) + "</p>" : "") +
+          "</article>";
+      }).join("");
+      return intro + '<div class="day-picks" role="tablist" aria-label="Giorno del piano">' + picks + "</div>" + note + totals + (meals || '<p class="muted">Nessun pasto in questo giorno.</p>');
+    }
+
+    function paintWeightLog() {
       var weights = (data && data.weights) || [];
       var points = weights.map(function (item) { return { date: item.date, kg: item.kg }; });
       var chart = points.length ? '<article class="card chart-card"><h3>Andamento del peso</h3>' + svgChart(points, "kg", "#d6ef6a") + "</article>" : '<p class="muted">Ancora nessun peso nel diario.</p>';
       var rows = weights.slice().reverse().slice(0, 12).map(function (item) {
         return "<div><span>" + esc(itDate(item.date)) + "</span><span>" + (item.kg != null ? esc(itNum(item.kg)) + " kg" : "—") + (item.note ? " · " + esc(item.note) : "") + "</span></div>";
       }).join("");
-      return '<section class="history"><div class="history-top"><h2>Peso e dieta</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
-        '<form class="card form-grid" data-action="weight-form">' +
+      return '<form class="card form-grid" data-action="weight-form">' +
         '<label>Data<input type="date" id="weightDate" value="' + esc(weightDate || (data && data.today) || "") + '"></label>' +
         '<label>Peso (kg)<input id="weightKg" inputmode="decimal" value="' + esc(weightKg) + '" placeholder="es. 82,5"></label>' +
         '<label>Note pasti<textarea id="weightNote" maxlength="400" placeholder="Colazione, pranzo, cena…">' + esc(weightNote) + "</textarea></label>" +
-        (errorText && view === "weight" ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
+        (errorText && view === "weight" && weightSub === "peso" ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
         '<button class="primary" type="button" data-action="save-weight"' + (saving ? " disabled" : "") + ">" + (saving ? "Salvo…" : "Salva peso") + "</button></form>" +
         chart +
-        '<div class="weight-list">' + (rows || "") + "</div></section>";
+        '<div class="weight-list">' + (rows || "") + "</div>";
+    }
+
+    function paintWeight() {
+      if (!mealDay && data && data.today) mealDay = weekdayNameIt(data.today);
+      var pianoOn = weightSub !== "peso";
+      var tabs = '<div class="subnav"><button class="ghost' + (pianoOn ? " is-on" : "") + '" type="button" data-action="view-piano">Piano</button>' +
+        '<button class="ghost' + (pianoOn ? "" : " is-on") + '" type="button" data-action="view-peso">Peso</button></div>';
+      var alert = errorText && view === "weight" && pianoOn ? '<p class="alert">' + esc(errorText) + "</p>" : "";
+      return '<section class="history"><div class="history-top"><h2>Peso e dieta</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+        tabs + alert + (pianoOn ? paintMealPlan() : paintWeightLog()) + "</section>";
     }
 
     function paintRecords() {
@@ -1162,7 +1291,11 @@
       }
       if (action === "history") { view = "history"; errorText = ""; render(); return; }
       if (action === "charts") { view = "charts"; errorText = ""; render(); return; }
-      if (action === "weight") { view = "weight"; errorText = ""; render(); return; }
+      if (action === "weight") { view = "weight"; errorText = ""; if (!mealDay && data && data.today) mealDay = weekdayNameIt(data.today); render(); return; }
+      if (action === "view-piano") { view = "weight"; weightSub = "piano"; render(); return; }
+      if (action === "view-peso") { view = "weight"; weightSub = "peso"; render(); return; }
+      if (action === "meal-day") { mealDay = button.getAttribute("data-day") || ""; render(true); return; }
+      if (action === "meal-check") { saveMealCheck(button.getAttribute("data-meal"), !mealIsDone(button.getAttribute("data-meal"))); return; }
       if (action === "records") { view = "records"; errorText = ""; render(); return; }
       if (action === "retry") { boot(); return; }
       if (action === "flush") { flushQueue(); return; }
@@ -1318,6 +1451,51 @@
       requestId = "";
       view = "confirm";
       render();
+    }
+
+    function mealCheckId(date, meal) {
+      return "mealcheck-" + date + "-" + String(meal || "").replace(/\s+/g, "-").slice(0, 60);
+    }
+
+    function setLocalMealCheck(date, meal, done, requestId) {
+      if (!data) data = {};
+      var checks = (data.mealChecks || []).slice();
+      var i;
+      var found = false;
+      for (i = 0; i < checks.length; i++) {
+        if (checks[i].date === date && checks[i].meal === meal) {
+          checks[i] = { date: date, meal: meal, done: done, id: requestId || checks[i].id };
+          found = true;
+          break;
+        }
+      }
+      if (!found) checks.push({ date: date, meal: meal, done: done, id: requestId || "" });
+      data.mealChecks = checks;
+      cacheState(data);
+    }
+
+    async function saveMealCheck(meal, done) {
+      var date = (data && data.today) || "";
+      if (!date || !meal) return;
+      var requestId = mealCheckId(date, meal);
+      var payload = { requestId: requestId, date: date, meal: meal, done: !!done };
+      setLocalMealCheck(date, meal, !!done, requestId);
+      render(true);
+      try {
+        if (!navigator.onLine) throw new Error("offline");
+        var res = await rpc("saveMealCheck", payload);
+        if (res && res.ok) {
+          if (res.mealChecks) {
+            data.mealChecks = res.mealChecks;
+            cacheState(data);
+          }
+        } else {
+          errorText = (res && res.error) || "Salvataggio non riuscito.";
+        }
+      } catch (err) {
+        errorText = queueOrThrow("saveMealCheck", payload, err);
+      }
+      render(true);
     }
 
     async function saveWeight() {

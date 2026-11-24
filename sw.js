@@ -1,6 +1,6 @@
-/* Palestra service worker v2.3 */
-const APP_VERSION = 'v2.3';
-const CACHE = 'palestra-shell-v2.3';
+/* Palestra service worker v2.4 */
+const APP_VERSION = 'v2.4';
+const CACHE = 'palestra-shell-v2.4';
 const SHELL = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const SHELL = [
 ];
 
 self.addEventListener('install', function (event) {
-  // Activate this version for clients still on v2.2 whose Aggiorna button
+  // Activate this version for clients still on v2.3 whose Aggiorna button
   // only reloads and does not send SKIP_WAITING.
   event.waitUntil(
     caches.open(CACHE).then(function (cache) { return cache.addAll(SHELL); }).then(function () {
