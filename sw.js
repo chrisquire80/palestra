@@ -1,6 +1,6 @@
-/* Palestra service worker v3.1 */
-const APP_VERSION = 'v3.1';
-const CACHE = 'palestra-shell-v3.1';
+/* Palestra service worker v3.1.1 */
+const APP_VERSION = 'v3.1.1';
+const CACHE = 'palestra-shell-v3.1.1';
 const SHELL = [
   './',
   './index.html',
@@ -8,6 +8,11 @@ const SHELL = [
   './manifest-light.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './icons/icon-512-maskable.png',
+  './icons/apple-touch-icon.png',
+  './icons/favicon-16.png',
+  './icons/favicon-32.png',
+  './favicon.ico',
   './vendor/fonts/outfit-latin-wght.woff2'
 ];
 
