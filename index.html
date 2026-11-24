@@ -306,7 +306,8 @@
     .session strong { display: block; }
     .detail { padding: 0 14px 12px; }
     .detail div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line); }
-    .modal[hidden] { display: none; }
+    [hidden] { display: none !important; }
+    .modal[hidden] { display: none !important; }
     .modal {
       position: fixed;
       inset: 0;
@@ -411,6 +412,24 @@
     .weight-list { margin-top: 16px; }
     .weight-list div { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
     .records li { margin: 0 0 12px; }
+    .error-toast {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: calc(12px + env(safe-area-inset-bottom));
+      z-index: 20;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: #3a120c;
+      color: #ffd7cc;
+      font-size: 0.88rem;
+      box-shadow: var(--shadow);
+    }
+    .error-toast p { margin: 0; flex: 1; word-break: break-word; }
+    .error-toast button { flex: none; }
   </style>
 </head>
 <body>
@@ -420,7 +439,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v2.1</span></h1>
+          <h1>Palestra <span class="ver">v2.2</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -473,7 +492,29 @@
       </div>
     </div>
   </div>
+  <div id="errorToast" class="error-toast" hidden role="alert">
+    <p id="errorToastText"></p>
+    <button class="ghost" type="button" id="errorToastDismiss">Ok</button>
+  </div>
   <script>
+    function showErrorToast(raw) {
+      var text = "";
+      if (raw && typeof raw === "object" && raw.message) text = String(raw.message);
+      else text = String(raw == null ? "Errore sconosciuto" : raw);
+      if (text.length > 240) text = text.slice(0, 237) + "…";
+      var toast = document.getElementById("errorToast");
+      var label = document.getElementById("errorToastText");
+      if (!toast || !label) return;
+      label.textContent = text;
+      toast.hidden = false;
+    }
+    window.onerror = function (message, source, lineno, colno, error) {
+      showErrorToast(error || message);
+    };
+    window.addEventListener("unhandledrejection", function (event) {
+      showErrorToast(event.reason);
+    });
+
     var API_URL = "https://script.google.com/macros/s/AKfycby5BbhGQxfGqEHD71yl8Z3csntO-mlf7LZrXSHkl1_fnCODC8oJUBCTf-2LIdjrZAE/exec";
     var TOKEN_KEY = "palestra-token";
     var QUEUE_KEY = "palestra-queue";
@@ -857,6 +898,10 @@
 
     function paint() {
       if (view === "loading") return '<section class="status"><h2>Carico la scheda…</h2><p class="muted">Leggo il diario e preparo i carichi dell’ultima volta.</p></section>';
+      if ((view === "editor" || view === "confirm") && !data) {
+        view = "error";
+        if (!errorText) errorText = "Non riesco a leggere il foglio.";
+      }
       if (view === "error") {
         return '<section class="error-box"><h2>Qualcosa non ha risposto</h2><p>' + esc(errorText) + '</p><button class="primary" type="button" data-action="retry">Riprova</button></section>';
       }
@@ -1060,6 +1105,7 @@
       if (!button) return;
       var action = button.dataset.action;
       if (action === "view-editor" || action === "back" || action === "again") {
+        if (!data) { view = "error"; render(); return; }
         view = "editor"; errorText = ""; prs = [];
         if (action === "again") requestId = "";
         render(); return;
@@ -1293,6 +1339,10 @@
     document.body.addEventListener("input", onInput);
     document.getElementById("modalYes").addEventListener("click", function () { closeModal(true); });
     document.getElementById("modalNo").addEventListener("click", function () { closeModal(false); });
+    document.getElementById("errorToastDismiss").addEventListener("click", function () {
+      var toast = document.getElementById("errorToast");
+      if (toast) toast.hidden = true;
+    });
     document.getElementById("hideInstall").addEventListener("click", function () {
       try { localStorage.setItem("palestra-install-off", "1"); } catch (err) {}
       document.getElementById("installBanner").hidden = true;
