@@ -1,6 +1,6 @@
-/* Palestra service worker v3.1.1 */
-const APP_VERSION = 'v3.1.1';
-const CACHE = 'palestra-shell-v3.1.1';
+/* Palestra service worker v3.2 */
+const APP_VERSION = 'v3.2';
+const CACHE = 'palestra-shell-v3.2';
 const SHELL = [
   './',
   './index.html',
@@ -89,6 +89,17 @@ self.addEventListener('notificationclick', function (event) {
         if (clientList[i].url && 'focus' in clientList[i]) return clientList[i].focus();
       }
       if (self.clients.openWindow) return self.clients.openWindow('./');
+    })
+  );
+});
+
+self.addEventListener('sync', function (event) {
+  if (event.tag !== 'palestra-flush') return;
+  event.waitUntil(
+    self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then(function (clients) {
+      clients.forEach(function (client) {
+        client.postMessage({ type: 'FLUSH_QUEUE' });
+      });
     })
   );
 });

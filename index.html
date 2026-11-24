@@ -566,6 +566,71 @@
       overflow: hidden;
     }
     .progress-hint.up { color: var(--chalk); }
+    .prog-rule { margin: 0 0 12px; color: var(--muted); font-size: 0.78rem; line-height: 1.4; }
+    .prog-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; }
+    .prog-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--chalk);
+      color: var(--on-chalk);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0;
+      cursor: pointer;
+    }
+    .prog-chip.is-keep {
+      background: var(--ghost-bg);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    .prog-chip.is-down {
+      background: var(--ghost-bg);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    .set-head { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+    .last-time {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 550;
+      line-height: 1.3;
+      opacity: 0.8;
+      text-align: left;
+      cursor: pointer;
+      min-height: 0;
+    }
+    .last-time:focus, .last-time:hover { color: var(--chalk); opacity: 1; }
+    .offline-badge {
+      min-height: 28px;
+      padding: 0 8px;
+      border-radius: var(--r-full);
+      background: #8a1f1a;
+      color: #fff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+    }
+    .pending-pill {
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 0.68rem;
+      line-height: 1.15;
+      text-align: center;
+      max-width: 9.8rem;
+      padding: 3px 8px;
+      min-height: 28px;
+    }
     .celebrate {
       margin: 0 0 14px;
       padding: 14px;
@@ -820,10 +885,11 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.1.1</span></h1>
+          <h1>Palestra <span class="ver">v3.2</span></h1>
         </div>
       </div>
       <div class="header-tools">
+        <span id="offlineBadge" class="offline-badge" hidden>Offline</span>
         <span id="pendingPill" class="pending-pill" hidden></span>
         <span id="refreshPill" class="refresh-pill" hidden>Aggiorno…</span>
         <button class="icon-link" type="button" data-action="settings" aria-label="Promemoria e altre opzioni">
@@ -844,7 +910,7 @@
       <button class="ghost" type="button" id="reloadApp">Aggiorna</button>
     </div>
     <div id="pendingBanner" class="banner" hidden>
-      <p id="pendingLabel">Ci sono salvataggi in attesa di connessione.</p>
+      <p id="pendingLabel">Salvataggi in attesa di sincronizzazione.</p>
       <button class="ghost" type="button" data-action="flush">Invia</button>
     </div>
     <div id="timerBar" class="timer" hidden>
@@ -953,6 +1019,7 @@
     var mealDay = "";
     var mealUpload = { phase: "", message: "", fileName: "", text: "", metaTitle: "", preview: null, warnings: [], canConfirm: false, error: "" };
     var flushing = false;
+    var flushPromise = null;
     var editSession = null;
     var editDraft = null;
     var reportMonth = "";
@@ -1023,42 +1090,213 @@
       });
     }
 
-    function loadQueue() {
+    var queueMem = [];
+    var queueHydrated = false;
+    var queuePersist = Promise.resolve();
+    var flushTimer = 0;
+    var QUEUE_DB = "palestra-sync";
+    var QUEUE_STORE = "queue";
+
+    function queueItemKey(item) {
+      return String(item && item.action ? item.action : "") + "::" + String(item && item.requestId ? item.requestId : "");
+    }
+
+    function openQueueDb() {
+      return new Promise(function (resolve, reject) {
+        if (!window.indexedDB) {
+          reject(new Error("no-idb"));
+          return;
+        }
+        var req = indexedDB.open(QUEUE_DB, 1);
+        req.onupgradeneeded = function () {
+          var db = req.result;
+          if (!db.objectStoreNames.contains(QUEUE_STORE)) {
+            db.createObjectStore(QUEUE_STORE, { keyPath: "qid" });
+          }
+        };
+        req.onsuccess = function () { resolve(req.result); };
+        req.onerror = function () { reject(req.error || new Error("Archivio coda non disponibile.")); };
+      });
+    }
+
+    function readQueueIdb() {
+      return openQueueDb().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          var tx = db.transaction(QUEUE_STORE, "readonly");
+          var store = tx.objectStore(QUEUE_STORE);
+          function finish(rows) {
+            resolve((rows || []).map(function (row) {
+              var copy = {};
+              var key;
+              for (key in row) {
+                if (key !== "qid") copy[key] = row[key];
+              }
+              return copy;
+            }));
+          }
+          if (store.getAll) {
+            var req = store.getAll();
+            req.onsuccess = function () { finish(req.result || []); };
+            req.onerror = function () { reject(req.error); };
+          } else {
+            var rows = [];
+            var cursor = store.openCursor();
+            cursor.onsuccess = function () {
+              var cur = cursor.result;
+              if (cur) { rows.push(cur.value); cur.continue(); }
+              else finish(rows);
+            };
+            cursor.onerror = function () { reject(cursor.error); };
+          }
+          tx.oncomplete = function () { db.close(); };
+        });
+      });
+    }
+
+    function writeQueueIdb(items) {
+      return openQueueDb().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          var tx = db.transaction(QUEUE_STORE, "readwrite");
+          var store = tx.objectStore(QUEUE_STORE);
+          var clear = store.clear();
+          clear.onerror = function () { reject(clear.error); };
+          clear.onsuccess = function () {
+            var i;
+            for (i = 0; i < items.length; i++) {
+              var item = items[i] || {};
+              var row = {
+                qid: queueItemKey(item) || ("tmp-" + item.queuedAt + "-" + i),
+                action: item.action,
+                requestId: item.requestId,
+                payload: item.payload,
+                queuedAt: item.queuedAt || Date.now()
+              };
+              store.put(row);
+            }
+          };
+          tx.oncomplete = function () { db.close(); resolve(); };
+          tx.onerror = function () { reject(tx.error); };
+        });
+      });
+    }
+
+    function readLegacyQueue() {
       try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]"); } catch (err) { return []; }
     }
 
-    function storeQueue(items) {
-      pendingCount = items.length;
-      try { localStorage.setItem(QUEUE_KEY, JSON.stringify(items)); } catch (err) {}
+    function mergeQueueItems(a, b) {
+      var map = {};
+      function add(item) {
+        if (!item || !item.action) return;
+        var key = queueItemKey(item);
+        if (!map[key] || (item.queuedAt || 0) >= (map[key].queuedAt || 0)) map[key] = item;
+      }
+      (a || []).forEach(add);
+      (b || []).forEach(add);
+      var out = [];
+      var key;
+      for (key in map) out.push(map[key]);
+      out.sort(function (x, y) { return (x.queuedAt || 0) - (y.queuedAt || 0); });
+      return out;
+    }
+
+    function updateQueueUi(items) {
+      pendingCount = (items || []).length;
       var pill = document.getElementById("pendingPill");
       var banner = document.getElementById("pendingBanner");
       if (pill) {
-        pill.hidden = !items.length;
-        pill.textContent = items.length ? (items.length + " in attesa") : "";
+        pill.hidden = !pendingCount;
+        pill.textContent = pendingCount
+          ? (pendingCount + " in attesa di sincronizzazione")
+          : "";
       }
       if (banner) {
-        banner.hidden = !items.length;
+        banner.hidden = !pendingCount;
         var label = document.getElementById("pendingLabel");
         if (label) {
-          label.textContent = items.length === 1
-            ? "C’è 1 salvataggio in attesa di connessione."
-            : "Ci sono " + items.length + " salvataggi in attesa di connessione.";
+          label.textContent = pendingCount === 1
+            ? "1 in attesa di sincronizzazione"
+            : pendingCount + " in attesa di sincronizzazione";
         }
+      }
+      updateConnectionUi();
+    }
+
+    function updateConnectionUi() {
+      var badge = document.getElementById("offlineBadge");
+      if (badge) badge.hidden = !!navigator.onLine;
+    }
+
+    function loadQueue() {
+      if (queueHydrated) return queueMem.slice();
+      return mergeQueueItems(readLegacyQueue(), []);
+    }
+
+    function persistQueue(items) {
+      queueMem = (items || []).slice();
+      queueHydrated = true;
+      updateQueueUi(queueMem);
+      var snapshot = queueMem.slice();
+      queuePersist = queuePersist.then(function () {
+        return writeQueueIdb(snapshot).then(function () {
+          try { localStorage.removeItem(QUEUE_KEY); } catch (err) {}
+        });
+      }).catch(function () {
+        try { localStorage.setItem(QUEUE_KEY, JSON.stringify(snapshot)); } catch (err) {}
+      });
+      return queuePersist;
+    }
+
+    function storeQueue(items) {
+      persistQueue(items);
+    }
+
+    async function initQueue() {
+      var fromLs = readLegacyQueue();
+      var fromIdb = [];
+      try { fromIdb = await readQueueIdb(); } catch (err) { fromIdb = []; }
+      queueMem = mergeQueueItems(fromIdb, fromLs);
+      queueHydrated = true;
+      updateQueueUi(queueMem);
+      try {
+        await writeQueueIdb(queueMem);
+        if (fromLs.length) {
+          try { localStorage.removeItem(QUEUE_KEY); } catch (err) {}
+        }
+      } catch (err) {
+        try { localStorage.setItem(QUEUE_KEY, JSON.stringify(queueMem)); } catch (err2) {}
       }
     }
 
     function enqueue(item) {
       var items = loadQueue();
       var i;
+      var found = false;
       for (i = 0; i < items.length; i++) {
         if (items[i].requestId && items[i].requestId === item.requestId && items[i].action === item.action) {
           items[i] = item;
-          storeQueue(items);
-          return;
+          found = true;
+          break;
         }
       }
-      items.push(item);
+      if (!found) items.push(item);
       storeQueue(items);
+      requestBackgroundSync();
+    }
+
+    function requestBackgroundSync() {
+      if (!pendingCount) return;
+      if (!("serviceWorker" in navigator) || !("SyncManager" in window)) return;
+      navigator.serviceWorker.ready.then(function (reg) {
+        if (reg && reg.sync) return reg.sync.register("palestra-flush");
+      }).catch(function () {});
+    }
+
+    function ensureFlushTimer() {
+      if (flushTimer) return;
+      flushTimer = setInterval(function () {
+        if (pendingCount && navigator.onLine) flushQueue();
+      }, 30000);
     }
 
     function cacheState(state) {
@@ -1083,9 +1321,23 @@
       invalidateViews();
     }
 
-    async function flushQueue() {
-      if (flushing) return;
+    function flushQueue() {
+      if (flushPromise) return flushPromise;
+      flushPromise = flushQueueNow().then(function (value) {
+        flushPromise = null;
+        return value;
+      }, function (err) {
+        flushPromise = null;
+        throw err;
+      });
+      return flushPromise;
+    }
+
+    async function flushQueueNow() {
       if (!navigator.onLine) return;
+      if (!queueHydrated) {
+        try { await initQueue(); } catch (err) {}
+      }
       var items = loadQueue();
       if (!items.length) return;
       flushing = true;
@@ -1115,6 +1367,7 @@
             }
           }
           if (!res || res.ok === false) {
+            item.lastError = (res && res.error) ? String(res.error) : "sync failed";
             next.push(item);
             continue;
           }
@@ -1145,10 +1398,11 @@
             cacheState(data);
           }
         } catch (err) {
+          item.lastError = String(err && err.message ? err.message : err);
           next.push(item);
         }
       }
-      storeQueue(next);
+      await persistQueue(next);
       flushing = false;
       if (view !== "loading") render(true);
     }
@@ -1196,11 +1450,264 @@
       return data && data.workouts ? data.workouts.find(function (item) { return item.code === code; }) : null;
     }
 
+    function cloneSets(sets) {
+      return (sets || []).map(function (set) {
+        return { reps: set.reps, kg: set.kg, rir: set.rir || "", note: set.note || "" };
+      });
+    }
+
+    function sameExerciseName(a, b) {
+      return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+    }
+
+    function historySessionsForExercise(name) {
+      var out = [];
+      var code = selected || "";
+      ((data && data.recent) || []).forEach(function (session) {
+        if (code && session.code && session.code !== code) return;
+        ((session && session.items) || []).forEach(function (item) {
+          if (sameExerciseName(item.name, name) && item.sets && item.sets.length) {
+            out.push({ date: session.date, sets: item.sets });
+          }
+        });
+      });
+      return out;
+    }
+
+    function isSmallIsolation(name, kind) {
+      if (kind === "circuit" || kind === "bodyweight") return true;
+      var n = String(name || "").toLowerCase();
+      return /curl|french|push\s*down|pushdown|push-down|flye?s?|croc[ie]|alzate|raise|estensioni?|extension|kickback|laterali|posteriali|concentrat|pec deck|butterfly|face pull|leg curl|leg extension/.test(n);
+    }
+
+    function progressionStepKg(name, kind) {
+      if (kind === "cardio" || kind === "bodyweight") return 0;
+      return isSmallIsolation(name, kind) ? 1 : 2.5;
+    }
+
+    function roundToHalf(kg) {
+      if (kg == null || !isFinite(Number(kg))) return null;
+      return Math.round(Number(kg) * 2) / 2;
+    }
+
+    function formatKgIt(kg) {
+      var n = Number(kg);
+      if (!isFinite(n)) return "";
+      var rounded = Math.round(n * 100) / 100;
+      var s = Math.abs(rounded - Math.round(rounded)) < 1e-9 ? String(Math.round(rounded)) : String(rounded);
+      return s.replace(".", ",");
+    }
+
+    function emptyProgression() {
+      return { addKg: 0, suggestKg: null, suggests: [], uniform: true, direction: "", text: "", chip: "" };
+    }
+
+    function setKgOf(set) {
+      if (!set || set.kg == null || set.kg === "") return null;
+      var kg = Number(set.kg);
+      return isFinite(kg) && kg > 0 ? kg : null;
+    }
+
+    function setRepsOf(set) {
+      if (!set || set.reps == null || set.reps === "") return null;
+      var reps = Number(set.reps);
+      return isFinite(reps) && reps > 0 ? reps : null;
+    }
+
+    function prescribedCount(targetSets, lastSets, prevSets) {
+      if (targetSets && targetSets.length) return targetSets.length;
+      var a = lastSets && lastSets.length ? lastSets.length : 0;
+      var b = prevSets && prevSets.length ? prevSets.length : 0;
+      if (!a || !b) return a || b;
+      return Math.min(a, b);
+    }
+
+    function sessionHitsTargets(sets, targetSets, count) {
+      if (!sets || !sets.length || !count) return false;
+      if (sets.length < count) return false;
+      var i;
+      for (i = 0; i < count; i++) {
+        var want = targetSets && targetSets[i] ? setRepsOf(targetSets[i]) : null;
+        var got = setRepsOf(sets[i]);
+        if (want == null) {
+          if (got == null) return false;
+          continue;
+        }
+        if (got == null || got < want) return false;
+      }
+      return true;
+    }
+
+    function sessionMissSeverity(sets, targetSets, count) {
+      var worst = 0;
+      var missed = 0;
+      var i;
+      for (i = 0; i < count; i++) {
+        var want = targetSets && targetSets[i] ? setRepsOf(targetSets[i]) : null;
+        var got = sets && sets[i] ? setRepsOf(sets[i]) : null;
+        if (want == null) {
+          if (got == null) { missed += 1; worst = Math.max(worst, 2); }
+          continue;
+        }
+        if (got == null || got < want) {
+          missed += 1;
+          worst = Math.max(worst, got == null ? want : want - got);
+        }
+      }
+      return { missed: missed, worst: worst };
+    }
+
+    function weightsMatchAcrossSessions(lastSets, prevSets, count) {
+      var i;
+      for (i = 0; i < count; i++) {
+        var a = setKgOf(lastSets[i]);
+        var b = setKgOf(prevSets[i]);
+        if (a == null || b == null) return false;
+        if (Math.abs(a - b) > 0.051) return false;
+      }
+      return true;
+    }
+
+    function workingWeights(sets, count) {
+      var out = [];
+      var i;
+      for (i = 0; i < count; i++) out.push(setKgOf(sets[i]));
+      return out;
+    }
+
+    function isUniformKg(weights) {
+      var first = null;
+      var i;
+      for (i = 0; i < weights.length; i++) {
+        if (weights[i] == null) return false;
+        if (first == null) first = weights[i];
+        else if (Math.abs(weights[i] - first) > 0.051) return false;
+      }
+      return first != null;
+    }
+
+    function progressionForExercise(name, kind, lastSets, prevSets, targetSets) {
+      var empty = emptyProgression();
+      if (kind !== "weights" && kind !== "circuit") return empty;
+      if (!lastSets || !lastSets.length || !prevSets || !prevSets.length) return empty;
+      var count = prescribedCount(targetSets, lastSets, prevSets);
+      if (!count) return empty;
+      var step = progressionStepKg(name, kind);
+      if (!step) return empty;
+      var lastHit = sessionHitsTargets(lastSets, targetSets, count);
+      var prevHit = sessionHitsTargets(prevSets, targetSets, count);
+      var sameWeight = weightsMatchAcrossSessions(lastSets, prevSets, count);
+      var lastWeights = workingWeights(lastSets, count);
+      var uniform = isUniformKg(lastWeights);
+      if (lastHit && prevHit && sameWeight) {
+        var suggests = [];
+        var i;
+        for (i = 0; i < lastWeights.length; i++) suggests.push(roundToHalf(lastWeights[i] + step));
+        if (uniform) {
+          return {
+            addKg: step, suggestKg: suggests[0], suggests: suggests, uniform: true, direction: "up",
+            text: "Nelle ultime 2 volte hai chiuso tutte le serie al target con " + formatKgIt(lastWeights[0]) + " kg: prova +" + formatKgIt(step) + " kg.",
+            chip: "Prova " + formatKgIt(suggests[0]) + " kg ↑"
+          };
+        }
+        var top = lastWeights[0];
+        var j;
+        for (j = 1; j < lastWeights.length; j++) { if (lastWeights[j] > top) top = lastWeights[j]; }
+        return {
+          addKg: step, suggestKg: null, suggests: suggests, uniform: false, direction: "up",
+          text: "Nelle ultime 2 volte hai chiuso tutte le serie al target con gli stessi carichi: prova +" + formatKgIt(step) + " kg (cima " + formatKgIt(roundToHalf(top + step)) + " kg).",
+          chip: "Prova +" + formatKgIt(step) + " kg ↑"
+        };
+      }
+      if (!lastHit && !prevHit) {
+        var lastSev = sessionMissSeverity(lastSets, targetSets, count);
+        var prevSev = sessionMissSeverity(prevSets, targetSets, count);
+        var small = lastSev.worst <= 1 && prevSev.worst <= 1 && lastSev.missed <= 1 && prevSev.missed <= 1;
+        var hasAllKg = lastWeights.length && lastWeights.every(function (kg) { return kg != null; });
+        if (!hasAllKg) return empty;
+        if (small) {
+          return {
+            addKg: 0, suggestKg: uniform ? lastWeights[0] : null, suggests: lastWeights.slice(), uniform: uniform, direction: "keep",
+            text: "Hai mancato le ripetizioni due volte: tieni " + (uniform ? formatKgIt(lastWeights[0]) + " kg" : "gli stessi carichi") + ".",
+            chip: uniform ? "Tieni " + formatKgIt(lastWeights[0]) + " kg" : "Tieni i carichi"
+          };
+        }
+        var down = [];
+        var d;
+        for (d = 0; d < lastWeights.length; d++) {
+          var cut = roundToHalf(lastWeights[d] * 0.95);
+          if (cut >= lastWeights[d]) cut = roundToHalf(lastWeights[d] - 0.5);
+          if (cut < 0) cut = 0;
+          down.push(cut);
+        }
+        return {
+          addKg: uniform ? (down[0] - lastWeights[0]) : 0, suggestKg: uniform ? down[0] : null, suggests: down, uniform: uniform, direction: "down",
+          text: "Hai mancato le ripetizioni due volte: tieni il carico o prova −5%" + (uniform ? " (" + formatKgIt(down[0]) + " kg)" : "") + ".",
+          chip: uniform ? "Prova " + formatKgIt(down[0]) + " kg ↓" : "Prova −5% ↓"
+        };
+      }
+      return empty;
+    }
+
+    function enrichExercise(ex) {
+      if (!ex) return ex;
+      var hist = historySessionsForExercise(ex.name);
+      if (!ex.lastSets || !ex.lastSets.length) {
+        if (hist[0]) {
+          ex.lastSets = cloneSets(hist[0].sets);
+          if (!ex.lastDate) ex.lastDate = hist[0].date || "";
+        }
+      }
+      if (!ex.prevSets || !ex.prevSets.length) {
+        if (hist[1]) {
+          ex.prevSets = cloneSets(hist[1].sets);
+          if (!ex.prevDate) ex.prevDate = hist[1].date || "";
+        }
+      }
+      var hasChip = ex.progression && ex.progression.chip;
+      if (!hasChip) {
+        var targets = ex.targetSets || [];
+        if (targets.length && ex.lastSets && ex.lastSets.length && targets.length !== ex.lastSets.length && hist[0] && hist[0].sets.length === ex.lastSets.length) {
+          targets = [];
+        }
+        ex.progression = progressionForExercise(ex.name, ex.kind, ex.lastSets || [], ex.prevSets || [], targets);
+      }
+      return ex;
+    }
+
+    function formatLastTime(set, kind) {
+      if (!set) return "";
+      if (kind === "cardio") {
+        return set.reps != null && set.reps !== "" ? "ultima: " + formatEditable(set.reps) + " min" : "";
+      }
+      var kg = set.kg != null && set.kg !== "" ? formatEditable(set.kg) : "";
+      var reps = set.reps != null && set.reps !== "" ? formatEditable(set.reps) : "";
+      if (kg && reps) return "ultima: " + kg + " kg × " + reps;
+      if (kg) return "ultima: " + kg + " kg";
+      if (reps) return "ultima: " + reps + " rip";
+      return "";
+    }
+
+    function applyProgression(ex) {
+      var p = (ex && ex.progression) || {};
+      var suggests = p.suggests || [];
+      (ex.sets || []).forEach(function (set, i) {
+        var kg = suggests[i];
+        if (kg == null && p.suggestKg != null) kg = p.suggestKg;
+        if (kg == null && p.addKg && ex.lastSets && ex.lastSets[i]) {
+          var base = Number(ex.lastSets[i].kg);
+          if (isFinite(base)) kg = roundToHalf(base + p.addKg);
+        }
+        if (kg != null) set.kg = formatEditable(kg);
+      });
+    }
+
     function ensureDraft(code) {
+
       if (drafts[code]) return drafts[code];
       var workout = workoutOf(code);
       drafts[code] = (workout.exercises || []).map(function (ex) {
-        return {
+        var draft = {
           name: ex.name,
           muscle: ex.muscle,
           hint: ex.hint,
@@ -1208,9 +1715,13 @@
           source: ex.source,
           lastLine: ex.lastLine || "",
           lastDate: ex.lastDate || "",
-          progression: ex.progression || { addKg: 0, text: "" },
+          lastSets: cloneSets(ex.lastSets || (ex.source === "log" ? ex.sets : [])),
+          prevDate: ex.prevDate || "",
+          prevSets: cloneSets(ex.prevSets || []),
+          targetSets: cloneSets(ex.targetSets || []),
+          progression: ex.progression || emptyProgression(),
           skipped: false,
-          sets: ex.sets.map(function (set) {
+          sets: (ex.sets || []).map(function (set) {
             return {
               reps: set.reps == null ? "" : formatEditable(set.reps),
               kg: set.kg == null ? "" : formatEditable(set.kg),
@@ -1220,6 +1731,7 @@
             };
           })
         };
+        return enrichExercise(draft);
       });
       return drafts[code];
     }
@@ -1493,6 +2005,7 @@
         '<div class="choices">' + choices + "</div>" +
         '<p class="focus">' + esc(workout ? workout.focus : "") + "</p>" +
         '<p class="last-line">' + last + "</p>" +
+        '<p class="prog-rule">Se per 2 volte fai tutte le ripetizioni nello stesso peso, ti suggerisco un aumento (+2,5 kg macchine e composti, +1 kg isolamenti). Se manchi le ripetizioni due volte, tienilo o scendi del 5%. Tocca il suggerimento o «ultima» per copiare i valori: non cambio i carichi da solo.</p>' +
         sessionProgress(list) +
         (errorText ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
         cards +
@@ -1507,18 +2020,28 @@
           '<button class="howto-btn" type="button" data-action="howto" data-name="' + esc(ex.name) + '" aria-label="Come si fa: ' + esc(ex.name) + '">Come si fa ▶</button></div>' +
           '<button class="text-btn" type="button" data-action="skip" data-ex="' + index + '">Riprendi</button></div></article>';
       }
+      enrichExercise(ex);
       var cardio = ex.kind === "cardio";
       var last = "";
-      if (ex.lastLine) {
-        last = '<p class="last-load">Ultima volta' + (ex.lastDate ? " (" + esc(itDate(ex.lastDate)) + ")" : "") + ": " + esc(ex.lastLine) + "</p>";
+      if (ex.lastDate || ex.lastLine) {
+        last = '<p class="last-load">Ultima volta' + (ex.lastDate ? " (" + esc(itDate(ex.lastDate)) + ")" : "") + (ex.lastSets && ex.lastSets.length ? "" : (ex.lastLine ? ": " + esc(ex.lastLine) : "")) + "</p>";
       }
       var hintProg = "";
-      if (ex.progression && ex.progression.text) {
+      if (ex.progression && ex.progression.chip) {
+        var chipClass = ex.progression.direction === "down" ? " is-down" : (ex.progression.direction === "keep" ? " is-keep" : "");
+        hintProg = '<div class="prog-row"><button class="prog-chip' + chipClass + '" type="button" data-action="apply-progress" data-ex="' + index + '" title="' + esc(ex.progression.text || "") + '">' + esc(ex.progression.chip) + "</button></div>";
+      } else if (ex.progression && ex.progression.text) {
         hintProg = '<p class="progress-hint' + (ex.progression.addKg ? " up" : "") + '">' + esc(ex.progression.text) + "</p>";
       }
       var sets = ex.sets.map(function (set, setIndex) {
         var kg = cardio ? "" : '<div class="field"><span>Kg</span><div class="stepper"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" data-delta="-1" aria-label="Diminuisci il carico, serie ' + (setIndex + 1) + '">−</button><input name="kg-' + index + "-" + setIndex + '" inputmode="decimal" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" value="' + esc(set.kg) + '" aria-label="Chilogrammi serie ' + (setIndex + 1) + '"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" data-delta="1" aria-label="Aumenta il carico, serie ' + (setIndex + 1) + '">+</button></div></div>';
-        return '<div class="set' + (set.done ? " is-done" : "") + '"><div class="set-top"><span>Serie ' + (setIndex + 1) + (set.done ? " · fatta" : "") + "</span>" +
+        var lastSet = (ex.lastSets || [])[setIndex];
+        var lastBtn = "";
+        var lastLabel = formatLastTime(lastSet, ex.kind);
+        if (lastLabel) {
+          lastBtn = '<button class="last-time" type="button" data-action="copy-last" data-ex="' + index + '" data-set="' + setIndex + '" title="Copia nell’allenamento di oggi">' + esc(lastLabel) + "</button>";
+        }
+        return '<div class="set' + (set.done ? " is-done" : "") + '"><div class="set-top"><div class="set-head"><span>Serie ' + (setIndex + 1) + (set.done ? " · fatta" : "") + "</span>" + lastBtn + "</div>" +
           '<div>' +
           '<button class="text-btn" type="button" data-action="done" data-ex="' + index + '" data-set="' + setIndex + '">' + (set.done ? "Annulla" : "Fatto") + "</button>" +
           (ex.sets.length > 1 ? '<button class="icon-btn" type="button" data-action="remove" data-ex="' + index + '" data-set="' + setIndex + '" aria-label="Togli serie ' + (setIndex + 1) + '">×</button>' : "") +
@@ -2935,7 +3458,7 @@
       var button = event.target.closest("[data-action]");
       if (!button) return;
       var action = button.dataset.action;
-      if (action === "view-editor" || action === "history" || action === "charts" || action === "weight" || action === "records" || action === "settings" || action === "theme" || action === "pick" || action === "step" || action === "meal-check" || action === "meal-day" || action === "view-piano" || action === "view-peso" || action === "rest-default-minus" || action === "rest-default-plus") {
+      if (action === "view-editor" || action === "history" || action === "charts" || action === "weight" || action === "records" || action === "settings" || action === "theme" || action === "pick" || action === "step" || action === "meal-check" || action === "meal-day" || action === "view-piano" || action === "view-peso" || action === "rest-default-minus" || action === "rest-default-plus" || action === "apply-progress" || action === "copy-last") {
         haptic(10);
       }
       if (action === "view-editor" || action === "back" || action === "again") {
@@ -2996,6 +3519,23 @@
       if (action === "retry") { boot(); return; }
       if (action === "flush") { flushQueue(); return; }
       if (action === "pick") { selected = button.dataset.code; errorText = ""; render(true); return; }
+      if (action === "apply-progress") {
+        var progEx = ensureDraft(selected)[Number(button.dataset.ex)];
+        if (progEx) applyProgression(progEx);
+        render(true);
+        return;
+      }
+      if (action === "copy-last") {
+        var lastEx = ensureDraft(selected)[Number(button.dataset.ex)];
+        var lastSet = lastEx && (lastEx.lastSets || [])[Number(button.dataset.set)];
+        var curSet = lastEx && lastEx.sets[Number(button.dataset.set)];
+        if (lastSet && curSet) {
+          if (lastSet.reps != null && lastSet.reps !== "") curSet.reps = formatEditable(lastSet.reps);
+          if (lastEx.kind !== "cardio" && lastSet.kg != null && lastSet.kg !== "") curSet.kg = formatEditable(lastSet.kg);
+        }
+        render(true);
+        return;
+      }
       if (action === "skip") {
         var skipped = ensureDraft(selected)[Number(button.dataset.ex)];
         skipped.skipped = !skipped.skipped;
@@ -3298,8 +3838,12 @@
           render();
         }
       }
+      await initQueue();
+      updateConnectionUi();
       flushQueue();
       startReminderClock();
+      ensureFlushTimer();
+      requestBackgroundSync();
       if (pendingCount) setTimeout(function () { flushQueue(); }, 4000);
     }
 
@@ -3363,6 +3907,9 @@
         });
         setInterval(function () { reg.update(); }, 15 * 60 * 1000);
       }).catch(function () {});
+      navigator.serviceWorker.addEventListener("message", function (event) {
+        if (event.data && event.data.type === "FLUSH_QUEUE") flushQueue();
+      });
       var alreadyControlled = !!navigator.serviceWorker.controller;
       navigator.serviceWorker.addEventListener("controllerchange", function () {
         if (!alreadyControlled) {
@@ -3401,13 +3948,34 @@
       document.getElementById("installApp").hidden = true;
     });
 
-    window.addEventListener("online", function () { flushQueue(); });
+    window.addEventListener("online", function () {
+      updateConnectionUi();
+      setTimeout(function () { flushQueue(); }, 400);
+    });
+    window.addEventListener("offline", function () { updateConnectionUi(); });
+    window.addEventListener("pageshow", function () { flushQueue(); });
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") flushQueue();
+    });
+    updateConnectionUi();
 
     var standalone = window.navigator.standalone || window.matchMedia("(display-mode: standalone)").matches;
     var mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     var installOff = false;
     try { installOff = localStorage.getItem("palestra-install-off") === "1"; } catch (err) { installOff = false; }
     if (mobile && !standalone && !installOff) document.getElementById("installBanner").hidden = false;
+
+    try {
+      if (sessionStorage.getItem("palestra-test") === "1") {
+        window.__palestraTest = {
+          enqueue: enqueue,
+          flushQueue: flushQueue,
+          loadQueue: loadQueue,
+          persistQueue: persistQueue,
+          initQueue: initQueue
+        };
+      }
+    } catch (err) {}
 
     if (!getToken()) {
       document.getElementById("setupBanner").hidden = false;
