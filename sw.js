@@ -1,16 +1,18 @@
-/* Palestra service worker v2.4 */
-const APP_VERSION = 'v2.4';
-const CACHE = 'palestra-shell-v2.4';
+/* Palestra service worker v2.5 */
+const APP_VERSION = 'v2.5';
+const CACHE = 'palestra-shell-v2.5';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './vendor/pdfjs/pdf.min.js',
+  './vendor/pdfjs/pdf.worker.min.js'
 ];
 
 self.addEventListener('install', function (event) {
-  // Activate this version for clients still on v2.3 whose Aggiorna button
+  // Activate this version for clients still on v2.4 whose Aggiorna button
   // only reloads and does not send SKIP_WAITING.
   event.waitUntil(
     caches.open(CACHE).then(function (cache) { return cache.addAll(SHELL); }).then(function () {

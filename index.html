@@ -464,6 +464,15 @@
     .foods .food-note { display: block; color: var(--muted); font-size: 0.84rem; margin-top: 2px; }
     .meal-note { margin: 8px 0 0; color: var(--muted); }
     .check-meal { min-height: 44px; margin-top: 2px; flex: none; }
+    .plan-upload { margin: 0 0 16px; }
+    .plan-upload .file-btn { width: 100%; }
+    .plan-progress, .plan-warnings { margin: 8px 0; }
+    .plan-preview { margin-top: 10px; }
+    .plan-preview h3 { margin: 0 0 8px; font-size: 1.05rem; }
+    .plan-preview .day-sum { margin: 0 0 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+    .plan-preview .day-sum strong { display: block; }
+    .plan-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .plan-actions button { flex: 1; }
     .records li { margin: 0 0 12px; }
     .error-toast {
       position: fixed;
@@ -492,7 +501,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v2.4</span></h1>
+          <h1>Palestra <span class="ver">v2.5</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -545,10 +554,17 @@
       </div>
     </div>
   </div>
+  <input id="mealPlanFile" type="file" accept="application/pdf,.pdf" hidden>
   <div id="errorToast" class="error-toast" hidden role="alert">
     <p id="errorToastText"></p>
     <button class="ghost" type="button" id="errorToastDismiss">Ok</button>
   </div>
+  <script src="vendor/pdfjs/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdfjs/pdf.worker.min.js";
+    }
+  </script>
   <script>
     function showErrorToast(raw) {
       var text = "";
@@ -596,6 +612,7 @@
     var weightNote = "";
     var weightSub = "piano";
     var mealDay = "";
+    var mealUpload = { phase: "", message: "", fileName: "", text: "", metaTitle: "", preview: null, warnings: [], canConfirm: false, error: "" };
     var flushing = false;
 
     function captureToken() {
@@ -1193,6 +1210,221 @@
       return parts.join(" · ");
     }
 
+    function resetMealUpload() {
+      mealUpload = { phase: "", message: "", fileName: "", text: "", metaTitle: "", preview: null, warnings: [], canConfirm: false, error: "" };
+    }
+
+    function mealPlanItemsToText(items) {
+      var lines = [];
+      var i;
+      var j;
+      for (i = 0; i < (items || []).length; i++) {
+        var it = items[i];
+        if (!it || !it.str || !String(it.str).trim()) continue;
+        var x = it.transform[4];
+        var y = it.transform[5];
+        var line = null;
+        for (j = 0; j < lines.length; j++) {
+          if (Math.abs(lines[j].y - y) < 3.5) { line = lines[j]; break; }
+        }
+        if (!line) {
+          line = { y: y, parts: [] };
+          lines.push(line);
+        }
+        line.parts.push({ x: x, str: it.str, w: it.width || 0 });
+      }
+      lines.sort(function (a, b) { return b.y - a.y; });
+      return lines.map(function (l) {
+        l.parts.sort(function (a, b) { return a.x - b.x; });
+        var out = "";
+        var prev = null;
+        var p;
+        for (p = 0; p < l.parts.length; p++) {
+          if (prev != null && l.parts[p].x - prev > 6) out += " ";
+          out += l.parts[p].str;
+          prev = l.parts[p].x + (l.parts[p].w || l.parts[p].str.length * 4);
+        }
+        return out.replace(/[ \t]+/g, " ").trim();
+      }).filter(Boolean).join("\n");
+    }
+
+    function extractMealPlanPdf(file) {
+      if (!window.pdfjsLib) {
+        return Promise.reject(new Error("Lettore PDF non disponibile. Aggiorna l’app e riprova."));
+      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdfjs/pdf.worker.min.js";
+      return file.arrayBuffer().then(function (buf) {
+        return pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+      }).then(function (doc) {
+        var pages = [];
+        var metaTitle = "";
+        return doc.getMetadata().then(function (meta) {
+          if (meta && meta.info && meta.info.Title) metaTitle = String(meta.info.Title);
+        }).catch(function () {}).then(function () {
+          var index = 1;
+          function next() {
+            if (index > doc.numPages) {
+              return { text: pages.join("\n"), metaTitle: metaTitle, pages: doc.numPages };
+            }
+            return doc.getPage(index).then(function (page) {
+              return page.getTextContent().then(function (content) {
+                pages.push(mealPlanItemsToText(content.items));
+                index += 1;
+                return next();
+              });
+            });
+          }
+          return next();
+        });
+      });
+    }
+
+    function paintMealPlanUpload() {
+      var html = '<div class="plan-upload"><button class="ghost file-btn" type="button" data-action="meal-plan-pick">Carica nuovo piano (PDF)</button>';
+      html += '<p class="muted">Carica il PDF della nutrizionista (massimo 10 MB). Prima lo controllo, poi ti chiedo conferma.</p>';
+      if (mealUpload.phase === "reading" || mealUpload.phase === "parsing" || mealUpload.phase === "saving") {
+        html += '<p class="plan-progress">' + esc(mealUpload.message || "Un attimo…") + "</p>";
+      }
+      if (mealUpload.phase === "error") {
+        html += '<p class="alert">' + esc(mealUpload.error || "Non sono riuscito a leggere il piano.") + "</p>";
+      }
+      if (mealUpload.phase === "preview" && mealUpload.preview) {
+        var prev = mealUpload.preview;
+        var days = prev.days || [];
+        html += '<article class="card plan-preview"><h3>Anteprima' + (mealUpload.fileName ? " · " + esc(mealUpload.fileName) : "") + "</h3>";
+        if (prev.title) html += '<p>' + esc(prev.title) + "</p>";
+        if (prev.note) html += '<p class="plan-note">' + esc(prev.note) + "</p>";
+        html += days.map(function (day) {
+          var meals = day.meals || [];
+          var foods = 0;
+          var i;
+          for (i = 0; i < meals.length; i++) foods += (meals[i].foods || []).length;
+          var names = meals.map(function (meal) { return meal.name; }).join(", ");
+          return '<div class="day-sum"><strong>' + esc(day.name) + "</strong><span class=\"muted\">" + meals.length + " pasti · " + foods + " alimenti" + (names ? " · " + esc(names) : "") + "</span></div>";
+        }).join("");
+        if (mealUpload.warnings && mealUpload.warnings.length) {
+          html += '<div class="plan-warnings alert">' + mealUpload.warnings.map(function (w) { return "<p>" + esc(w) + "</p>"; }).join("") + "</div>";
+        }
+        if (!mealUpload.canConfirm) {
+          html += '<p class="alert">Il piano attuale non è stato modificato. Se l’anteprima è sbagliata, invia il PDF ad Eddie in chat.</p>';
+          html += '<div class="plan-actions"><button class="secondary" type="button" data-action="meal-plan-cancel">Chiudi</button></div>';
+        } else {
+          html += '<p class="muted">Se è corretto, conferma: il piano attuale viene archiviato e sostituito.</p>';
+          html += '<div class="plan-actions"><button class="secondary" type="button" data-action="meal-plan-cancel">Annulla</button>';
+          html += '<button class="primary" type="button" data-action="meal-plan-confirm">Conferma</button></div>';
+        }
+        html += "</article>";
+      }
+      if (mealUpload.phase === "done") {
+        html += '<p class="plan-progress">' + esc(mealUpload.message || "Piano aggiornato.") + "</p>";
+      }
+      html += "</div>";
+      return html;
+    }
+
+    function fileToBase64(file) {
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () {
+          var result = String(reader.result || "");
+          var comma = result.indexOf(",");
+          resolve(comma >= 0 ? result.slice(comma + 1) : result);
+        };
+        reader.onerror = function () { reject(new Error("Non riesco a leggere il file.")); };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleMealPlanFile(file) {
+      if (!file) return;
+      var max = 10 * 1024 * 1024;
+      if (file.size > max) {
+        mealUpload.phase = "error";
+        mealUpload.error = "Il PDF è più grande di 10 MB. Il piano attuale non è stato modificato.";
+        render(true);
+        return;
+      }
+      if (file.type && file.type !== "application/pdf" && file.type !== "application/x-pdf") {
+        if (!/\.pdf$/i.test(file.name || "")) {
+          mealUpload.phase = "error";
+          mealUpload.error = "Serve un file PDF. Il piano attuale non è stato modificato. Se il formato è diverso, invialo ad Eddie in chat.";
+          render(true);
+          return;
+        }
+      }
+      mealUpload.phase = "reading";
+      mealUpload.message = "Sto leggendo il PDF…";
+      mealUpload.fileName = file.name || "piano.pdf";
+      mealUpload.error = "";
+      mealUpload.preview = null;
+      render(true);
+      try {
+        var extracted = await extractMealPlanPdf(file);
+        mealUpload.text = extracted.text || "";
+        mealUpload.metaTitle = extracted.metaTitle || "";
+        if (!String(mealUpload.text).trim()) {
+          throw new Error("Il PDF non contiene testo leggibile (potrebbe essere una scansione). Il piano attuale non è stato modificato. Invia il file ad Eddie in chat.");
+        }
+        mealUpload.phase = "parsing";
+        mealUpload.message = "Sto analizzando il piano…";
+        render(true);
+        var payload = {
+          fileName: mealUpload.fileName,
+          text: mealUpload.text,
+          metaTitle: mealUpload.metaTitle,
+          preview: true,
+          dryRun: true
+        };
+        if (file.size <= 3 * 1024 * 1024) {
+          try { payload.pdfBase64 = await fileToBase64(file); } catch (ignore) {}
+        }
+        var res = await rpc("uploadMealPlan", payload);
+        if (!res || res.ok === false) {
+          throw new Error((res && res.error) || "Non sono riuscito a interpretare il PDF. Il piano attuale non è stato modificato. Invia il file ad Eddie in chat.");
+        }
+        mealUpload.phase = "preview";
+        mealUpload.preview = res.preview;
+        mealUpload.warnings = res.warnings || [];
+        mealUpload.canConfirm = !!res.canConfirm;
+        mealUpload.message = "";
+      } catch (err) {
+        mealUpload.phase = "error";
+        mealUpload.error = (err && err.message) || "Non sono riuscito a leggere il piano. Il piano attuale non è stato modificato. Invia il PDF ad Eddie in chat.";
+      }
+      render(true);
+    }
+
+    async function confirmMealPlanUpload() {
+      if (!mealUpload.canConfirm || !mealUpload.text) return;
+      mealUpload.phase = "saving";
+      mealUpload.message = "Sto salvando il nuovo piano…";
+      render(true);
+      try {
+        var res = await rpc("uploadMealPlan", {
+          fileName: mealUpload.fileName,
+          text: mealUpload.text,
+          metaTitle: mealUpload.metaTitle,
+          confirm: true
+        });
+        if (!res || res.ok === false || !res.saved) {
+          throw new Error((res && res.error) || "Il salvataggio non è andato a buon fine. Il piano attuale non è stato modificato. Invia il PDF ad Eddie in chat.");
+        }
+        if (res.mealPlan) {
+          if (!data) data = {};
+          data.mealPlan = res.mealPlan;
+          cacheState(data);
+        }
+        mealUpload.phase = "done";
+        mealUpload.message = "Piano aggiornato. Quello precedente è stato archiviato nel foglio.";
+        mealUpload.preview = null;
+        mealUpload.canConfirm = false;
+      } catch (err) {
+        mealUpload.phase = "error";
+        mealUpload.error = (err && err.message) || "Il piano attuale non è stato modificato. Invia il PDF ad Eddie in chat.";
+      }
+      render(true);
+    }
+
     function paintMealPlan() {
       var plan = data && data.mealPlan;
       var days = (plan && plan.days) || [];
@@ -1211,6 +1443,7 @@
       var note = plan.note ? '<p class="plan-note">' + esc(plan.note) + "</p>" : "";
       var totals = day && day.totals ? '<p class="plan-totals">Totale ' + esc(day.name) + ": " + esc(formatMacros(day.totals)) + "</p>" : "";
       var intro = '<p class="muted">' + (isToday ? "Piano di oggi, " : "Piano del ") + esc(day ? day.name : "") + ".</p>";
+      var uploadUi = paintMealPlanUpload();
       var meals = ((day && day.meals) || []).map(function (meal) {
         var done = isToday && mealIsDone(meal.name);
         var foods = (meal.foods || []).map(function (food) {
@@ -1225,7 +1458,7 @@
           (meal.note ? '<p class="meal-note">' + esc(meal.note) + "</p>" : "") +
           "</article>";
       }).join("");
-      return intro + '<div class="day-picks" role="tablist" aria-label="Giorno del piano">' + picks + "</div>" + note + totals + (meals || '<p class="muted">Nessun pasto in questo giorno.</p>');
+      return intro + '<div class="day-picks" role="tablist" aria-label="Giorno del piano">' + picks + "</div>" + note + totals + uploadUi + (meals || '<p class="muted">Nessun pasto in questo giorno.</p>');
     }
 
     function paintWeightLog() {
@@ -1296,6 +1529,13 @@
       if (action === "view-peso") { view = "weight"; weightSub = "peso"; render(); return; }
       if (action === "meal-day") { mealDay = button.getAttribute("data-day") || ""; render(true); return; }
       if (action === "meal-check") { saveMealCheck(button.getAttribute("data-meal"), !mealIsDone(button.getAttribute("data-meal"))); return; }
+      if (action === "meal-plan-pick") {
+        var input = document.getElementById("mealPlanFile");
+        if (input) { input.value = ""; input.click(); }
+        return;
+      }
+      if (action === "meal-plan-cancel") { resetMealUpload(); render(true); return; }
+      if (action === "meal-plan-confirm") { confirmMealPlanUpload(); return; }
       if (action === "records") { view = "records"; errorText = ""; render(); return; }
       if (action === "retry") { boot(); return; }
       if (action === "flush") { flushQueue(); return; }
@@ -1573,6 +1813,10 @@
     document.body.addEventListener("input", onInput);
     document.getElementById("modalYes").addEventListener("click", function () { closeModal(true); });
     document.getElementById("modalNo").addEventListener("click", function () { closeModal(false); });
+    document.getElementById("mealPlanFile").addEventListener("change", function (event) {
+      var file = event.target.files && event.target.files[0];
+      handleMealPlanFile(file);
+    });
     document.getElementById("errorToastDismiss").addEventListener("click", function () {
       var toast = document.getElementById("errorToast");
       if (toast) toast.hidden = true;
