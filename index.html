@@ -1659,7 +1659,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.7</span></h1>
+          <h1>Palestra <span class="ver">v3.8</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -6262,7 +6262,8 @@
         training: t.training !== false,
         weighIn: t.weighIn !== false,
         postSave: t.postSave !== false,
-        weekly: t.weekly !== false
+        weekly: t.weekly !== false,
+        inactivity: t.inactivity !== false
       };
     }
 
@@ -6317,7 +6318,8 @@
         training: nextToggles.training !== false,
         weighIn: nextToggles.weighIn !== false,
         postSave: nextToggles.postSave !== false,
-        weekly: nextToggles.weekly !== false
+        weekly: nextToggles.weekly !== false,
+        inactivity: nextToggles.inactivity !== false
       };
       if (!silent) {
         telegramSyncBusy = true;
@@ -6338,6 +6340,10 @@
           time: (cfg.weighIn && cfg.weighIn.time) || "07:30",
           freq: cfg.weighIn && cfg.weighIn.freq === "weekly" ? "weekly" : "daily",
           day: (cfg.weighIn && cfg.weighIn.day) || 1
+        },
+        stale: {
+          enabled: !!(cfg.stale && cfg.stale.enabled),
+          days: clampStaleDays(cfg.stale && cfg.stale.days)
         }
       };
       if (!navigator.onLine) {
@@ -6388,7 +6394,7 @@
       if (st.needsAuth || st.authorized === false) {
         statusText = "Non collegato: serve l’autorizzazione una tantum in Apps Script (authorizePalestraTelegram).";
       } else if (linked) {
-        statusText = "Collegato (@" + handle + "). Solo la tua chat è autorizzata. Comandi: /peso 80,5 (o il numero), /oggi, /stato, /aiuto.";
+        statusText = "Collegato (@" + handle + "). Solo la tua chat è autorizzata. Comandi: /oggi, /stato, /peso, /settimana, /record, /dieta, /aiuto.";
       } else {
         statusText = "Non ancora collegato. Apri @" + handle + " su Telegram, tocca Avvia (/start) e poi Verifica collegamento.";
       }
@@ -6417,10 +6423,11 @@
         live +
         '<div class="remind-ics" style="margin-top:10px"><button class="secondary" type="button" data-action="telegram-refresh"' + (telegramSyncBusy ? " disabled" : "") + '>' + btnLabel + "</button></div>" +
         '<div class="tg-toggles">' +
-          tgRow("training", "Promemoria allenamento", "Nei giorni e all’orario scelti qui sotto, con la prossima scheda.") +
-          tgRow("weighIn", "Promemoria pesata", "All’orario e frequenza scelti qui sotto; puoi rispondere col peso.") +
+          tgRow("training", "Promemoria allenamento", "Nei giorni e all’orario scelti qui sotto, con Vado, Rimanda 30 min e Salta.") +
+          tgRow("weighIn", "Promemoria pesata", "Proposta modificabile (±0,1 kg) all’orario scelto, oppure rispondi col peso.") +
           tgRow("postSave", "Dopo ogni sessione", "Volume, serie e nuovi record appena salvi.") +
           tgRow("weekly", "Riepilogo settimanale", "Ogni domenica verso le 20:00.") +
+          tgRow("inactivity", "Avviso inattività", "Un solo avviso dopo " + clampStaleDays(cfg.stale && cfg.stale.days) + " giorni senza allenarti, finché non salvi una sessione.") +
         "</div></article>";
     }
 
@@ -7061,7 +7068,7 @@
         haptic(10);
         render(true);
         if ((card === "training" || card === "weigh") && calendarSyncEnabled()) scheduleCalendarSync();
-        if (card === "training" || card === "weigh") scheduleTelegramSync();
+        if (card === "training" || card === "weigh" || card === "stale") scheduleTelegramSync();
         return;
       }
       if (action === "remind-day") {
@@ -7106,6 +7113,7 @@
         updateNudgeBanners();
         haptic(10);
         render(true);
+        scheduleTelegramSync();
         return;
       }
       if (action === "stale-open") { view = "editor"; errorText = ""; render(); return; }
