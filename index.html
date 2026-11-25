@@ -785,6 +785,102 @@
       color: inherit;
     }
     .limit-note { font-size: var(--fs-sm); color: var(--muted); }
+
+    .remind-intro { margin: 0 0 var(--space-3); }
+    .remind-ics { margin: 0 0 var(--space-4); }
+    .remind-ics .primary { width: 100%; }
+    .remind-ics p { margin: 8px 0 0; font-size: var(--fs-xs); color: var(--muted); }
+    .remind-notify { margin: 0 0 var(--space-4); }
+    .remind-notify .text-btn { min-height: 44px; }
+    .remind-card {
+      background: var(--card-2);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      padding: var(--space-3);
+      margin: 0 0 var(--space-3);
+    }
+    .remind-card:last-child { margin-bottom: 0; }
+    .remind-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 4px;
+    }
+    .remind-head h4 {
+      margin: 0;
+      font-size: var(--fs-lg);
+      font-weight: 750;
+      letter-spacing: -0.03em;
+    }
+    .remind-sum { margin: 0 0 8px; color: var(--muted); font-size: var(--fs-sm); }
+    .remind-hint {
+      margin: 0 0 8px;
+      color: var(--chalk-text);
+      font-size: var(--fs-sm);
+      font-weight: 650;
+    }
+    .remind-card.is-off .remind-editor { display: none; }
+    .remind-days, .remind-freq {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0 0 8px;
+    }
+    .remind-days button,
+    .remind-freq button {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0 10px;
+      border-radius: var(--r-full);
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      font-size: var(--fs-sm);
+      font-weight: 650;
+    }
+    .remind-days button.is-on,
+    .remind-freq button.is-on {
+      background: var(--chalk);
+      color: var(--on-chalk);
+      border-color: transparent;
+      font-weight: 800;
+    }
+    .remind-time {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0;
+    }
+    .remind-time label { margin: 0; color: var(--muted); font-size: var(--fs-sm); font-weight: 650; }
+    .remind-time input[type="time"] {
+      min-height: 44px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--line);
+      background: var(--card);
+      padding: 0 10px;
+      color: inherit;
+    }
+    .remind-head .seg-btn {
+      min-height: 44px;
+      min-width: 88px;
+      padding: 0 14px;
+      border-radius: var(--r-full);
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      font-size: var(--fs-sm);
+      font-weight: 650;
+      flex: none;
+    }
+    .remind-head .seg-btn.is-on {
+      background: var(--chalk);
+      color: var(--on-chalk);
+      border-color: transparent;
+      font-weight: 800;
+    }
+
     .report-block { margin: 0 0 16px; }
     .report-block h3 { margin: 0 0 8px; }
     .report-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
@@ -1204,7 +1300,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.3</span></h1>
+          <h1>Palestra <span class="ver">v3.3.1</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -1231,6 +1327,16 @@
     <div id="pendingBanner" class="banner" hidden>
       <p id="pendingLabel">Salvataggi in attesa di sincronizzazione.</p>
       <button class="ghost" type="button" data-action="flush">Invia</button>
+    </div>
+    <div id="staleBanner" class="banner" hidden>
+      <p id="staleBannerText"></p>
+      <button class="ghost" type="button" data-action="stale-open">Apri</button>
+      <button class="ghost" type="button" data-action="stale-dismiss">Ok</button>
+    </div>
+    <div id="planBanner" class="banner" hidden>
+      <p id="planBannerText"></p>
+      <button class="ghost" type="button" data-action="plan-open">Apri</button>
+      <button class="ghost" type="button" data-action="plan-dismiss">Ok</button>
     </div>
     <div id="timerBar" class="timer" hidden>
       <svg class="timer-ring" viewBox="0 0 58 58" aria-hidden="true">
@@ -2273,6 +2379,7 @@
       syncNav();
       paintTimer();
       storeQueue(loadQueue());
+      updateNudgeBanners();
       if (keepScroll) window.scrollTo(0, y);
       else window.scrollTo(0, 0);
     }
@@ -3513,31 +3620,266 @@
       return "13:00";
     }
 
+
+    var WEEKDAYS = [
+      { id: 1, short: "Lun", long: "Lunedì", by: "MO" },
+      { id: 2, short: "Mar", long: "Martedì", by: "TU" },
+      { id: 3, short: "Mer", long: "Mercoledì", by: "WE" },
+      { id: 4, short: "Gio", long: "Giovedì", by: "TH" },
+      { id: 5, short: "Ven", long: "Venerdì", by: "FR" },
+      { id: 6, short: "Sab", long: "Sabato", by: "SA" },
+      { id: 7, short: "Dom", long: "Domenica", by: "SU" }
+    ];
+    var IT_MONTHS = {
+      gennaio: 1, febbraio: 2, marzo: 3, aprile: 4, maggio: 5, giugno: 6,
+      luglio: 7, agosto: 8, settembre: 9, ottobre: 10, novembre: 11, dicembre: 12
+    };
+    var STALE_NUDGE_KEY = "palestra-nudge-stale";
+    var PLAN_NUDGE_KEY = "palestra-nudge-plan";
+
+    function weekdayById(id) {
+      var i;
+      for (i = 0; i < WEEKDAYS.length; i++) {
+        if (WEEKDAYS[i].id === id) return WEEKDAYS[i];
+      }
+      return null;
+    }
+
+    function isoWeekdayFromIso(iso) {
+      var d = parseIsoDate(iso);
+      if (!d) return 0;
+      var js = d.getDay();
+      return js === 0 ? 7 : js;
+    }
+
+    function clampStaleDays(n) {
+      n = Math.round(Number(n));
+      if (!isFinite(n)) return 4;
+      if (n < 3) return 3;
+      if (n > 7) return 7;
+      return n;
+    }
+
+    function clampWeekday(n, fallback) {
+      n = Math.round(Number(n));
+      if (n >= 1 && n <= 7) return n;
+      return fallback || 1;
+    }
+
+    function normalizeTime(value, fallback) {
+      var hm = String(value || "").trim();
+      if (minutesOf(hm) == null) return fallback || "08:00";
+      var bits = hm.split(":");
+      var h = String(Math.max(0, Math.min(23, Number(bits[0]) || 0)));
+      var m = String(Math.max(0, Math.min(59, Number(bits[1]) || 0)));
+      if (h.length < 2) h = "0" + h;
+      if (m.length < 2) m = "0" + m;
+      return h + ":" + m;
+    }
+
+    function defaultReminders() {
+      return {
+        version: 2,
+        training: { enabled: false, days: [], time: "18:30" },
+        weighIn: { enabled: true, time: "07:30", freq: "daily", day: 1 },
+        stale: { enabled: true, days: 4 },
+        plan: { enabled: true }
+      };
+    }
+
     function loadReminders() {
-      var cfg = { enabled: true, weighIn: { enabled: true, time: "07:30" }, meals: {} };
+      var cfg = defaultReminders();
       try {
         var saved = JSON.parse(localStorage.getItem(REMINDER_KEY) || "null");
         if (saved && typeof saved === "object") {
-          if (saved.enabled === false) cfg.enabled = false;
-          if (saved.weighIn) {
+          if (saved.weighIn && typeof saved.weighIn === "object") {
             cfg.weighIn.enabled = saved.weighIn.enabled !== false;
-            if (saved.weighIn.time) cfg.weighIn.time = saved.weighIn.time;
+            if (saved.weighIn.time) cfg.weighIn.time = normalizeTime(saved.weighIn.time, "07:30");
+            if (saved.weighIn.freq === "weekly" || saved.weighIn.freq === "daily") cfg.weighIn.freq = saved.weighIn.freq;
+            if (saved.weighIn.day != null) cfg.weighIn.day = clampWeekday(saved.weighIn.day, 1);
           }
-          if (saved.meals && typeof saved.meals === "object") cfg.meals = saved.meals;
+          if (saved.training && typeof saved.training === "object") {
+            cfg.training.enabled = !!saved.training.enabled;
+            if (saved.training.time) cfg.training.time = normalizeTime(saved.training.time, "18:30");
+            if (Array.isArray(saved.training.days)) {
+              cfg.training.days = saved.training.days.map(function (d) { return clampWeekday(d, 0); }).filter(function (d) { return d >= 1 && d <= 7; });
+              cfg.training.days = cfg.training.days.filter(function (d, i, arr) { return arr.indexOf(d) === i; }).sort(function (a, b) { return a - b; });
+            }
+          }
+          if (saved.stale && typeof saved.stale === "object") {
+            cfg.stale.enabled = saved.stale.enabled !== false;
+            if (saved.stale.days != null) cfg.stale.days = clampStaleDays(saved.stale.days);
+          }
+          if (saved.plan && typeof saved.plan === "object") {
+            cfg.plan.enabled = saved.plan.enabled !== false;
+          }
         }
       } catch (err) {}
-      var names = mealNamesFromPlan();
-      var i;
-      for (i = 0; i < names.length; i++) {
-        var name = names[i];
-        if (!cfg.meals[name]) cfg.meals[name] = { enabled: true, time: defaultMealTime(name) };
-        if (!cfg.meals[name].time) cfg.meals[name].time = defaultMealTime(name);
-      }
       return cfg;
     }
 
     function storeReminders(cfg) {
-      try { localStorage.setItem(REMINDER_KEY, JSON.stringify(cfg)); } catch (err) {}
+      var clean = {
+        version: 2,
+        training: {
+          enabled: !!(cfg.training && cfg.training.enabled),
+          days: ((cfg.training && cfg.training.days) || []).slice(),
+          time: normalizeTime(cfg.training && cfg.training.time, "18:30")
+        },
+        weighIn: {
+          enabled: !!(cfg.weighIn && cfg.weighIn.enabled),
+          time: normalizeTime(cfg.weighIn && cfg.weighIn.time, "07:30"),
+          freq: cfg.weighIn && cfg.weighIn.freq === "weekly" ? "weekly" : "daily",
+          day: clampWeekday(cfg.weighIn && cfg.weighIn.day, 1)
+        },
+        stale: {
+          enabled: !!(cfg.stale && cfg.stale.enabled),
+          days: clampStaleDays(cfg.stale && cfg.stale.days)
+        },
+        plan: { enabled: !(cfg.plan && cfg.plan.enabled === false) }
+      };
+      try { localStorage.setItem(REMINDER_KEY, JSON.stringify(clean)); } catch (err) {}
+      return clean;
+    }
+
+    function formatDayList(ids) {
+      var names = (ids || []).map(function (id) {
+        var d = weekdayById(id);
+        return d ? d.short : "";
+      }).filter(Boolean);
+      if (!names.length) return "";
+      if (names.length === 1) return names[0];
+      if (names.length === 2) return names[0] + " e " + names[1];
+      return names.slice(0, -1).join(", ") + " e " + names[names.length - 1];
+    }
+
+    function trainingSummary(cfg) {
+      var days = formatDayList(cfg.training && cfg.training.days);
+      var time = (cfg.training && cfg.training.time) || "18:30";
+      if (!days) return "Scegli i giorni e l’orario";
+      return days + " · " + time;
+    }
+
+    function weighInSummary(cfg) {
+      var w = cfg.weighIn || {};
+      var time = w.time || "07:30";
+      if (w.freq === "weekly") {
+        var day = weekdayById(clampWeekday(w.day, 1));
+        return "Ogni " + (day ? day.long.toLowerCase() : "lunedì") + " · " + time;
+      }
+      return "Ogni mattina · " + time;
+    }
+
+    function staleSummary(cfg) {
+      var n = clampStaleDays(cfg.stale && cfg.stale.days);
+      return "Se passano " + n + (n === 1 ? " giorno" : " giorni") + " senza una sessione";
+    }
+
+    function nextSchedaHint() {
+      var code = (data && data.suggested) || "A";
+      var sessions = (data && data.recent) || [];
+      var last = sessions.length ? sessions[0] : null;
+      if (last && last.code && last.date) {
+        return "Prossima scheda: " + code + " (dopo " + last.code + " del " + itDateShort(last.date) + ")";
+      }
+      return "Prossima scheda: " + code;
+    }
+
+    function recentTrainingDaysHint() {
+      var seen = {};
+      var ids = [];
+      ((data && data.recent) || []).forEach(function (s) {
+        if (!s || !s.date) return;
+        var id = isoWeekdayFromIso(s.date);
+        if (id && !seen[id]) { seen[id] = true; ids.push(id); }
+      });
+      ids.sort(function (a, b) { return a - b; });
+      var list = formatDayList(ids);
+      if (!list) return "";
+      return "Finora ti sei allenato " + list.toLowerCase() + ".";
+    }
+
+    function lastSessionDate() {
+      var sessions = (data && data.recent) || [];
+      var latest = "";
+      var i;
+      for (i = 0; i < sessions.length; i++) {
+        if (sessions[i] && sessions[i].date && sessions[i].date > latest) latest = sessions[i].date;
+      }
+      return latest;
+    }
+
+    function daysSinceLastSession(today) {
+      var last = lastSessionDate();
+      if (!last) return null;
+      var a = parseIsoDate(last);
+      var b = parseIsoDate(today || todayIso());
+      if (!a || !b) return null;
+      return Math.round((b.getTime() - a.getTime()) / 86400000);
+    }
+
+    function parseMealPlanMonth(plan) {
+      if (!plan) return "";
+      var text = [plan.title, plan.fonte, plan.note].filter(Boolean).join(" ");
+      if (!text) return "";
+      var lower = text.toLowerCase().replace(/[àá]/g, "a").replace(/[èé]/g, "e").replace(/[ìí]/g, "i").replace(/[òó]/g, "o").replace(/[ùú]/g, "u");
+      var names = Object.keys(IT_MONTHS).join("|");
+      var m = lower.match(new RegExp("(" + names + ")\\s+(\\d{4})"));
+      if (m) {
+        var month = String(IT_MONTHS[m[1]]);
+        if (month.length < 2) month = "0" + month;
+        return m[2] + "-" + month;
+      }
+      m = lower.match(/(\d{4})[-\/.](\d{1,2})/);
+      if (m && Number(m[2]) >= 1 && Number(m[2]) <= 12) {
+        month = String(Number(m[2]));
+        if (month.length < 2) month = "0" + month;
+        return m[1] + "-" + month;
+      }
+      m = lower.match(/(\d{1,2})[-\/.](\d{4})/);
+      if (m && Number(m[1]) >= 1 && Number(m[1]) <= 12) {
+        month = String(Number(m[1]));
+        if (month.length < 2) month = "0" + month;
+        return m[2] + "-" + month;
+      }
+      return "";
+    }
+
+    function lastDateOfMonth(yearMonth) {
+      var parts = String(yearMonth || "").split("-");
+      if (parts.length < 2) return "";
+      var d = new Date(Number(parts[0]), Number(parts[1]), 0);
+      return isoFromDate(d);
+    }
+
+    function addDaysIsoSafe(iso, days) {
+      return addDaysIso(iso, days);
+    }
+
+    function planNudgeInfo(plan, today) {
+      today = today || todayIso();
+      var month = parseMealPlanMonth(plan);
+      var start;
+      var label;
+      if (month) {
+        var end = lastDateOfMonth(month);
+        start = addDaysIsoSafe(end, -2);
+        label = monthLabelIt(month);
+        if (today < start) return null;
+        return { month: month, label: label, ended: today > end, key: month + "|" + String((plan && plan.title) || "") };
+      }
+      var current = today.slice(0, 7);
+      var endCur = lastDateOfMonth(current);
+      var startCur = addDaysIsoSafe(endCur, -2);
+      if (today >= startCur) {
+        return { month: current, label: monthLabelIt(current), ended: today > endCur, key: "cal|" + current };
+      }
+      var prevDate = addDaysIsoSafe(today.slice(0, 8) + "01", -1);
+      var prev = prevDate.slice(0, 7);
+      if (today <= addDaysIsoSafe(prevDate, 5)) {
+        return { month: prev, label: monthLabelIt(prev), ended: true, key: "cal|" + prev };
+      }
+      return null;
     }
 
     function notificationAllowed() {
@@ -3546,14 +3888,14 @@
 
     async function requestReminderPermission() {
       if (typeof Notification === "undefined") {
-        errorText = "Questo browser non supporta le notifiche dell’app.";
+        errorText = "Questo browser non supporta le notifiche dell’app. Usa «Aggiungi al calendario» per gli avvisi sul telefono.";
         render(true);
         return;
       }
       try {
         var perm = await Notification.requestPermission();
-        if (perm !== "granted") errorText = "Notifiche non concesse. Puoi comunque aggiungere i promemoria al calendario.";
-        else errorText = "Notifiche attive: arriveranno mentre l’app è aperta.";
+        if (perm !== "granted") errorText = "Notifiche non concesse. Il calendario resta il modo più affidabile per gli avvisi.";
+        else errorText = "Notifiche in app attive: arrivano solo mentre Palestra è aperta.";
       } catch (err) {
         errorText = "Non sono riuscito a chiedere il permesso per le notifiche.";
       }
@@ -3581,21 +3923,20 @@
       if (typeof Notification === "undefined") return;
       if (Notification.permission !== "granted") return;
       var cfg = loadReminders();
-      if (!cfg.enabled) return;
       var now = nowPartsRome();
       var nowMin = minutesOf(now.hm);
       if (nowMin == null) return;
+      var todayDow = isoWeekdayFromIso(now.date);
       var fired = loadFiredReminders();
       if (fired.date !== now.date) fired = { date: now.date, tags: [] };
       var due = [];
       if (cfg.weighIn && cfg.weighIn.enabled) {
-        due.push({ tag: "weigh-in", time: cfg.weighIn.time, title: "Palestra", body: "Pesata del mattino." });
+        var weighToday = cfg.weighIn.freq !== "weekly" || clampWeekday(cfg.weighIn.day, 1) === todayDow;
+        if (weighToday) due.push({ tag: "weigh-in", time: cfg.weighIn.time, title: "Palestra", body: "Ora della pesata." });
       }
-      var name;
-      for (name in cfg.meals) {
-        if (!Object.prototype.hasOwnProperty.call(cfg.meals, name)) continue;
-        var meal = cfg.meals[name];
-        if (meal && meal.enabled) due.push({ tag: "meal-" + name, time: meal.time, title: "Palestra", body: "È ora di: " + name + "." });
+      if (cfg.training && cfg.training.enabled && (cfg.training.days || []).indexOf(todayDow) !== -1) {
+        var next = (data && data.suggested) || "A";
+        due.push({ tag: "training", time: cfg.training.time, title: "Palestra", body: "È ora di allenarti. Tocca la scheda " + next + "." });
       }
       var i;
       var changed = false;
@@ -3621,9 +3962,74 @@
       if (!reminderVisBound) {
         reminderVisBound = true;
         document.addEventListener("visibilitychange", function () {
-          if (document.visibilityState === "visible") tickReminders();
+          if (document.visibilityState === "visible") {
+            tickReminders();
+            updateNudgeBanners();
+          }
         });
       }
+    }
+
+    function readNudge(key) {
+      try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (err) { return null; }
+    }
+
+    function writeNudge(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch (err) {}
+    }
+
+    function updateNudgeBanners() {
+      var staleEl = document.getElementById("staleBanner");
+      var staleText = document.getElementById("staleBannerText");
+      var planEl = document.getElementById("planBanner");
+      var planText = document.getElementById("planBannerText");
+      if (!staleEl || !planEl) return;
+      var cfg = loadReminders();
+      var today = todayIso();
+      var showStale = false;
+      var staleMsg = "";
+      if (data && cfg.stale && cfg.stale.enabled) {
+        var gap = daysSinceLastSession(today);
+        var limit = clampStaleDays(cfg.stale.days);
+        if (gap != null && gap >= limit) {
+          var dismissed = readNudge(STALE_NUDGE_KEY);
+          if (!dismissed || dismissed.session !== lastSessionDate()) {
+            showStale = true;
+            var next = (data && data.suggested) || "A";
+            staleMsg = "Sono " + gap + " giorni senza una sessione. Oggi tocca la scheda " + next + ".";
+          }
+        }
+      }
+      staleEl.hidden = !showStale;
+      if (staleText) staleText.textContent = staleMsg;
+      var showPlan = false;
+      var planMsg = "";
+      var plan = data && data.mealPlan;
+      if (cfg.plan && cfg.plan.enabled && plan && (plan.days || []).length) {
+        var info = planNudgeInfo(plan, today);
+        if (info) {
+          var planDismissed = readNudge(PLAN_NUDGE_KEY);
+          if (!planDismissed || planDismissed.key !== info.key) {
+            showPlan = true;
+            planMsg = info.ended
+              ? ("Il piano alimentare" + (info.label ? " di " + info.label.toLowerCase() : "") + " è scaduto. Carica il nuovo PDF in Dieta.")
+              : ("Il piano alimentare" + (info.label ? " di " + info.label.toLowerCase() : "") + " sta per scadere. Carica il nuovo PDF in Dieta.");
+          }
+        }
+      }
+      planEl.hidden = !showPlan;
+      if (planText) planText.textContent = planMsg;
+    }
+
+    function dismissStaleNudge() {
+      writeNudge(STALE_NUDGE_KEY, { session: lastSessionDate(), at: todayIso() });
+      updateNudgeBanners();
+    }
+
+    function dismissPlanNudge() {
+      var info = planNudgeInfo(data && data.mealPlan, todayIso());
+      writeNudge(PLAN_NUDGE_KEY, { key: info ? info.key : todayIso(), at: todayIso() });
+      updateNudgeBanners();
     }
 
     function icsEscape(value) {
@@ -3639,6 +4045,17 @@
       return h + m + "00";
     }
 
+    function icsDate(iso) {
+      return String(iso || "").replace(/-/g, "");
+    }
+
+    function icsUtcStamp(d) {
+      var x = d || new Date();
+      function pad(n) { return (n < 10 ? "0" : "") + n; }
+      return x.getUTCFullYear() + pad(x.getUTCMonth() + 1) + pad(x.getUTCDate()) + "T" +
+        pad(x.getUTCHours()) + pad(x.getUTCMinutes()) + pad(x.getUTCSeconds()) + "Z";
+    }
+
     function foldIcs(line) {
       if (line.length <= 75) return line;
       var out = line.slice(0, 75);
@@ -3650,37 +4067,122 @@
       return out;
     }
 
-    function downloadRemindersIcs() {
-      var cfg = loadReminders();
-      var startDate = (data && data.today) || nowPartsRome().date;
-      var day = startDate.replace(/-/g, "");
+    function nextDateForWeekdays(isoToday, dayIds) {
+      var ids = (dayIds || []).slice();
+      if (!ids.length) return isoToday;
+      var d = parseIsoDate(isoToday);
+      if (!d) return isoToday;
+      var i;
+      for (i = 0; i < 7; i++) {
+        var js = d.getDay();
+        var id = js === 0 ? 7 : js;
+        if (ids.indexOf(id) !== -1) return isoFromDate(d);
+        d.setDate(d.getDate() + 1);
+      }
+      return isoToday;
+    }
+
+    function icsByDay(ids) {
+      return (ids || []).map(function (id) {
+        var d = weekdayById(id);
+        return d ? d.by : "";
+      }).filter(Boolean).join(",");
+    }
+
+    function romeVTimezone() {
+      return [
+        "BEGIN:VTIMEZONE",
+        "TZID:Europe/Rome",
+        "X-LIC-LOCATION:Europe/Rome",
+        "BEGIN:DAYLIGHT",
+        "TZOFFSETFROM:+0100",
+        "TZOFFSETTO:+0200",
+        "TZNAME:CEST",
+        "DTSTART:19700329T020000",
+        "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU",
+        "END:DAYLIGHT",
+        "BEGIN:STANDARD",
+        "TZOFFSETFROM:+0200",
+        "TZOFFSETTO:+0100",
+        "TZNAME:CET",
+        "DTSTART:19701025T030000",
+        "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU",
+        "END:STANDARD",
+        "END:VTIMEZONE"
+      ];
+    }
+
+    function buildRemindersIcs(cfg, today) {
+      cfg = cfg || loadReminders();
+      today = today || ((data && data.today) || todayIso());
+      var stamp = icsUtcStamp();
       var lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
         "PRODID:-//Palestra//Promemoria//IT",
         "CALSCALE:GREGORIAN",
-        "METHOD:PUBLISH"
-      ];
-      function addEvent(uid, hm, title) {
-        if (!hm) return;
+        "METHOD:PUBLISH",
+        "X-WR-CALNAME:Palestra",
+        "X-WR-TIMEZONE:Europe/Rome"
+      ].concat(romeVTimezone());
+      var count = 0;
+
+      function addEvent(opts) {
+        var startDay = icsDate(opts.date);
         lines.push("BEGIN:VEVENT");
-        lines.push("UID:" + uid);
-        lines.push("DTSTAMP:" + day + "T" + icsTime(nowPartsRome().hm) + "Z");
-        lines.push("DTSTART;TZID=Europe/Rome:" + day + "T" + icsTime(hm));
-        lines.push("DURATION:PT15M");
-        lines.push("RRULE:FREQ=DAILY");
-        lines.push(foldIcs("SUMMARY:" + icsEscape(title)));
+        lines.push("UID:" + opts.uid);
+        lines.push("DTSTAMP:" + stamp);
+        lines.push("LAST-MODIFIED:" + stamp);
+        lines.push("DTSTART;TZID=Europe/Rome:" + startDay + "T" + icsTime(opts.time));
+        lines.push("DURATION:" + (opts.duration || "PT15M"));
+        if (opts.rrule) lines.push("RRULE:" + opts.rrule);
+        lines.push(foldIcs("SUMMARY:" + icsEscape(opts.title)));
+        if (opts.desc) lines.push(foldIcs("DESCRIPTION:" + icsEscape(opts.desc)));
+        lines.push("BEGIN:VALARM");
+        lines.push("ACTION:DISPLAY");
+        lines.push(foldIcs("DESCRIPTION:" + icsEscape(opts.title)));
+        lines.push("TRIGGER:-PT10M");
+        lines.push("END:VALARM");
         lines.push("END:VEVENT");
+        count += 1;
       }
-      if (cfg.weighIn && cfg.weighIn.enabled) addEvent("palestra-pesata@chrisquire80", cfg.weighIn.time, "Pesata del mattino");
-      var names = mealNamesFromPlan();
-      var i;
-      for (i = 0; i < names.length; i++) {
-        var meal = cfg.meals[names[i]];
-        if (meal && meal.enabled) addEvent("palestra-pasto-" + i + "@chrisquire80", meal.time, names[i]);
+
+      if (cfg.training && cfg.training.enabled && cfg.training.days && cfg.training.days.length) {
+        addEvent({
+          uid: "palestra-allenamento@chrisquire80",
+          date: nextDateForWeekdays(today, cfg.training.days),
+          time: cfg.training.time,
+          duration: "PT1H",
+          rrule: "FREQ=WEEKLY;BYDAY=" + icsByDay(cfg.training.days),
+          title: "Allenamento in palestra",
+          desc: "Schede A, B e C a rotazione. " + nextSchedaHint() + "."
+        });
+      }
+      if (cfg.weighIn && cfg.weighIn.enabled) {
+        var weighDays = cfg.weighIn.freq === "weekly" ? [clampWeekday(cfg.weighIn.day, 1)] : [1, 2, 3, 4, 5, 6, 7];
+        addEvent({
+          uid: "palestra-pesata@chrisquire80",
+          date: cfg.weighIn.freq === "weekly" ? nextDateForWeekdays(today, weighDays) : today,
+          time: cfg.weighIn.time,
+          duration: "PT15M",
+          rrule: cfg.weighIn.freq === "weekly" ? ("FREQ=WEEKLY;BYDAY=" + icsByDay(weighDays)) : "FREQ=DAILY",
+          title: "Pesata",
+          desc: "Registra il peso in Palestra, nella scheda Dieta."
+        });
       }
       lines.push("END:VCALENDAR");
-      var blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar;charset=utf-8" });
+      return { ics: lines.join("\r\n") + "\r\n", count: count };
+    }
+
+    function downloadRemindersIcs() {
+      var packed = buildRemindersIcs(loadReminders());
+      if (!packed.count) {
+        errorText = "Attiva almeno l’allenamento (con i giorni) o la pesata, poi riprova.";
+        render(true);
+        return;
+      }
+      errorText = "";
+      var blob = new Blob([packed.ics], { type: "text/calendar;charset=utf-8" });
       var url = URL.createObjectURL(blob);
       var a = document.createElement("a");
       a.href = url;
@@ -3689,6 +4191,77 @@
       a.click();
       a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }
+
+
+    function remindToggle(card, on) {
+      return '<button class="seg-btn' + (on ? " is-on" : "") + '" type="button" data-action="remind-toggle" data-card="' + card + '" aria-pressed="' + (on ? "true" : "false") + '">' +
+        (on ? "Attivo" : "Spento") + "</button>";
+    }
+
+    function remindDayChips(card, selected, single) {
+      return '<div class="remind-days" role="group" aria-label="Giorni">' + WEEKDAYS.map(function (d) {
+        var on = (selected || []).indexOf(d.id) !== -1;
+        return '<button type="button" data-action="remind-day" data-card="' + card + '" data-day="' + d.id + '"' +
+          (on ? ' class="is-on"' : "") + ' aria-pressed="' + (on ? "true" : "false") + '">' + esc(d.short) + "</button>";
+      }).join("") + "</div>";
+    }
+
+    function paintReminderCards(cfg) {
+      var trainOn = !!(cfg.training && cfg.training.enabled);
+      var trainHint = nextSchedaHint();
+      var hist = !((cfg.training && cfg.training.days) || []).length ? recentTrainingDaysHint() : "";
+      var training = '<div class="remind-card">' +
+        '<div class="remind-head"><h4>Allenamento</h4>' + remindToggle("training", trainOn) + "</div>" +
+        '<p class="remind-sum">' + esc(trainingSummary(cfg)) + "</p>" +
+        '<p class="remind-hint">' + esc(trainHint) + "</p>" +
+        (hist ? '<p class="muted">' + esc(hist) + "</p>" : "") +
+        '<div class="remind-editor">' + remindDayChips("training", cfg.training.days) +
+        '<p class="remind-time"><label for="trainTime">Orario</label>' +
+        '<input type="time" id="trainTime" data-remind="training" data-field="time" value="' + esc(cfg.training.time || "18:30") + '" aria-label="Orario allenamento"></p>' +
+        "</div></div>";
+
+      var weighOn = !!(cfg.weighIn && cfg.weighIn.enabled);
+      var weekly = cfg.weighIn.freq === "weekly";
+      var freq = '<div class="remind-freq" role="group" aria-label="Frequenza pesata">' +
+        '<button type="button" data-action="remind-freq" data-freq="daily"' + (!weekly ? ' class="is-on"' : "") + ' aria-pressed="' + (!weekly ? "true" : "false") + '">Ogni giorno</button>' +
+        '<button type="button" data-action="remind-freq" data-freq="weekly"' + (weekly ? ' class="is-on"' : "") + ' aria-pressed="' + (weekly ? "true" : "false") + '">Una volta a settimana</button>' +
+        "</div>";
+      var weigh = '<div class="remind-card">' +
+        '<div class="remind-head"><h4>Pesata</h4>' + remindToggle("weigh", weighOn) + "</div>" +
+        '<p class="remind-sum">' + esc(weighInSummary(cfg)) + "</p>" +
+        '<div class="remind-editor">' + freq +
+        (weekly ? remindDayChips("weigh", [clampWeekday(cfg.weighIn.day, 1)]) : "") +
+        '<p class="remind-time"><label for="weighTime">Orario</label>' +
+        '<input type="time" id="weighTime" data-remind="weigh" data-field="time" value="' + esc(cfg.weighIn.time || "07:30") + '" aria-label="Orario pesata"></p>' +
+        "</div></div>";
+
+      var staleOn = !!(cfg.stale && cfg.stale.enabled);
+      var staleN = clampStaleDays(cfg.stale && cfg.stale.days);
+      var staleChips = '<div class="remind-days" role="group" aria-label="Giorni di riposo">' +
+        [3, 4, 5, 6, 7].map(function (n) {
+          var on = n === staleN;
+          return '<button type="button" data-action="remind-stale" data-days="' + n + '"' +
+            (on ? ' class="is-on"' : "") + ' aria-pressed="' + (on ? "true" : "false") + '">' + n + "g</button>";
+        }).join("") + "</div>";
+      var stale = '<div class="remind-card">' +
+        '<div class="remind-head"><h4>Riposo troppo lungo</h4>' + remindToggle("stale", staleOn) + "</div>" +
+        '<p class="remind-sum">' + esc(staleSummary(cfg)) + "</p>" +
+        '<p class="muted">Avviso in app quando la apri, non nel calendario.</p>' +
+        '<div class="remind-editor">' + staleChips + "</div></div>";
+
+      var planOn = !(cfg.plan && cfg.plan.enabled === false);
+      var planMonth = parseMealPlanMonth(data && data.mealPlan);
+      var planSum = planMonth
+        ? ("Promemoria verso la fine di " + monthLabelIt(planMonth).toLowerCase())
+        : "Promemoria verso la fine del mese, se il piano non ha una data nel titolo";
+      var plan = '<div class="remind-card">' +
+        '<div class="remind-head"><h4>Aggiorna il piano alimentare</h4>' + remindToggle("plan", planOn) + "</div>" +
+        '<p class="remind-sum">' + esc(planSum) + "</p>" +
+        '<p class="muted">Avviso in app quando il mese del piano sta per finire, non nel calendario.</p>' +
+        "</div>";
+
+      return training + weigh + stale + plan;
     }
 
 
@@ -3982,12 +4555,6 @@
       var cfg = loadReminders();
       var perm = typeof Notification === "undefined" ? "non supportate" : Notification.permission;
       var permLabel = perm === "granted" ? "concesse" : perm === "denied" ? "bloccate" : "non ancora chieste";
-      var names = mealNamesFromPlan();
-      var rows = names.map(function (name) {
-        var meal = cfg.meals[name] || { enabled: true, time: defaultMealTime(name) };
-        return '<div class="remind-row"><label><input type="checkbox" data-remind-meal="' + esc(name) + '" data-field="enabled"' + (meal.enabled ? " checked" : "") + "> " + esc(name) + "</label>" +
-          '<input type="time" data-remind-meal="' + esc(name) + '" data-field="time" value="' + esc(meal.time || defaultMealTime(name)) + '" aria-label="Orario ' + esc(name) + '"></div>';
-      }).join("");
       var themePref = loadThemePref();
       function themeBtn(id, label) {
         var on = themePref === id;
@@ -3998,14 +4565,13 @@
         '<article class="card"><h3>Tema</h3><p class="muted">Scegli come appare l’app. Automatico segue le impostazioni del telefono.</p>' +
         '<div class="theme-picks" role="radiogroup" aria-label="Tema">' + themeBtn("auto", "Automatico") + themeBtn("light", "Chiaro") + themeBtn("dark", "Scuro") + "</div></article>" +
         '<article class="card"><h3>Promemoria</h3>' +
-        '<p class="limit-note">Le notifiche dell’app arrivano in modo affidabile solo mentre Palestra è aperta (o almeno in esecuzione). Su Android, senza un servizio di push, il telefono non può svegliarsi da solo a un orario fissato. Per non perdere i pasti o la pesata, aggiungi gli orari al calendario: funziona anche a telefono spento.</p>' +
-        '<p class="muted">Permesso notifiche: ' + esc(permLabel) + ".</p>" +
-        '<div class="session-actions"><button class="secondary" type="button" data-action="notify-ask">Consenti notifiche</button>' +
-        '<button class="primary" type="button" data-action="reminders-ics">Aggiungi al calendario</button></div>' +
-        '<div class="remind-row"><label><input type="checkbox" id="remindEnabled"' + (cfg.enabled ? " checked" : "") + "> Promemoria attivi (con l’app aperta)</label></div>" +
-        '<div class="remind-row"><label><input type="checkbox" id="weighEnabled"' + (cfg.weighIn.enabled ? " checked" : "") + "> Pesata del mattino</label>" +
-        '<input type="time" id="weighTime" value="' + esc(cfg.weighIn.time || "07:30") + '" aria-label="Orario pesata"></div>' +
-        "<h3>Pasti</h3><p class=\"muted\">Orari precompilati dal piano. Puoi cambiarli.</p>" + rows +
+        '<p class="limit-note remind-intro">Le notifiche in app arrivano solo mentre Palestra è aperta. Per essere avvisato anche a telefono spento, aggiungi gli orari al calendario del telefono.</p>' +
+        '<div class="remind-ics"><button class="primary" type="button" data-action="reminders-ics">Aggiungi al calendario</button>' +
+        '<p>Si scarica un file .ics: aprilo e conferma l’importazione. Gli eventi si ripetono da soli, con un avviso 10 minuti prima. Se importi di nuovo lo stesso file, il calendario aggiorna gli eventi già presenti invece di crearne di doppi. I vecchi promemoria dei pasti, se li avevi già aggiunti, vanno tolti a mano.</p></div>' +
+        '<p class="muted remind-notify">Permesso notifiche in app: ' + esc(permLabel) + '. Sono un extra, non sostituiscono il calendario.</p>' +
+        '<div class="remind-notify"><button class="text-btn" type="button" data-action="notify-ask">Consenti notifiche in app</button></div>' +
+        (errorText && view === "settings" ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
+        paintReminderCards(cfg) +
         "</article>" +
         '<article class="card"><h3>Riepilogo mensile</h3><p class="muted">Genera una pagina da salvare come PDF, con sessioni, carichi, peso e aderenza ai pasti.</p>' +
         '<button class="secondary" type="button" data-action="report">Apri il riepilogo</button></article></section>';
@@ -4266,18 +4832,16 @@
 
     function updateReminderFromInput(input) {
       var cfg = loadReminders();
-      if (input.id === "remindEnabled") cfg.enabled = !!input.checked;
-      else if (input.id === "weighEnabled") cfg.weighIn.enabled = !!input.checked;
-      else if (input.id === "weighTime") cfg.weighIn.time = input.value || "07:30";
-      else if (input.dataset && input.dataset.remindMeal) {
-        var name = input.dataset.remindMeal;
-        if (!cfg.meals[name]) cfg.meals[name] = { enabled: true, time: defaultMealTime(name) };
-        if (input.dataset.field === "enabled") cfg.meals[name].enabled = !!input.checked;
-        if (input.dataset.field === "time") cfg.meals[name].time = input.value || defaultMealTime(name);
-      } else {
-        return false;
+      var which = input.dataset && input.dataset.remind;
+      if (!which && (input.id === "trainTime" || input.id === "weighTime")) {
+        which = input.id === "trainTime" ? "training" : "weigh";
       }
+      if (which === "training") cfg.training.time = normalizeTime(input.value, "18:30");
+      else if (which === "weigh") cfg.weighIn.time = normalizeTime(input.value, "07:30");
+      else return false;
       storeReminders(cfg);
+      viewNeedsPaint.settings = true;
+      render(true);
       return true;
     }
 
@@ -4351,6 +4915,65 @@
       if (action === "print-report") { window.print(); return; }
       if (action === "notify-ask") { requestReminderPermission(); return; }
       if (action === "reminders-ics") { downloadRemindersIcs(); return; }
+      if (action === "remind-toggle") {
+        var card = button.getAttribute("data-card");
+        var cfg = loadReminders();
+        if (card === "training") cfg.training.enabled = !cfg.training.enabled;
+        else if (card === "weigh") cfg.weighIn.enabled = !cfg.weighIn.enabled;
+        else if (card === "stale") cfg.stale.enabled = !cfg.stale.enabled;
+        else if (card === "plan") cfg.plan.enabled = !cfg.plan.enabled;
+        else return;
+        storeReminders(cfg);
+        viewNeedsPaint.settings = true;
+        updateNudgeBanners();
+        haptic(10);
+        render(true);
+        return;
+      }
+      if (action === "remind-day") {
+        var day = Number(button.getAttribute("data-day"));
+        var card = button.getAttribute("data-card");
+        var cfg = loadReminders();
+        if (card === "training") {
+          var days = (cfg.training.days || []).slice();
+          var ix = days.indexOf(day);
+          if (ix === -1) days.push(day);
+          else days.splice(ix, 1);
+          days.sort(function (a, b) { return a - b; });
+          cfg.training.days = days;
+        } else if (card === "weigh") {
+          cfg.weighIn.day = clampWeekday(day, 1);
+          cfg.weighIn.freq = "weekly";
+        } else return;
+        storeReminders(cfg);
+        viewNeedsPaint.settings = true;
+        haptic(10);
+        render(true);
+        return;
+      }
+      if (action === "remind-freq") {
+        var cfg = loadReminders();
+        cfg.weighIn.freq = button.getAttribute("data-freq") === "weekly" ? "weekly" : "daily";
+        storeReminders(cfg);
+        viewNeedsPaint.settings = true;
+        haptic(10);
+        render(true);
+        return;
+      }
+      if (action === "remind-stale") {
+        var cfg = loadReminders();
+        cfg.stale.days = clampStaleDays(button.getAttribute("data-days"));
+        storeReminders(cfg);
+        viewNeedsPaint.settings = true;
+        updateNudgeBanners();
+        haptic(10);
+        render(true);
+        return;
+      }
+      if (action === "stale-open") { view = "editor"; errorText = ""; render(); return; }
+      if (action === "stale-dismiss") { dismissStaleNudge(); return; }
+      if (action === "plan-open") { view = "weight"; weightSub = "piano"; errorText = ""; render(); return; }
+      if (action === "plan-dismiss") { dismissPlanNudge(); return; }
       if (action === "edit-session") { openSessionEdit(button.dataset.index); return; }
       if (action === "delete-session") { deleteSessionByIndex(button.dataset.index, false); return; }
       if (action === "delete-session-edit") { deleteSessionByIndex(null, false); return; }
@@ -4852,7 +5475,16 @@
           getRecordModel: function () { return getRecordModel(); },
           detectClientPRs: detectClientPRs,
           showRecordToast: showRecordToast,
-          hideRecordToast: hideRecordToast
+          hideRecordToast: hideRecordToast,
+          loadReminders: loadReminders,
+          storeReminders: storeReminders,
+          defaultReminders: defaultReminders,
+          buildRemindersIcs: buildRemindersIcs,
+          parseMealPlanMonth: parseMealPlanMonth,
+          daysSinceLastSession: daysSinceLastSession,
+          planNudgeInfo: planNudgeInfo,
+          trainingSummary: trainingSummary,
+          weighInSummary: weighInSummary
         };
       }
     } catch (err) {}
