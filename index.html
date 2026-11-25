@@ -625,6 +625,9 @@
     .timer .timer-actions { margin-left: auto; display: flex; gap: 6px; }
     .timer .timer-actions button { min-width: 48px; min-height: 44px; }
     .set.is-done { box-shadow: inset 3px 0 0 var(--chalk); background: var(--done-bg); }
+    .set.is-saved { opacity: 0.86; }
+    .set.is-saved input:disabled { opacity: 0.78; cursor: default; }
+    .set-saved-tag { font-size: var(--fs-xs); font-weight: 700; color: var(--chalk-text); letter-spacing: 0.01em; }
     .last-load, .progress-hint { margin: 0 0 4px; color: var(--muted); font-size: var(--fs-sm); line-height: 1.3; }
     .last-load {
       display: -webkit-box;
@@ -1679,7 +1682,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.9.2</span></h1>
+          <h1>Palestra <span class="ver">v3.9.3</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -1805,6 +1808,7 @@
     var TOKEN_KEY = "palestra-token";
     var QUEUE_KEY = "palestra-queue";
     var STATE_KEY = "palestra-state";
+    var DRAFTS_KEY = "palestra-drafts-v1";
     var REST_KEY = "palestra-rest-default";
     var REMINDER_KEY = "palestra-reminders";
     var calendarStatus = null;
@@ -2034,9 +2038,18 @@
       return parsed;
     }
 
+    var GET_SAFE_ACTIONS = {
+      getState: true,
+      getHistory: true,
+      getRecords: true,
+      getWeights: true,
+      getMealPlan: true,
+      getCalendarStatus: true,
+      getTelegramStatus: true
+    };
     function rpcGetFallback_(name, body) {
       if (!body || !body.initData || body.token) return null;
-      if (!/^get/i.test(name) && name !== "getState") return null;
+      if (!GET_SAFE_ACTIONS[name]) return null;
       var parts = ["action=" + encodeURIComponent(name), "initData=" + encodeURIComponent(body.initData)];
       if (body.payload !== undefined) parts.push("payload=" + encodeURIComponent(JSON.stringify(body.payload)));
       var url = apiUrl() + "?" + parts.join("&");
@@ -2296,15 +2309,84 @@
       } catch (err) { return null; }
     }
 
+    function newSetId() {
+      var hex = "";
+      try {
+        if (window.crypto && window.crypto.getRandomValues) {
+          var buf = new Uint32Array(1);
+          window.crypto.getRandomValues(buf);
+          hex = (buf[0] >>> 0).toString(16);
+          while (hex.length < 8) hex = "0" + hex;
+          return "s" + hex;
+        }
+      } catch (err) {}
+      return "s" + Math.floor(Math.random() * 0xFFFFFFFF).toString(16).padStart(8, "0");
+    }
+
+    function persistDrafts() {
+      try {
+        var d = dateValue || (data && data.today) || "";
+        if (!d) return;
+        localStorage.setItem(DRAFTS_KEY, JSON.stringify({ date: d, drafts: drafts }));
+      } catch (err) {}
+    }
+
+    function loadPersistedDrafts(targetDate) {
+      try {
+        var raw = JSON.parse(localStorage.getItem(DRAFTS_KEY) || "null");
+        if (!raw || !raw.drafts || (targetDate && raw.date !== targetDate)) return {};
+        return raw.drafts;
+      } catch (err) {
+        return {};
+      }
+    }
+
+    function reconcileDraftsWithState(state) {
+      if (!state || !state.workouts) return;
+      var activeDate = dateValue || state.today || "";
+      if (!activeDate || activeDate !== state.today) return;
+      state.workouts.forEach(function (w) {
+        var list = drafts[w.code];
+        if (!list || !list.length) return;
+        var exMap = {};
+        (w.exercises || []).forEach(function (ex) { exMap[ex.name] = ex; });
+        list.forEach(function (draftEx) {
+          var serverEx = exMap[draftEx.name];
+          if (!serverEx) return;
+          var serverSets = serverEx.sets || [];
+          (draftEx.sets || []).forEach(function (dSet, idx) {
+            var sSet = serverSets[idx];
+            if (dSet.saved) return;
+            if (sSet && sSet.saved && (
+              (dSet.savedId && sSet.savedId === dSet.savedId) ||
+              (dSet.clientId && sSet.savedId === dSet.clientId) ||
+              (idx < (serverEx.todaySavedCount || 0))
+            )) {
+              dSet.saved = true;
+              dSet.done = true;
+              dSet.queued = false;
+              dSet.savedId = sSet.savedId || dSet.savedId || dSet.clientId || "";
+              if (sSet.reps != null) dSet.reps = formatEditable(sSet.reps);
+              if (sSet.kg != null) dSet.kg = formatEditable(sSet.kg);
+            }
+          });
+        });
+      });
+      persistDrafts();
+    }
+
     function applyState(state, keepDrafts) {
       data = state;
       cacheState(state);
-      if (!keepDrafts) drafts = {};
+      if (!keepDrafts) {
+        drafts = loadPersistedDrafts(dateValue || state.today);
+      }
       if (!dateValue) dateValue = state.today;
       if (!selected) selected = state.suggested || "A";
       if (!weightDate) weightDate = state.today;
       if (state.calendar) calendarStatus = state.calendar;
       if (state.telegram) telegramStatus = state.telegram;
+      reconcileDraftsWithState(state);
       recordModel = null;
       invalidateViews();
     }
@@ -2358,6 +2440,24 @@
             item.lastError = (res && res.error) ? String(res.error) : "sync failed";
             next.push(item);
             continue;
+          }
+          if (item.action === "saveSession") {
+            var qMap = res.savedMap || {};
+            var qCode = item.payload && item.payload.workout;
+            if (qCode && drafts[qCode]) {
+              drafts[qCode].forEach(function (ex) {
+                (ex.sets || []).forEach(function (s) {
+                  if (s.queuedRequestId === item.requestId || (s.clientId && qMap[s.clientId])) {
+                    s.saved = true;
+                    s.done = true;
+                    s.queued = false;
+                    s.queuedRequestId = "";
+                    s.savedId = qMap[s.clientId] || s.savedId || s.clientId || "";
+                  }
+                });
+              });
+              persistDrafts();
+            }
           }
           if (res.state) mergeState(res.state);
           if (res.weights) {
@@ -2699,9 +2799,17 @@
     }
 
     function ensureDraft(code) {
-
-      if (drafts[code]) return drafts[code];
+      if (drafts[code]) {
+        drafts[code].forEach(function (ex) {
+          (ex.sets || []).forEach(function (s) {
+            if (!s.clientId) s.clientId = newSetId();
+            if (s.saved) s.done = true;
+          });
+        });
+        return drafts[code];
+      }
       var workout = workoutOf(code);
+      var allowSavedToday = !dateValue || !data || dateValue === data.today;
       drafts[code] = (workout.exercises || []).map(function (ex) {
         var draft = {
           name: ex.name,
@@ -2718,12 +2826,17 @@
           progression: ex.progression || emptyProgression(),
           skipped: false,
           sets: (ex.sets || []).map(function (set) {
+            var isSaved = !!(allowSavedToday && set.saved);
             return {
+              clientId: (isSaved && set.savedId) ? String(set.savedId) : newSetId(),
               reps: set.reps == null ? "" : formatEditable(set.reps),
               kg: set.kg == null ? "" : formatEditable(set.kg),
               rir: set.rir || "",
               note: set.note || "",
-              done: false
+              done: isSaved,
+              saved: isSaved,
+              savedId: isSaved ? String(set.savedId || "") : "",
+              queued: false
             };
           })
         };
@@ -2747,18 +2860,44 @@
       return { sets: sets, tonnage: Math.round(tonnage * 10) / 10 };
     }
 
-    function sessionProgress(list) {
+    function draftSaveStats(list) {
       var total = 0;
       var done = 0;
+      var saved = 0;
+      var queued = 0;
+      var unsavedDone = 0;
+      var unsavedUndone = 0;
       (list || []).forEach(function (ex) {
         if (ex.skipped) return;
         (ex.sets || []).forEach(function (set) {
           total += 1;
-          if (set.done) done += 1;
+          if (set.done || set.saved) done += 1;
+          if (set.saved) saved += 1;
+          else if (set.queued) queued += 1;
+          else if (set.done) unsavedDone += 1;
+          else unsavedUndone += 1;
         });
       });
-      var pct = total ? Math.round((done / total) * 100) : 0;
-      var label = total ? (done + " di " + total + " serie fatte") : "Nessuna serie in corso";
+      return {
+        total: total,
+        done: done,
+        saved: saved,
+        queued: queued,
+        unsavedDone: unsavedDone,
+        unsavedUndone: unsavedUndone
+      };
+    }
+
+    function sessionProgress(list) {
+      var st = draftSaveStats(list);
+      var pct = st.total ? Math.round((st.done / st.total) * 100) : 0;
+      var label = "Nessuna serie in corso";
+      if (st.total) {
+        label = st.done + " di " + st.total + " serie fatte";
+        if (st.saved && st.saved < st.total) label += " · " + st.saved + " salvate";
+        else if (st.saved && st.saved === st.total) label += " · tutte salvate";
+        if (st.queued) label += " · " + st.queued + " in coda";
+      }
       return '<div class="session-progress" aria-label="' + esc(label) + '"><p>' + esc(label) + '</p><div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><span style="width:' + pct + '%"></span></div></div>';
     }
 
@@ -3010,6 +3149,13 @@
       var restRow = '<div class="rest-set"><span class="rest-label">Riposo: <strong id="restDefaultLabel">' + esc(formatRest(restDefault)) + "</strong></span>" +
         '<button class="ghost" type="button" data-action="rest-default-minus" aria-label="Togli 15 secondi di riposo"' + restMinusOff + ">−</button>" +
         '<button class="ghost" type="button" data-action="rest-default-plus" aria-label="Aggiungi 15 secondi di riposo"' + restPlusOff + ">+</button></div>";
+      var saveSt = draftSaveStats(list);
+      var allSaved = saveSt.total > 0 && saveSt.unsavedDone === 0 && saveSt.unsavedUndone === 0;
+      var saveLabel = "Salva sessione";
+      if (saving) saveLabel = "Salvo…";
+      else if (allSaved) saveLabel = saveSt.queued ? "In coda…" : "Sessione salvata ✓";
+      else if (saveSt.unsavedDone > 0 && saveSt.unsavedUndone > 0) saveLabel = "Salva fatti (" + saveSt.unsavedDone + ")";
+      else if (saveSt.unsavedDone > 0 && saveSt.saved > 0) saveLabel = "Completa (" + saveSt.unsavedDone + ")";
       return '<section class="editor"><div class="date-row"><label class="date">Data<input type="date" id="sessionDate" value="' + esc(dateValue) + '"></label></div>' +
         restRow +
         '<div class="choices">' + choices + "</div>" +
@@ -3021,8 +3167,8 @@
         (errorText ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
         cards +
         '<div class="bar"><p>' + esc(seriesWord(stats.sets)) + " · " + esc(itNum(stats.tonnage)) + " kg" + preview + "</p>" +
-        '<button class="primary" id="saveBtn" type="button" data-action="save"' + (saving || stats.sets === 0 ? " disabled" : "") + ">" +
-        (saving ? "Salvo…" : "Salva sessione") + "</button></div></section>";
+        '<button class="primary" id="saveBtn" type="button" data-action="save"' + (saving || stats.sets === 0 || allSaved ? " disabled" : "") + ">" +
+        saveLabel + "</button></div></section>";
     }
 
     function paintExercise(ex, index) {
@@ -3045,27 +3191,35 @@
         hintProg = '<p class="progress-hint' + (ex.progression.addKg ? " up" : "") + '">' + esc(ex.progression.text) + "</p>";
       }
       var sets = ex.sets.map(function (set, setIndex) {
-        var kg = cardio ? "" : '<div class="field"><span>Kg</span><div class="stepper"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" data-delta="-1" aria-label="Diminuisci il carico, serie ' + (setIndex + 1) + '">−</button><input name="kg-' + index + "-" + setIndex + '" inputmode="decimal" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" value="' + esc(set.kg) + '" aria-label="Chilogrammi serie ' + (setIndex + 1) + '"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" data-delta="1" aria-label="Aumenta il carico, serie ' + (setIndex + 1) + '">+</button></div></div>';
+        var locked = !!(set.saved || set.queued);
+        var disAttr = locked ? " disabled" : "";
+        var kg = cardio ? "" : '<div class="field"><span>Kg</span><div class="stepper"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" data-delta="-1" aria-label="Diminuisci il carico, serie ' + (setIndex + 1) + '"' + disAttr + '>−</button><input name="kg-' + index + "-" + setIndex + '" inputmode="decimal" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" value="' + esc(set.kg) + '" aria-label="Chilogrammi serie ' + (setIndex + 1) + '"' + disAttr + '><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="kg" data-delta="1" aria-label="Aumenta il carico, serie ' + (setIndex + 1) + '"' + disAttr + '>+</button></div></div>';
         var lastSet = (ex.lastSets || [])[setIndex];
         var lastBtn = "";
         var lastLabel = formatLastTime(lastSet, ex.kind);
-        if (lastLabel) {
+        if (lastLabel && !locked) {
           lastBtn = '<button class="last-time" type="button" data-action="copy-last" data-ex="' + index + '" data-set="' + setIndex + '" title="Copia nell’allenamento di oggi">' + esc(lastLabel) + "</button>";
         }
-        return '<div class="set' + (set.done ? " is-done" : "") + '"><div class="set-top"><div class="set-head"><span>Serie ' + (setIndex + 1) + (set.done ? " · fatta" : "") + "</span>" + lastBtn + "</div>" +
-          '<div>' +
-          '<button class="text-btn" type="button" data-action="done" data-ex="' + index + '" data-set="' + setIndex + '">' + (set.done ? "Annulla" : "Fatto") + "</button>" +
-          (ex.sets.length > 1 ? '<button class="icon-btn" type="button" data-action="remove" data-ex="' + index + '" data-set="' + setIndex + '" aria-label="Togli serie ' + (setIndex + 1) + '">×</button>' : "") +
+        var statusSuffix = set.saved ? " · salvata" : (set.queued ? " · in coda" : (set.done ? " · fatta" : ""));
+        var rightCtrl = set.saved
+          ? '<span class="set-saved-tag">Salvata ✓</span>'
+          : (set.queued
+            ? '<span class="set-saved-tag">In coda</span>'
+            : '<button class="text-btn" type="button" data-action="done" data-ex="' + index + '" data-set="' + setIndex + '">' + (set.done ? "Annulla" : "Fatto") + "</button>" +
+              (ex.sets.length > 1 ? '<button class="icon-btn" type="button" data-action="remove" data-ex="' + index + '" data-set="' + setIndex + '" aria-label="Togli serie ' + (setIndex + 1) + '">×</button>' : ""));
+        return '<div class="set' + ((set.done || set.saved) ? " is-done" : "") + (locked ? " is-saved" : "") + '"><div class="set-top"><div class="set-head"><span>Serie ' + (setIndex + 1) + statusSuffix + "</span>" + lastBtn + "</div>" +
+          '<div>' + rightCtrl +
           "</div></div><div class=\"grids" + (cardio ? " one" : "") + "\">" +
-          '<div class="field"><span>' + (cardio ? "Minuti" : "Rip") + '</span><div class="stepper"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="reps" data-delta="-1" aria-label="Diminuisci, serie ' + (setIndex + 1) + '">−</button><input name="rip-' + index + "-" + setIndex + '" inputmode="decimal" data-ex="' + index + '" data-set="' + setIndex + '" data-field="reps" value="' + esc(set.reps) + '" aria-label="' + (cardio ? "Minuti" : "Ripetizioni") + " serie " + (setIndex + 1) + '"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="reps" data-delta="1" aria-label="Aumenta, serie ' + (setIndex + 1) + '">+</button></div></div>' +
-          kg + '</div><div class="extra"><input name="rir-' + index + "-" + setIndex + '" data-ex="' + index + '" data-set="' + setIndex + '" data-field="rir" value="' + esc(set.rir) + '" placeholder="RIR" aria-label="RIR serie ' + (setIndex + 1) + '" maxlength="24"><input name="nota-' + index + "-" + setIndex + '" data-ex="' + index + '" data-set="' + setIndex + '" data-field="note" value="' + esc(set.note) + '" placeholder="' + (cardio ? "Velocità, pendenza…" : "Nota") + '" aria-label="Nota serie ' + (setIndex + 1) + '" maxlength="300"></div></div>';
+          '<div class="field"><span>' + (cardio ? "Minuti" : "Rip") + '</span><div class="stepper"><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="reps" data-delta="-1" aria-label="Diminuisci, serie ' + (setIndex + 1) + '"' + disAttr + '>−</button><input name="rip-' + index + "-" + setIndex + '" inputmode="decimal" data-ex="' + index + '" data-set="' + setIndex + '" data-field="reps" value="' + esc(set.reps) + '" aria-label="' + (cardio ? "Minuti" : "Ripetizioni") + " serie " + (setIndex + 1) + '"' + disAttr + '><button class="step" type="button" data-action="step" data-ex="' + index + '" data-set="' + setIndex + '" data-field="reps" data-delta="1" aria-label="Aumenta, serie ' + (setIndex + 1) + '"' + disAttr + '>+</button></div></div>' +
+          kg + '</div><div class="extra"><input name="rir-' + index + "-" + setIndex + '" data-ex="' + index + '" data-set="' + setIndex + '" data-field="rir" value="' + esc(set.rir) + '" placeholder="RIR" aria-label="RIR serie ' + (setIndex + 1) + '" maxlength="24"' + disAttr + '><input name="nota-' + index + "-" + setIndex + '" data-ex="' + index + '" data-set="' + setIndex + '" data-field="note" value="' + esc(set.note) + '" placeholder="' + (cardio ? "Velocità, pendenza…" : "Nota") + '" aria-label="Nota serie ' + (setIndex + 1) + '" maxlength="300"' + disAttr + '></div></div>';
       }).join("");
       var source = ex.source === "log" ? "Come l’ultima volta" : "Dalla scheda: nel diario non c’è ancora";
       var hint = ex.hint ? '<p class="hint">' + esc(ex.hint) + "</p>" : "";
       var cue = '<input class="ex-cue" data-exname="' + esc(ex.name) + '" value="' + esc(exerciseNoteOf(ex.name)) + '" placeholder="Nota rapida (es. sedile a 4)" maxlength="200" aria-label="Nota per ' + esc(ex.name) + '">';
       var howto = '<button class="howto-btn" type="button" data-action="howto" data-name="' + esc(ex.name) + '" aria-label="Come si fa: ' + esc(ex.name) + '">Come si fa ▶</button>';
+      var hasLockedInEx = (ex.sets || []).some(function (s) { return s.saved || s.queued; });
       return '<article class="card"><div class="card-top"><div><p class="muscle">' + esc(ex.muscle || "Extra") + "</p><h3>" + esc(ex.name) + "</h3>" + howto + hint + cue + "</div>" +
-        '<button class="text-btn" type="button" data-action="skip" data-ex="' + index + '">Salta</button></div>' +
+        (hasLockedInEx ? "" : '<button class="text-btn" type="button" data-action="skip" data-ex="' + index + '">Salta</button>') + "</div>" +
         last + hintProg +
         '<p class="source">' + source + "</p>" + sets +
         '<div class="card-actions"><button class="text-btn" type="button" data-action="add" data-ex="' + index + '">Aggiungi serie</button></div></article>';
@@ -3081,13 +3235,21 @@
           : "Hai migliorato " + names.length + " esercizi.";
         celebrate = '<p class="celebrate-line">Nuovo record: ' + esc(line) + "</p>";
       }
-      return '<section class="confirm"><p class="eyebrow">Registrato</p><h2>' + esc(summary.code) + " · " + esc(itDate(summary.date)) + "</h2>" +
+      var isPartialConfirm = !!(summary && summary.partial && !summary.complete);
+      var eyebrow = isPartialConfirm ? "Progressi salvati" : "Registrato";
+      var defaultMsg = isPartialConfirm
+        ? "Le serie completate sono nel foglio Log. Puoi continuare la sessione quando vuoi: al prossimo salvataggio aggiungerò solo le serie nuove."
+        : "Le serie sono in fondo al foglio Log, con le formule già compilate. Oggi e Storico si aggiornano da soli.";
+      var mainBtn = isPartialConfirm
+        ? '<button class="primary" type="button" data-action="continue-session">Continua la sessione</button>'
+        : '<button class="primary" type="button" data-action="again">Nuova sessione</button>';
+      return '<section class="confirm"><p class="eyebrow">' + eyebrow + '</p><h2>' + esc(summary.code) + " · " + esc(itDate(summary.date)) + "</h2>" +
         celebrate +
         '<div class="stat"><b>' + esc(seriesWord(summary.sets)) + '</b><span class="muted">' + esc(itNum(summary.tonnage)) + " kg di tonnellaggio</span></div>" +
         '<p class="' + cls + '">' + esc(deltaSentence(summary)) + "</p>" +
         (summary.replayed ? '<p class="muted">Questo salvataggio era già nel diario: non ho aggiunto righe doppie.</p>' : "") +
-        (errorText ? '<p class="muted">' + esc(errorText) + "</p>" : '<p class="muted">Le serie sono in fondo al foglio Log, con le formule già compilate. Oggi e Storico si aggiornano da soli.</p>') +
-        '<div class="confirm-actions"><button class="primary" type="button" data-action="again">Nuova sessione</button></div>' +
+        (errorText ? '<p class="muted">' + esc(errorText) + "</p>" : '<p class="muted">' + defaultMsg + "</p>") +
+        '<div class="confirm-actions">' + mainBtn + '</div>' +
         '<div class="confirm-actions"><button class="secondary" type="button" data-action="records">Vedi i record</button></div>' +
         '<div class="confirm-actions"><button class="secondary" type="button" data-action="history">Vedi lo storico</button></div></section>';
     }
@@ -7125,7 +7287,7 @@
 
     function onInput(event) {
       var input = event.target;
-      if (input.id === "sessionDate") { dateValue = input.value; return; }
+      if (input.id === "sessionDate") { dateValue = input.value; drafts = loadPersistedDrafts(dateValue); if (data) reconcileDraftsWithState(data); render(true); return; }
       if (input.id === "weightDate") { weightDate = input.value; return; }
       if (input.id === "weightKg") { weightKg = input.value; return; }
       if (input.id === "weightNote") { weightNote = input.value; return; }
@@ -7164,7 +7326,9 @@
       }
       if (!input.dataset || input.dataset.ex == null) return;
       var set = ensureDraft(selected)[Number(input.dataset.ex)].sets[Number(input.dataset.set)];
+      if (!set || set.saved || set.queued) return;
       set[input.dataset.field] = input.value;
+      persistDrafts();
     }
 
     function onClick(event) {
@@ -7174,11 +7338,11 @@
       if (action === "view-editor" || action === "history" || action === "charts" || action === "weight" || action === "records" || action === "settings" || action === "theme" || action === "pick" || action === "step" || action === "meal-check" || action === "meal-day" || action === "view-piano" || action === "view-peso" || action === "rest-default-minus" || action === "rest-default-plus" || action === "apply-progress" || action === "copy-last") {
         haptic(10);
       }
-      if (action === "view-editor" || action === "back" || action === "again") {
+      if (action === "view-editor" || action === "back" || action === "again" || action === "continue-session") {
         if (action === "back") { goBackFromView(); return; }
         if (!data) { view = "error"; render(); return; }
         view = "editor"; errorText = ""; prs = [];
-        if (action === "again") requestId = "";
+        if (action === "again" || action === "continue-session") requestId = "";
         render(); return;
       }
       if (action === "settings") { view = "settings"; errorText = ""; render(); refreshCalendarStatus(); refreshTelegramStatus(); return; }
@@ -7409,6 +7573,7 @@
       if (action === "apply-progress") {
         var progEx = ensureDraft(selected)[Number(button.dataset.ex)];
         if (progEx) applyProgression(progEx);
+        persistDrafts();
         render(true);
         return;
       }
@@ -7416,45 +7581,55 @@
         var lastEx = ensureDraft(selected)[Number(button.dataset.ex)];
         var lastSet = lastEx && (lastEx.lastSets || [])[Number(button.dataset.set)];
         var curSet = lastEx && lastEx.sets[Number(button.dataset.set)];
-        if (lastSet && curSet) {
+        if (lastSet && curSet && !curSet.saved && !curSet.queued) {
           if (lastSet.reps != null && lastSet.reps !== "") curSet.reps = formatEditable(lastSet.reps);
           if (lastEx.kind !== "cardio" && lastSet.kg != null && lastSet.kg !== "") curSet.kg = formatEditable(lastSet.kg);
+          persistDrafts();
         }
         render(true);
         return;
       }
       if (action === "skip") {
         var skipped = ensureDraft(selected)[Number(button.dataset.ex)];
+        var hasSavedInEx = (skipped.sets || []).some(function (s) { return s.saved || s.queued; });
+        if (hasSavedInEx) return;
         skipped.skipped = !skipped.skipped;
+        persistDrafts();
         render(true);
         return;
       }
       if (action === "add") {
         var exercise = ensureDraft(selected)[Number(button.dataset.ex)];
         var last = exercise.sets[exercise.sets.length - 1] || { reps: "", kg: "", rir: "", note: "" };
-        exercise.sets.push({ reps: last.reps, kg: last.kg, rir: last.rir, note: last.note, done: false });
+        exercise.sets.push({ clientId: newSetId(), reps: last.reps, kg: last.kg, rir: last.rir, note: last.note, done: false, saved: false, savedId: "", queued: false });
+        persistDrafts();
         render(true);
         return;
       }
       if (action === "remove") {
         var target = ensureDraft(selected)[Number(button.dataset.ex)];
-        if (target.sets.length < 2) return;
+        var remSet = target.sets[Number(button.dataset.set)];
+        if (target.sets.length < 2 || !remSet || remSet.saved || remSet.queued) return;
         target.sets.splice(Number(button.dataset.set), 1);
+        persistDrafts();
         render(true);
         return;
       }
       if (action === "done") {
         var doneSet = ensureDraft(selected)[Number(button.dataset.ex)].sets[Number(button.dataset.set)];
+        if (!doneSet || doneSet.saved || doneSet.queued) return;
         doneSet.done = !doneSet.done;
         if (doneSet.done) {
           haptic(24);
           startRest();
         } else haptic(10);
+        persistDrafts();
         render(true);
         return;
       }
       if (action === "step") {
         var stepped = ensureDraft(selected)[Number(button.dataset.ex)].sets[Number(button.dataset.set)];
+        if (!stepped || stepped.saved || stepped.queued) return;
         var field = button.dataset.field;
         var current = parseNum(stepped[field]);
         var next = (current == null ? 0 : current) + Number(button.dataset.delta);
@@ -7462,6 +7637,7 @@
         if (field === "reps") next = Math.round(next);
         else next = Math.round(next * 10) / 10;
         stepped[field] = formatEditable(next);
+        persistDrafts();
         render(true);
         return;
       }
@@ -7525,8 +7701,62 @@
 
     async function save(confirmDuplicate) {
       if (saving) return;
-      var list = ensureDraft(selected);
-      if (!draftStats(list).sets) return;
+      var savedCode = selected;
+      var list = ensureDraft(savedCode);
+      var saveSt = draftSaveStats(list);
+      if (!saveSt.total || (saveSt.unsavedDone === 0 && saveSt.unsavedUndone === 0)) return;
+
+      var onlyDone = false;
+      var isPartial = false;
+      var isComplete = true;
+
+      if (saveSt.unsavedDone > 0 && saveSt.unsavedUndone > 0) {
+        onlyDone = true;
+        isPartial = true;
+        isComplete = false;
+      } else if (saveSt.unsavedDone > 0 && saveSt.unsavedUndone === 0) {
+        onlyDone = true;
+        isPartial = saveSt.saved > 0;
+        isComplete = true;
+      } else if (saveSt.saved > 0 && saveSt.unsavedDone === 0 && saveSt.unsavedUndone > 0) {
+        var saveRest = await ask(
+          "Hai " + saveSt.saved + " serie già salvate e " + saveSt.unsavedUndone + " non ancora segnate come «Fatto». Vuoi salvare anche le serie restanti così come sono?",
+          "Salva restanti"
+        );
+        if (!saveRest) return;
+        onlyDone = false;
+        isPartial = true;
+        isComplete = true;
+      } else {
+        onlyDone = false;
+        isPartial = false;
+        isComplete = true;
+      }
+
+      var sentSets = [];
+      var exercisesPayload = [];
+      list.forEach(function (ex) {
+        if (ex.skipped) return;
+        var picked = [];
+        (ex.sets || []).forEach(function (set, setIdx) {
+          if (set.saved || set.queued) return;
+          if (onlyDone && !set.done) return;
+          if (!set.clientId) set.clientId = newSetId();
+          sentSets.push(set);
+          picked.push({
+            clientId: set.clientId,
+            serie: setIdx + 1,
+            reps: set.reps,
+            kg: set.kg,
+            rir: set.rir,
+            note: set.note
+          });
+        });
+        if (picked.length) exercisesPayload.push({ name: ex.name, skipped: false, sets: picked });
+      });
+      if (!exercisesPayload.length) return;
+
+      var sentStats = draftStats(exercisesPayload);
       if (!requestId) requestId = newRequestId();
       saving = true;
       errorText = "";
@@ -7534,17 +7764,11 @@
       var payload = {
         requestId: requestId,
         date: dateValue,
-        workout: selected,
+        workout: savedCode,
+        partial: isPartial,
+        complete: isComplete,
         confirmDuplicate: !!confirmDuplicate,
-        exercises: list.map(function (ex) {
-          return {
-            name: ex.name,
-            skipped: !!ex.skipped,
-            sets: ex.sets.map(function (set) {
-              return { reps: set.reps, kg: set.kg, rir: set.rir, note: set.note };
-            })
-          };
-        })
+        exercises: exercisesPayload
       };
       var res;
       try {
@@ -7552,10 +7776,24 @@
         res = await rpc("saveSession", payload);
       } catch (err) {
         saving = false;
+        var reqUsed = requestId;
+        sentSets.forEach(function (s) { s.queued = true; s.done = true; s.queuedRequestId = reqUsed; });
+        persistDrafts();
+        requestId = "";
         errorText = queueOrThrow("saveSession", payload, err);
         view = "confirm";
-        summary = { code: selected, date: dateValue, sets: draftStats(list).sets, tonnage: draftStats(list).tonnage, delta: null, previous: workoutOf(selected) && workoutOf(selected).previous, replayed: false };
-        prs = detectClientPRs(list, (data && data.records) || []);
+        summary = {
+          code: savedCode,
+          date: dateValue,
+          sets: sentStats.sets,
+          tonnage: sentStats.tonnage,
+          delta: null,
+          previous: workoutOf(savedCode) && workoutOf(savedCode).previous,
+          replayed: false,
+          partial: isPartial,
+          complete: isComplete
+        };
+        prs = detectClientPRs(exercisesPayload, (data && data.records) || []);
         render();
         showRecordToast(prs);
         return;
@@ -7573,18 +7811,49 @@
         render(true);
         return;
       }
-      summary = res.summary;
+      var savedMap = res.savedMap || {};
+      sentSets.forEach(function (s) {
+        s.saved = true;
+        s.done = true;
+        s.queued = false;
+        s.queuedRequestId = "";
+        s.savedId = savedMap[s.clientId] || s.savedId || s.clientId;
+      });
+      summary = res.summary || {
+        code: savedCode,
+        date: dateValue,
+        sets: sentStats.sets,
+        tonnage: sentStats.tonnage,
+        delta: null,
+        previous: workoutOf(savedCode) && workoutOf(savedCode).previous,
+        replayed: !!res.replayed
+      };
+      summary.partial = isPartial;
+      summary.complete = isComplete;
       prs = res.prs || [];
-      if (!prs.length) prs = detectClientPRs(list, (data && data.records) || []);
-      delete drafts[selected];
-      if (res.state) {
-        var keepDate = dateValue;
-        applyState(res.state, true);
-        dateValue = keepDate;
-        selected = data.suggested || selected;
+      if (!prs.length && !res.replayed) prs = detectClientPRs(exercisesPayload, (data && data.records) || []);
+
+      if (isPartial && !isComplete) {
+        persistDrafts();
+        if (res.state) {
+          var keepDate = dateValue;
+          mergeState(res.state);
+          dateValue = keepDate;
+          selected = savedCode;
+        }
+        editorNotice = "Salvate " + seriesWord(sentStats.sets) + " di " + savedCode + ". Puoi continuare quando vuoi.";
+      } else {
+        delete drafts[savedCode];
+        persistDrafts();
+        if (res.state) {
+          var keepDate2 = dateValue;
+          mergeState(res.state);
+          dateValue = keepDate2;
+          selected = data.suggested || savedCode;
+        }
+        editorNotice = "";
       }
       requestId = "";
-      editorNotice = "";
       view = "confirm";
       render();
       showRecordToast(prs);
