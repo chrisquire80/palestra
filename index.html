@@ -106,6 +106,19 @@
       --fs-xl: 1.4rem;
       --fs-2xl: 1.75rem;
       --fs-3xl: 2.05rem;
+      --chart-1: #d4f05a;
+      --chart-2: #ff6a51;
+      --chart-3: #68c3a3;
+      --chart-4: #f2c14e;
+      --chart-5: #7aa6ff;
+      --chart-6: #c49bff;
+      --chart-7: #9a9586;
+      --chart-8: #f472b6;
+      --heat-0: #24281f;
+      --heat-1: #2b3812;
+      --heat-2: #506c1b;
+      --heat-3: #8db32c;
+      --heat-4: #d4f05a;
       --ease: 160ms ease;
       color-scheme: dark;
     }
@@ -149,6 +162,19 @@
       --toast-ink: #5a140c;
       --bar-track: rgba(22, 20, 15, 0.12);
       --chart-label: #5a5448;
+      --chart-1: #2f6b10;
+      --chart-2: #d4321b;
+      --chart-3: #0f766e;
+      --chart-4: #a16207;
+      --chart-5: #1d4ed8;
+      --chart-6: #6d28d9;
+      --chart-7: #6b6458;
+      --chart-8: #9d174d;
+      --heat-0: #efe8d6;
+      --heat-1: #dce9c4;
+      --heat-2: #a9cc75;
+      --heat-3: #649b36;
+      --heat-4: #2f6b10;
       --glow: rgba(212, 50, 27, 0.14);
       color-scheme: light;
     }
@@ -1269,6 +1295,192 @@
     .records-detail .chart { height: 112px; }
     .records-detail .chart-card { margin-bottom: var(--space-3); }
 
+
+    /* Grafici v3.4 */
+    .charts-view .chart-card { margin: 0 0 var(--space-4); }
+    .chart-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-2);
+      margin: 0 0 var(--space-2);
+    }
+    .chart-head h3 { margin: 0; }
+    .chart-sub {
+      margin: 0 0 var(--space-3);
+      color: var(--muted);
+      font-size: var(--fs-sm);
+    }
+    .chart-kpis {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+      margin: 0 0 var(--space-3);
+    }
+    .chart-kpi {
+      background: var(--card-2);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      padding: var(--space-2) var(--space-3);
+    }
+    .chart-kpi b {
+      display: block;
+      font-size: var(--fs-xl);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+    .chart-kpi span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+    }
+    .chart-kpi .delta {
+      margin-top: 4px;
+      font-size: var(--fs-xs);
+      font-weight: 750;
+      color: var(--muted);
+    }
+    .chart-kpi .delta.up { color: var(--chalk-text); }
+    .chart-kpi .delta.down { color: var(--down); }
+    .chart-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0 0 var(--space-3);
+    }
+    .chart-pills button {
+      min-height: 44px;
+      padding: 0 11px;
+      border-radius: var(--r-full);
+      border: 1px solid var(--line);
+      background: var(--card-2);
+      color: var(--ink);
+      font-size: var(--fs-xs);
+      font-weight: 650;
+    }
+    .chart-pills button.is-on {
+      background: var(--chalk);
+      color: var(--on-chalk);
+      border-color: transparent;
+      font-weight: 800;
+    }
+    .chart-svg-tall { width: 100%; height: 170px; display: block; }
+    .muscle-rows {
+      display: grid;
+      gap: 6px;
+      margin: var(--space-3) 0 0;
+    }
+    .muscle-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      font-size: var(--fs-xs);
+    }
+    .muscle-row .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: var(--r-full);
+      display: inline-block;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .muscle-track {
+      height: 7px;
+      border-radius: var(--r-full);
+      background: var(--bar-track);
+      overflow: hidden;
+    }
+    .muscle-fill {
+      display: block;
+      height: 100%;
+      border-radius: var(--r-full);
+    }
+    .muscle-val {
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .heat-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+    }
+    .heat-svg {
+      display: block;
+      width: 100%;
+      min-width: 312px;
+      height: auto;
+    }
+    .heat-day[data-action="heatmap-day"] { cursor: pointer; }
+    .heat-legend {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: var(--space-2) 0 0;
+      font-size: var(--fs-xs);
+      color: var(--muted);
+    }
+    .heat-scale {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .heat-swatch {
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+      display: inline-block;
+      border: 1px solid var(--line);
+    }
+    .heat-detail {
+      margin: var(--space-2) 0 0;
+      padding: 8px 10px;
+      border-radius: var(--r-sm);
+      background: var(--card-2);
+      border: 1px solid var(--line);
+      font-size: var(--fs-xs);
+      color: var(--ink);
+    }
+    .chart-empty {
+      padding: var(--space-3);
+      border-radius: var(--r-md);
+      background: var(--card-2);
+      border: 1px dashed var(--line);
+      color: var(--muted);
+      font-size: var(--fs-sm);
+    }
+    .chart-empty p { margin: 0 0 8px; }
+    .chart-empty p:last-child { margin-bottom: 0; }
+    .chart-empty .secondary {
+      background: var(--card);
+      border: 1px solid var(--line);
+    }
+    .macro-day-card {
+      padding: var(--space-3);
+      border-radius: var(--r-md);
+      background: var(--card-2);
+      border: 1px solid var(--line);
+      margin-top: var(--space-2);
+    }
+    .macro-day-card strong { font-size: var(--fs-md); }
+    .macro-day-card p { margin: 4px 0 0; font-size: var(--fs-xs); color: var(--muted); }
+    .charts-view .date { margin: 0 0 var(--space-3); }
+    .charts-view .subnav { margin: 0 0 var(--space-3); }
+
+    .heat-swatch.l0 { background: var(--heat-0); }
+    .heat-swatch.l1 { background: var(--heat-1); }
+    .heat-swatch.l2 { background: var(--heat-2); }
+    .heat-swatch.l3 { background: var(--heat-3); }
+    .heat-swatch.l4 { background: var(--heat-4); }
+    .nut-block { margin-top: var(--space-3); }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         transition: none !important;
@@ -1300,7 +1512,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.3.1</span></h1>
+          <h1>Palestra <span class="ver">v3.4</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -1441,6 +1653,11 @@
     var restTimer = null;
     var restJustFinished = false;
     var chartExercise = "";
+    var chartMuscle = "all";
+    var chartPeriodMode = "month";
+    var chartExMetric = "e1rm";
+    var chartHeatDate = "";
+    var chartsModel = null;
     var weightDate = "";
     var weightKg = "";
     var weightNote = "";
@@ -2343,6 +2560,8 @@
     var viewNeedsPaint = {};
 
     function invalidateViews() {
+      chartsModel = null;
+      recordModel = null;
       var key;
       for (key in viewRoots) {
         if (Object.prototype.hasOwnProperty.call(viewRoots, key)) viewNeedsPaint[key] = true;
@@ -2574,18 +2793,879 @@
         "</svg>";
     }
 
+    var MUSCLE_COLOR_TOKENS = [
+      { varName: "--chart-1", fallback: "#2f6b10" },
+      { varName: "--chart-2", fallback: "#d4321b" },
+      { varName: "--chart-3", fallback: "#0f766e" },
+      { varName: "--chart-4", fallback: "#a16207" },
+      { varName: "--chart-5", fallback: "#1d4ed8" },
+      { varName: "--chart-6", fallback: "#6d28d9" },
+      { varName: "--chart-7", fallback: "#6b6458" },
+      { varName: "--chart-8", fallback: "#9d174d" }
+    ];
+
+    function inferMuscleGroup(name) {
+      var s = String(name || "").toLowerCase();
+      if (/cardio|tapis|cyclette|ellittica|corsa|bici/.test(s)) return "Cardio";
+      if (/circuito/.test(s)) return "Circuito";
+      if (/chest|pectoral|incline|panca|petto|croci/.test(s)) return "Petto";
+      if (/lat|row|pulley|trazion|remat|dorso|hyper/.test(s)) return "Dorso";
+      if (/leg|squat|stacco|affond|calf|polpacc|glute/.test(s)) return "Gambe";
+      if (/shoulder|lateral|alzate|lento|spalle|military/.test(s)) return "Spalle";
+      if (/curl|bicip/.test(s)) return "Bicipiti";
+      if (/push down|french|tricip|dip/.test(s)) return "Tricipiti";
+      if (/crunch|addom|plank|abs/.test(s)) return "Addome";
+      return "Altro";
+    }
+
+    function muscleColor(muscle, muscleOrder) {
+      var idx = muscleOrder.indexOf(muscle);
+      if (idx < 0) idx = muscleOrder.length;
+      var tok = MUSCLE_COLOR_TOKENS[idx % MUSCLE_COLOR_TOKENS.length];
+      return cssVar(tok.varName, tok.fallback);
+    }
+
+    function prevCalendarMonth(ym) {
+      var parts = String(ym || "").split("-");
+      if (parts.length < 2) return "";
+      var y = Number(parts[0]), m = Number(parts[1]);
+      if (!y || !m) return "";
+      m -= 1;
+      if (m < 1) { m = 12; y -= 1; }
+      return y + "-" + String(m).padStart(2, "0");
+    }
+
+    function daysDiffIso(aIso, bIso) {
+      var a = parseIsoDate(aIso);
+      var b = parseIsoDate(bIso);
+      if (!a || !b) return 999999;
+      return Math.round((b.getTime() - a.getTime()) / 86400000);
+    }
+
+    function nearestWeightForDate(weights, dateIso) {
+      if (!weights || !weights.length || !dateIso) return null;
+      var best = null;
+      var bestDiff = 999999;
+      var i, diff, signed;
+      for (i = 0; i < weights.length; i++) {
+        if (weights[i].kg == null || !isFinite(weights[i].kg) || weights[i].kg <= 0) continue;
+        signed = daysDiffIso(weights[i].date, dateIso);
+        diff = Math.abs(signed);
+        if (diff < bestDiff || (diff === bestDiff && signed >= 0)) {
+          best = weights[i];
+          bestDiff = diff;
+        }
+      }
+      return best;
+    }
+
+    function linearRegression(points) {
+      if (!points || points.length < 2) return null;
+      var baseDate = points[0].date;
+      var n = points.length;
+      var xs = [];
+      var sumX = 0, sumY = 0;
+      var i, x;
+      for (i = 0; i < n; i++) {
+        x = Math.max(0, daysDiffIso(baseDate, points[i].date));
+        xs.push(x);
+        sumX += x;
+        sumY += points[i].y;
+      }
+      var meanX = sumX / n;
+      var meanY = sumY / n;
+      var num = 0, den = 0;
+      for (i = 0; i < n; i++) {
+        num += (xs[i] - meanX) * (points[i].y - meanY);
+        den += (xs[i] - meanX) * (xs[i] - meanX);
+      }
+      if (den <= 0) return null;
+      var slopePerDay = num / den;
+      var intercept = meanY - slopePerDay * meanX;
+      var maxX = xs[n - 1];
+      return {
+        slopePerDay: slopePerDay,
+        slopePerWeek: Math.round(slopePerDay * 7 * 10) / 10,
+        startY: intercept,
+        endY: intercept + slopePerDay * maxX,
+        totalDelta: Math.round(slopePerDay * maxX * 10) / 10
+      };
+    }
+
+    function buildChartsModel() {
+      var today = todayIso();
+      var catalog = exerciseCatalog();
+      function muscleOf(name) {
+        if (catalog[name] && catalog[name].muscle) return catalog[name].muscle;
+        return inferMuscleGroup(name);
+      }
+
+      var sessionsDesc = ((data && data.recent) || []).slice();
+      var sessions = sessionsDesc.slice().sort(function (a, b) {
+        return String(a.date || "").localeCompare(String(b.date || ""));
+      });
+
+      // 1. Weekly volume per muscle group (sets/week, last 8 weeks)
+      var currWeek = isoWeekKey(today);
+      var weeks = [];
+      var weekMap = {};
+      var i, wk;
+      for (i = 7; i >= 0; i--) {
+        wk = addDaysIso(currWeek, -7 * i);
+        var obj = { week: wk, label: itDateShort(wk), byMuscle: {}, total: 0 };
+        weeks.push(obj);
+        weekMap[wk] = obj;
+      }
+      var muscleTotals = {};
+      sessions.forEach(function (s) {
+        if (!s || !s.date) return;
+        var w = weekMap[isoWeekKey(s.date)];
+        ((s && s.items) || []).forEach(function (it) {
+          if (!it || !it.name) return;
+          var m = muscleOf(it.name);
+          if (m === "Cardio") return;
+          var cnt = (it.sets || []).length;
+          if (!cnt) return;
+          if (w) {
+            w.byMuscle[m] = (w.byMuscle[m] || 0) + cnt;
+            w.total += cnt;
+          }
+          muscleTotals[m] = (muscleTotals[m] || 0) + cnt;
+        });
+      });
+      var muscles = Object.keys(muscleTotals).sort(function (a, b) {
+        var ia = MUSCLE_ORDER.indexOf(a);
+        var ib = MUSCLE_ORDER.indexOf(b);
+        if (ia < 0) ia = 99;
+        if (ib < 0) ib = 99;
+        if (ia !== ib) return ia - ib;
+        return a.localeCompare(b, "it");
+      });
+      var latestActiveWeek = null;
+      for (i = weeks.length - 1; i >= 0; i--) {
+        if (weeks[i].total > 0) { latestActiveWeek = weeks[i]; break; }
+      }
+
+      // 2. Per-exercise e1RM points from sessions
+      var e1rmByEx = {};
+      sessions.forEach(function (s) {
+        if (!s || !s.date) return;
+        ((s && s.items) || []).forEach(function (it) {
+          if (!it || !it.name) return;
+          var m = muscleOf(it.name);
+          if (m === "Cardio") return;
+          var bestE1 = null, maxKg = null, bestReps = null, bestLoadKg = null, vol = 0, validSets = 0;
+          (it.sets || []).forEach(function (set) {
+            var kg = parseNum(set.kg);
+            var reps = parseNum(set.reps);
+            if (kg != null && kg > 0 && reps != null && reps > 0) {
+              validSets += 1;
+              vol += kg * reps;
+              if (maxKg == null || kg > maxKg) maxKg = kg;
+              var est = epley1RM(kg, reps);
+              if (est != null && (bestE1 == null || est > bestE1)) {
+                bestE1 = est;
+                bestLoadKg = kg;
+                bestReps = reps;
+              }
+            }
+          });
+          if (bestE1 == null) return;
+          if (!e1rmByEx[it.name]) e1rmByEx[it.name] = [];
+          var list = e1rmByEx[it.name];
+          var prev = list.length ? list[list.length - 1] : null;
+          if (prev && prev.date === s.date) {
+            if (bestE1 > prev.e1rm) {
+              prev.e1rm = bestE1;
+              prev.bestKg = bestLoadKg;
+              prev.bestReps = bestReps;
+            }
+            if (maxKg > prev.maxLoad) prev.maxLoad = maxKg;
+            prev.volume = Math.round((prev.volume + vol) * 10) / 10;
+            prev.sets += validSets;
+          } else {
+            list.push({
+              date: s.date,
+              e1rm: bestE1,
+              maxLoad: maxKg,
+              bestKg: bestLoadKg,
+              bestReps: bestReps,
+              volume: Math.round(vol * 10) / 10,
+              sets: validSets
+            });
+          }
+        });
+      });
+
+      // 3. Calendar heatmap (last 26 weeks ending this week)
+      var heatWeeks = 26;
+      var heatStart = addDaysIso(currWeek, -7 * (heatWeeks - 1));
+      var daySessions = {};
+      var maxDayVol = 0;
+      var activeDaysCount = 0;
+      var peakDay = null;
+      sessions.forEach(function (s) {
+        if (!s || !s.date) return;
+        if (s.date < heatStart || s.date > addDaysIso(currWeek, 6)) return;
+        if (!daySessions[s.date]) {
+          daySessions[s.date] = { date: s.date, volume: 0, sets: 0, codes: [] };
+          activeDaysCount += 1;
+        }
+        var ds = daySessions[s.date];
+        ds.volume = Math.round((ds.volume + (Number(s.tonnage) || 0)) * 10) / 10;
+        ds.sets += Number(s.sets) || 0;
+        if (s.code && ds.codes.indexOf(s.code) === -1) ds.codes.push(s.code);
+      });
+      Object.keys(daySessions).forEach(function (dt) {
+        var ds = daySessions[dt];
+        if (ds.volume > maxDayVol) { maxDayVol = ds.volume; peakDay = ds; }
+      });
+      var heatGrid = [];
+      var wIdx, dIdx;
+      for (wIdx = 0; wIdx < heatWeeks; wIdx++) {
+        var col = [];
+        for (dIdx = 0; dIdx < 7; dIdx++) {
+          var iso = addDaysIso(heatStart, wIdx * 7 + dIdx);
+          var info = daySessions[iso] || null;
+          var lvl = 0;
+          if (info) {
+            if (maxDayVol <= 0) lvl = 2;
+            else {
+              var ratio = info.volume / maxDayVol;
+              lvl = ratio <= 0.25 ? 1 : ratio <= 0.5 ? 2 : ratio <= 0.75 ? 3 : 4;
+            }
+          }
+          col.push({ date: iso, info: info, level: lvl, future: iso > today });
+        }
+        heatGrid.push(col);
+      }
+
+      // 4. Period comparison
+      function summarizeRange(startIso, endIso) {
+        var out = { sessions: 0, sets: 0, volume: 0, bestE1rm: {} };
+        sessions.forEach(function (s) {
+          if (!s || !s.date || s.date < startIso || s.date > endIso) return;
+          out.sessions += 1;
+          out.sets += Number(s.sets) || 0;
+          out.volume += Number(s.tonnage) || 0;
+          ((s && s.items) || []).forEach(function (it) {
+            if (!it || !it.name || muscleOf(it.name) === "Cardio") return;
+            (it.sets || []).forEach(function (set) {
+              var est = epley1RM(parseNum(set.kg), parseNum(set.reps));
+              if (est != null && (!out.bestE1rm[it.name] || est > out.bestE1rm[it.name])) {
+                out.bestE1rm[it.name] = est;
+              }
+            });
+          });
+        });
+        out.volume = Math.round(out.volume * 10) / 10;
+        return out;
+      }
+
+      function comparePeriods(curr, prev) {
+        var shared = [];
+        var improved = 0;
+        Object.keys(curr.bestE1rm).forEach(function (ex) {
+          if (prev.bestE1rm[ex] > 0) {
+            var pct = ((curr.bestE1rm[ex] - prev.bestE1rm[ex]) / prev.bestE1rm[ex]) * 100;
+            shared.push(pct);
+            if (pct > 0.05) improved += 1;
+          }
+        });
+        var avgE1rmPct = shared.length
+          ? Math.round((shared.reduce(function (a, b) { return a + b; }, 0) / shared.length) * 10) / 10
+          : null;
+        return {
+          curr: curr,
+          prev: prev,
+          sessionsDelta: curr.sessions - prev.sessions,
+          setsDelta: curr.sets - prev.sets,
+          volumeDelta: Math.round((curr.volume - prev.volume) * 10) / 10,
+          volumePct: prev.volume > 0 ? Math.round(((curr.volume - prev.volume) / prev.volume) * 1000) / 10 : null,
+          avgE1rmPct: avgE1rmPct,
+          sharedCount: shared.length,
+          improvedCount: improved
+        };
+      }
+
+      var thisMonth = today.slice(0, 7);
+      var lastMonth = prevCalendarMonth(thisMonth);
+      var cmpMonth = comparePeriods(
+        summarizeRange(thisMonth + "-01", lastDateOfMonth(thisMonth)),
+        summarizeRange(lastMonth + "-01", lastDateOfMonth(lastMonth))
+      );
+      cmpMonth.currLabel = monthLabelIt(thisMonth);
+      cmpMonth.prevLabel = monthLabelIt(lastMonth);
+
+      var w4CurrStart = addDaysIso(today, -27);
+      var w4PrevEnd = addDaysIso(today, -28);
+      var w4PrevStart = addDaysIso(today, -55);
+      var cmp4w = comparePeriods(
+        summarizeRange(w4CurrStart, today),
+        summarizeRange(w4PrevStart, w4PrevEnd)
+      );
+      cmp4w.currLabel = itDateShort(w4CurrStart) + " – " + itDateShort(today);
+      cmp4w.prevLabel = itDateShort(w4PrevStart) + " – " + itDateShort(w4PrevEnd);
+
+      // 5. Weights + 7-day moving average, and daily calories/macros from mealChecks
+      var weights = ((data && data.weights) || []).filter(function (w) {
+        return w && w.date && w.kg != null && isFinite(Number(w.kg));
+      }).map(function (w) {
+        return { date: w.date, kg: Number(w.kg), note: w.note || "" };
+      }).sort(function (a, b) { return a.date.localeCompare(b.date); });
+
+      var weightSeries = weights.map(function (w, idx) {
+        var winStart = addDaysIso(w.date, -6);
+        var sum = 0, cnt = 0, j;
+        for (j = 0; j <= idx; j++) {
+          if (weights[j].date >= winStart && weights[j].date <= w.date) {
+            sum += weights[j].kg;
+            cnt += 1;
+          }
+        }
+        return {
+          date: w.date,
+          kg: w.kg,
+          ma7: cnt ? Math.round((sum / cnt) * 10) / 10 : w.kg
+        };
+      });
+
+      var planDays = (data && data.mealPlan && data.mealPlan.days) || [];
+      var checksByDate = {};
+      ((data && data.mealChecks) || []).forEach(function (c) {
+        if (!c || !c.date || !c.done || !c.meal) return;
+        if (!checksByDate[c.date]) checksByDate[c.date] = {};
+        checksByDate[c.date][c.meal] = true;
+      });
+      var dailyNutrition = Object.keys(checksByDate).sort().map(function (dt) {
+        var wdName = weekdayNameIt(dt);
+        var planDay = null;
+        var k;
+        for (k = 0; k < planDays.length; k++) {
+          if (sameWeekday(planDays[k].name, wdName)) { planDay = planDays[k]; break; }
+        }
+        var sum = { kcal: 0, prot: 0, carb: 0, fat: 0 };
+        var mealsDone = 0;
+        var meals = (planDay && planDay.meals) || [];
+        for (k = 0; k < meals.length; k++) {
+          if (checksByDate[dt][meals[k].name]) {
+            mealsDone += 1;
+            if (meals[k].macros) sum = addMacros(sum, meals[k].macros);
+          }
+        }
+        var tot = (planDay && planDay.totals) || {};
+        return {
+          date: dt,
+          kcal: Math.round(sum.kcal || 0),
+          prot: Math.round(sum.prot || 0),
+          carb: Math.round(sum.carb || 0),
+          fat: Math.round(sum.fat || 0),
+          planKcal: tot.kcal != null ? Math.round(tot.kcal) : null,
+          mealsDone: mealsDone,
+          mealsTotal: meals.length
+        };
+      });
+
+      return {
+        today: today,
+        weeks: weeks,
+        muscles: muscles,
+        muscleTotals: muscleTotals,
+        latestActiveWeek: latestActiveWeek,
+        e1rmByEx: e1rmByEx,
+        heatGrid: heatGrid,
+        heatStart: heatStart,
+        activeDaysCount: activeDaysCount,
+        maxDayVol: maxDayVol,
+        peakDay: peakDay,
+        daySessions: daySessions,
+        cmpMonth: cmpMonth,
+        cmp4w: cmp4w,
+        weightSeries: weightSeries,
+        dailyNutrition: dailyNutrition
+      };
+    }
+
+    function getChartsModel() {
+      if (chartsModel) return chartsModel;
+      chartsModel = buildChartsModel();
+      return chartsModel;
+    }
+
+    function svgStackedWeeklyMuscle(model, filterMuscle) {
+      var weeks = model.weeks || [];
+      var w = 320, h = 164, padL = 24, padR = 8, padT = 16, padB = 26;
+      var plotW = w - padL - padR;
+      var plotH = h - padT - padB;
+      var single = filterMuscle && filterMuscle !== "all";
+      var maxVal = 0;
+      var i, m;
+      for (i = 0; i < weeks.length; i++) {
+        var val = single ? (weeks[i].byMuscle[filterMuscle] || 0) : weeks[i].total;
+        if (val > maxVal) maxVal = val;
+      }
+      if (maxVal <= 0) return '<div class="chart-empty"><p>Ancora nessuna serie registrata nelle ultime 8 settimane.</p></div>';
+      var yMax = Math.max(4, Math.ceil(maxVal * 1.15));
+      var colW = plotW / weeks.length;
+      var barW = Math.min(24, Math.max(12, colW - 8));
+      var labelColor = cssVar("--chart-label", "#b4af9f");
+      var lineColor = cssVar("--line", "rgba(255,255,255,0.12)");
+      var singleColor = cssVar("--chalk-text", "#2f6b10");
+      var bars = [];
+      // horizontal guide line at mid & top
+      var midVal = Math.round(yMax / 2);
+      var midY = (padT + plotH - (midVal / yMax) * plotH).toFixed(1);
+      bars.push('<line x1="' + padL + '" y1="' + midY + '" x2="' + (w - padR) + '" y2="' + midY + '" stroke="' + lineColor + '" stroke-dasharray="3 3"></line>');
+      bars.push('<text x="' + (padL - 4) + '" y="' + (Number(midY) + 3) + '" text-anchor="end" fill="' + labelColor + '" font-size="9">' + midVal + "</text>");
+      bars.push('<text x="' + (padL - 4) + '" y="' + (padT + 4) + '" text-anchor="end" fill="' + labelColor + '" font-size="9">' + yMax + "</text>");
+
+      for (i = 0; i < weeks.length; i++) {
+        var wk = weeks[i];
+        var cx = padL + i * colW + colW / 2;
+        var x = (cx - barW / 2).toFixed(1);
+        var tot = single ? (wk.byMuscle[filterMuscle] || 0) : wk.total;
+        if (single) {
+          if (tot > 0) {
+            var bh = (tot / yMax) * plotH;
+            var by = padT + plotH - bh;
+            bars.push('<rect x="' + x + '" y="' + by.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="4" fill="' + singleColor + '"></rect>');
+            bars.push('<text x="' + cx.toFixed(1) + '" y="' + Math.max(10, by - 4).toFixed(1) + '" text-anchor="middle" fill="' + labelColor + '" font-size="9">' + tot + "</text>");
+          }
+        } else {
+          var accY = padT + plotH;
+          for (m = 0; m < model.muscles.length; m++) {
+            var mus = model.muscles[m];
+            var cnt = wk.byMuscle[mus] || 0;
+            if (!cnt) continue;
+            var sh = (cnt / yMax) * plotH;
+            accY -= sh;
+            bars.push('<rect x="' + x + '" y="' + accY.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(1, sh).toFixed(1) + '" fill="' + muscleColor(mus, model.muscles) + '"></rect>');
+          }
+          if (tot > 0) {
+            bars.push('<text x="' + cx.toFixed(1) + '" y="' + Math.max(10, accY - 4).toFixed(1) + '" text-anchor="middle" fill="' + labelColor + '" font-size="9">' + tot + "</text>");
+          }
+        }
+        // show every 2nd week label cleanly on narrow phones + always show last week
+        if (i % 2 === 1 || i === weeks.length - 1) {
+          var shortLbl = wk.label;
+          bars.push('<text x="' + cx.toFixed(1) + '" y="' + (h - 6) + '" text-anchor="middle" fill="' + labelColor + '" font-size="9">' + esc(shortLbl) + "</text>");
+        }
+      }
+      return '<svg class="chart-svg-tall" viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="Serie settimanali per gruppo muscolare">' + bars.join("") + "</svg>";
+    }
+
+    function svgE1rmTrendChart(points) {
+      if (!points || !points.length) {
+        return '<div class="chart-empty"><p>Questo esercizio non ha ancora serie con carico per calcolare l’1RM stimato.</p></div>';
+      }
+      var series = points.map(function (p) { return { date: p.date, y: p.e1rm }; });
+      var reg = linearRegression(series);
+      var w = 320, h = 162, padL = 22, padR = 16, padT = 28, padB = 22;
+      var min = series[0].y, max = series[0].y, i;
+      for (i = 0; i < series.length; i++) {
+        if (series[i].y < min) min = series[i].y;
+        if (series[i].y > max) max = series[i].y;
+      }
+      if (reg) {
+        min = Math.min(min, reg.startY, reg.endY);
+        max = Math.max(max, reg.startY, reg.endY);
+      }
+      if (min === max) { min -= 1; max += 1; }
+      var firstD = series[0].date;
+      var totalDays = Math.max(1, daysDiffIso(firstD, series[series.length - 1].date));
+      function X(idx) {
+        if (series.length === 1) return padL + (w - padL - padR) / 2;
+        var dx = Math.max(0, daysDiffIso(firstD, series[idx].date));
+        return padL + (dx / totalDays) * (w - padL - padR);
+      }
+      function Y(v) {
+        return h - padB - ((v - min) / (max - min)) * (h - padT - padB);
+      }
+      var color = cssVar("--chalk-text", "#2f6b10");
+      var trendColor = cssVar("--red", "#d4321b");
+      var labelColor = cssVar("--chart-label", "#b4af9f");
+      var d = "";
+      var dots = "";
+      for (i = 0; i < series.length; i++) {
+        var px = X(i).toFixed(1), py = Y(series[i].y).toFixed(1);
+        d += (i ? " L" : "M") + px + " " + py;
+        dots += '<circle cx="' + px + '" cy="' + py + '" r="' + (i === series.length - 1 ? "4" : "2.6") + '" fill="' + color + '"></circle>';
+      }
+      var trendLine = "";
+      if (reg) {
+        trendLine = '<line x1="' + X(0).toFixed(1) + '" y1="' + Y(reg.startY).toFixed(1) + '" x2="' + X(series.length - 1).toFixed(1) + '" y2="' + Y(reg.endY).toFixed(1) + '" stroke="' + trendColor + '" stroke-width="1.8" stroke-dasharray="4 4"></line>';
+      }
+      var last = series[series.length - 1];
+      return '<svg class="chart" viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="Andamento 1RM stimato">' +
+        trendLine +
+        (series.length > 1 ? '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>' : "") +
+        dots +
+        '<text x="' + padL + '" y="14" fill="' + labelColor + '" font-size="10">' + esc(itDateShort(series[0].date)) + "</text>" +
+        '<text x="' + (w - padR) + '" y="14" fill="' + labelColor + '" font-size="10" text-anchor="end">' + esc(itNum(last.y)) + " kg</text>" +
+        "</svg>" +
+        '<div class="chart-legend">' +
+          '<span><span class="swatch" style="background:' + color + '"></span>1RM stimato</span>' +
+          (reg ? '<span><span class="swatch" style="background:' + trendColor + '"></span>Tendenza (' + (reg.slopePerWeek > 0 ? "+" : "") + esc(itNum(reg.slopePerWeek)) + " kg/sett)</span>" : "") +
+        "</div>";
+    }
+
+    function svgHeatmap(model, selectedDate) {
+      var grid = model.heatGrid || [];
+      var cols = grid.length;
+      var cell = 10, gap = 2.5, step = cell + gap;
+      var padL = 16, padT = 16, padR = 4, padB = 4;
+      var w = padL + cols * step + padR;
+      var h = padT + 7 * step + padB;
+      var labelColor = cssVar("--chart-label", "#b4af9f");
+      var ringColor = cssVar("--ink", "#f6f3ea");
+      var heatColors = [
+        cssVar("--heat-0", "#24281f"),
+        cssVar("--heat-1", "#243010"),
+        cssVar("--heat-2", "#4c6419"),
+        cssVar("--heat-3", "#8db32c"),
+        cssVar("--heat-4", "#d4f05a")
+      ];
+      var out = [];
+      // Weekday hints Lun, Mer, Ven, Dom
+      var dayLabels = [{ r: 0, t: "L" }, { r: 2, t: "M" }, { r: 4, t: "V" }, { r: 6, t: "D" }];
+      var i, c, r;
+      for (i = 0; i < dayLabels.length; i++) {
+        out.push('<text x="0" y="' + (padT + dayLabels[i].r * step + 8.5).toFixed(1) + '" fill="' + labelColor + '" font-size="8.5">' + dayLabels[i].t + "</text>");
+      }
+      var lastMonth = "";
+      for (c = 0; c < cols; c++) {
+        var col = grid[c];
+        // month label when first column or month starts in this column
+        var mLbl = "";
+        for (r = 0; r < 7; r++) {
+          var ym = col[r].date.slice(0, 7);
+          if (c === 0 && r === 0) { mLbl = ym; break; }
+          if (col[r].date.slice(8, 10) === "01") { mLbl = ym; break; }
+        }
+        if (mLbl && mLbl !== lastMonth) {
+          lastMonth = mLbl;
+          try {
+            var mName = new Intl.DateTimeFormat("it-IT", { month: "short", timeZone: "Europe/Rome" }).format(new Date(mLbl + "-15T12:00:00"));
+            mName = mName.replace(".", "");
+            mName = mName.charAt(0).toUpperCase() + mName.slice(1);
+            out.push('<text x="' + (padL + c * step).toFixed(1) + '" y="10" fill="' + labelColor + '" font-size="8.5">' + esc(mName) + "</text>");
+          } catch (err) {}
+        }
+        for (r = 0; r < 7; r++) {
+          var cellItem = col[r];
+          if (cellItem.future) continue;
+          var x = (padL + c * step).toFixed(1);
+          var y = (padT + r * step).toFixed(1);
+          var fill = heatColors[cellItem.level] || heatColors[0];
+          var isSel = selectedDate && cellItem.date === selectedDate;
+          var attrs = cellItem.info
+            ? ' class="heat-day" data-action="heatmap-day" data-date="' + esc(cellItem.date) + '" tabindex="0" role="button" aria-label="' + esc(itDate(cellItem.date) + ": " + itNum(cellItem.info.volume) + " kg") + '"'
+            : "";
+          var stroke = isSel ? ' stroke="' + ringColor + '" stroke-width="1.5"' : "";
+          out.push('<rect x="' + x + '" y="' + y + '" width="' + cell + '" height="' + cell + '" rx="2.5" fill="' + fill + '"' + stroke + attrs + "></rect>");
+        }
+      }
+      return '<div class="heat-wrap"><svg class="heat-svg" viewBox="0 0 ' + w.toFixed(1) + " " + h.toFixed(1) + '" role="img" aria-label="Calendario allenamenti degli ultimi 6 mesi">' + out.join("") + "</svg></div>";
+    }
+
+    function svgWeightWithMA(series) {
+      if (!series || !series.length) return "";
+      var w = 320, h = 158, padL = 22, padR = 16, padT = 28, padB = 22;
+      var min = series[0].kg, max = series[0].kg, i;
+      for (i = 0; i < series.length; i++) {
+        min = Math.min(min, series[i].kg, series[i].ma7);
+        max = Math.max(max, series[i].kg, series[i].ma7);
+      }
+      if (min === max) { min -= 0.5; max += 0.5; }
+      var firstD = series[0].date;
+      var totalDays = Math.max(1, daysDiffIso(firstD, series[series.length - 1].date));
+      function X(idx) {
+        if (series.length === 1) return padL + (w - padL - padR) / 2;
+        return padL + (Math.max(0, daysDiffIso(firstD, series[idx].date)) / totalDays) * (w - padL - padR);
+      }
+      function Y(v) { return h - padB - ((v - min) / (max - min)) * (h - padT - padB); }
+      var rawColor = cssVar("--red", "#d4321b");
+      var maColor = cssVar("--chalk-text", "#2f6b10");
+      var labelColor = cssVar("--chart-label", "#b4af9f");
+      var rawD = "", maD = "", dots = "";
+      for (i = 0; i < series.length; i++) {
+        var px = X(i).toFixed(1);
+        rawD += (i ? " L" : "M") + px + " " + Y(series[i].kg).toFixed(1);
+        maD += (i ? " L" : "M") + px + " " + Y(series[i].ma7).toFixed(1);
+        dots += '<circle cx="' + px + '" cy="' + Y(series[i].kg).toFixed(1) + '" r="2.6" fill="' + rawColor + '"></circle>';
+      }
+      var last = series[series.length - 1];
+      return '<svg class="chart" viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="Peso corporeo e media mobile a 7 giorni">' +
+        (series.length > 1 ? '<path d="' + rawD + '" fill="none" stroke="' + rawColor + '" stroke-width="1.6" opacity="0.65"></path>' : "") +
+        (series.length > 1 ? '<path d="' + maD + '" fill="none" stroke="' + maColor + '" stroke-width="2.6" stroke-linecap="round"></path>' : "") +
+        dots +
+        '<text x="' + padL + '" y="14" fill="' + labelColor + '" font-size="10">' + esc(itDateShort(series[0].date)) + "</text>" +
+        '<text x="' + (w - padR) + '" y="14" fill="' + labelColor + '" font-size="10" text-anchor="end">' + esc(itNum(last.kg)) + " kg</text>" +
+        "</svg>" +
+        '<div class="chart-legend">' +
+          '<span><span class="swatch" style="background:' + rawColor + '"></span>Peso</span>' +
+          '<span><span class="swatch" style="background:' + maColor + '"></span>Media 7 giorni (' + esc(itNum(last.ma7)) + " kg)</span>" +
+        "</div>";
+    }
+
+    function svgNutritionBars(days) {
+      if (!days || days.length < 2) return "";
+      var slice = days.slice(-14);
+      var w = 320, h = 140, padL = 28, padR = 8, padT = 16, padB = 22;
+      var plotW = w - padL - padR, plotH = h - padT - padB;
+      var maxK = 0, i;
+      for (i = 0; i < slice.length; i++) {
+        maxK = Math.max(maxK, slice[i].kcal || 0, slice[i].planKcal || 0);
+      }
+      if (maxK <= 0) return "";
+      var yMax = Math.ceil(maxK * 1.15);
+      var colW = plotW / slice.length;
+      var barW = Math.min(22, Math.max(8, colW - 5));
+      var color = cssVar("--chalk-text", "#2f6b10");
+      var targetColor = cssVar("--red", "#d4321b");
+      var labelColor = cssVar("--chart-label", "#b4af9f");
+      var bars = [];
+      for (i = 0; i < slice.length; i++) {
+        var d = slice[i];
+        var cx = padL + i * colW + colW / 2;
+        var bh = (d.kcal / yMax) * plotH;
+        var by = padT + plotH - bh;
+        bars.push('<rect x="' + (cx - barW / 2).toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(2, bh).toFixed(1) + '" rx="3" fill="' + color + '"></rect>');
+        if (d.planKcal) {
+          var ty = (padT + plotH - (d.planKcal / yMax) * plotH).toFixed(1);
+          bars.push('<line x1="' + (cx - barW / 2 - 2).toFixed(1) + '" y1="' + ty + '" x2="' + (cx + barW / 2 + 2).toFixed(1) + '" y2="' + ty + '" stroke="' + targetColor + '" stroke-width="1.6"></line>');
+        }
+        if (i === 0 || i === slice.length - 1 || (slice.length <= 7)) {
+          bars.push('<text x="' + cx.toFixed(1) + '" y="' + (h - 6) + '" text-anchor="middle" fill="' + labelColor + '" font-size="8.5">' + esc(itDateShort(d.date)) + "</text>");
+        }
+      }
+      bars.push('<text x="' + (padL - 4) + '" y="' + (padT + 4) + '" text-anchor="end" fill="' + labelColor + '" font-size="8.5">' + yMax + "</text>");
+      return '<svg class="chart" viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="Calorie giornaliere">' + bars.join("") + "</svg>";
+    }
+
+    function svgRatioChart(points) {
+      if (!points || !points.length) return "";
+      var w = 320, h = 154, padL = 22, padR = 16, padT = 28, padB = 22;
+      var min = points[0].ratio, max = points[0].ratio, i;
+      for (i = 0; i < points.length; i++) {
+        if (points[i].ratio < min) min = points[i].ratio;
+        if (points[i].ratio > max) max = points[i].ratio;
+      }
+      if (min === max) { min = Math.max(0, min - 0.1); max += 0.1; }
+      var firstD = points[0].date;
+      var totalDays = Math.max(1, daysDiffIso(firstD, points[points.length - 1].date));
+      function X(idx) {
+        if (points.length === 1) return padL + (w - padL - padR) / 2;
+        return padL + (Math.max(0, daysDiffIso(firstD, points[idx].date)) / totalDays) * (w - padL - padR);
+      }
+      function Y(v) { return h - padB - ((v - min) / (max - min)) * (h - padT - padB); }
+      var color = cssVar("--chalk-text", "#2f6b10");
+      var labelColor = cssVar("--chart-label", "#b4af9f");
+      var d = "", dots = "";
+      for (i = 0; i < points.length; i++) {
+        var px = X(i).toFixed(1), py = Y(points[i].ratio).toFixed(1);
+        d += (i ? " L" : "M") + px + " " + py;
+        dots += '<circle cx="' + px + '" cy="' + py + '" r="' + (i === points.length - 1 ? "4" : "2.6") + '" fill="' + color + '"></circle>';
+      }
+      var last = points[points.length - 1];
+      return '<svg class="chart" viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="Rapporto forza peso corporeo">' +
+        (points.length > 1 ? '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>' : "") +
+        dots +
+        '<text x="' + padL + '" y="14" fill="' + labelColor + '" font-size="10">' + esc(itDateShort(points[0].date)) + "</text>" +
+        '<text x="' + (w - padR) + '" y="14" fill="' + labelColor + '" font-size="10" text-anchor="end">' + esc(itNum(last.ratio)) + "×</text>" +
+        "</svg>";
+    }
+
     function paintCharts() {
       var history = (data && data.history) || [];
-      if (!history.length) return '<section class="history"><div class="history-top"><h2>Grafici</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' + emptyState("Ancora pochi dati", "Serve almeno una sessione nel diario per vedere i grafici.") + "</section>";
-      if (!chartExercise) chartExercise = history[0].name;
-      var current = history.find(function (item) { return item.name === chartExercise; }) || history[0];
-      var options = history.map(function (item) {
-        return '<option value="' + esc(item.name) + '"' + (item.name === current.name ? " selected" : "") + ">" + esc(item.name) + "</option>";
+      var recent = (data && data.recent) || [];
+      var weights = (data && data.weights) || [];
+      var checks = (data && data.mealChecks) || [];
+      if (!history.length && !recent.length && !weights.length && !checks.length) {
+        return '<section class="history charts-view"><div class="history-top"><h2>Grafici</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+          emptyState("Ancora pochi dati", "Serve almeno una sessione nel diario per vedere i grafici.") + "</section>";
+      }
+      var model = getChartsModel();
+
+      // 4. Period comparison
+      var isMonth = (chartPeriodMode || "month") !== "4w";
+      var cmp = isMonth ? model.cmpMonth : model.cmp4w;
+      function fmtVol(kg) {
+        if (kg >= 1000) return itNum(Math.round((kg / 1000) * 10) / 10) + " t";
+        return itNum(Math.round(kg)) + " kg";
+      }
+      function deltaLine(delta, suffix, hasPrev, pct) {
+        if (!hasPrev) return { cls: "", text: "Nessun dato prima" };
+        var sign = delta > 0 ? "+" : "";
+        var cls = delta > 0 ? "up" : delta < 0 ? "down" : "";
+        var txt = sign + (suffix === "vol" ? fmtVol(Math.abs(delta)) : itNum(delta) + suffix);
+        if (delta < 0 && suffix === "vol") txt = "−" + fmtVol(Math.abs(delta));
+        if (pct != null) txt += " (" + (pct > 0 ? "+" : "") + itNum(pct) + "%)";
+        return { cls: cls, text: txt };
+      }
+      var hasPrev = cmp.prev.sessions > 0;
+      var dSess = deltaLine(cmp.sessionsDelta, "", hasPrev, null);
+      var dSets = deltaLine(cmp.setsDelta, " serie", hasPrev, null);
+      var dVol = deltaLine(cmp.volumeDelta, "vol", hasPrev, cmp.volumePct);
+      var e1rmText = cmp.avgE1rmPct != null ? ((cmp.avgE1rmPct > 0 ? "+" : "") + itNum(cmp.avgE1rmPct) + "%") : "—";
+      var e1rmCls = cmp.avgE1rmPct != null ? (cmp.avgE1rmPct > 0 ? "up" : cmp.avgE1rmPct < 0 ? "down" : "") : "";
+      var e1rmSub = cmp.sharedCount ? ("Su " + cmp.sharedCount + " esercizi comuni") : "Servono sessioni in entrambi i periodi";
+      var cmpCard = '<article class="card chart-card"><h3>Confronto periodi</h3>' +
+        '<div class="subnav" role="tablist" aria-label="Periodo">' +
+          '<button class="ghost' + (isMonth ? " is-on" : "") + '" type="button" data-action="chart-period" data-mode="month" aria-pressed="' + (isMonth ? "true" : "false") + '">Mese vs scorso</button>' +
+          '<button class="ghost' + (!isMonth ? " is-on" : "") + '" type="button" data-action="chart-period" data-mode="4w" aria-pressed="' + (!isMonth ? "true" : "false") + '">4 sett. vs prec.</button>' +
+        "</div>" +
+        '<p class="chart-sub">' + esc(cmp.currLabel) + " rispetto a " + esc(cmp.prevLabel) + "</p>" +
+        '<div class="chart-kpis">' +
+          '<div class="chart-kpi"><b>' + cmp.curr.sessions + '</b><span>Sessioni</span><div class="delta ' + dSess.cls + '">' + esc(dSess.text) + "</div></div>" +
+          '<div class="chart-kpi"><b>' + cmp.curr.sets + '</b><span>Serie</span><div class="delta ' + dSets.cls + '">' + esc(dSets.text) + "</div></div>" +
+          '<div class="chart-kpi"><b>' + esc(fmtVol(cmp.curr.volume)) + '</b><span>Volume</span><div class="delta ' + dVol.cls + '">' + esc(dVol.text) + "</div></div>" +
+          '<div class="chart-kpi"><b>' + esc(e1rmText) + '</b><span>1RM medio</span><div class="delta ' + e1rmCls + '">' + esc(e1rmSub) + "</div></div>" +
+        "</div></article>";
+
+      // 3. Calendar heatmap (6 months)
+      var activeDates = Object.keys(model.daySessions).sort();
+      var selHeat = chartHeatDate && model.daySessions[chartHeatDate] ? chartHeatDate : (activeDates.length ? activeDates[activeDates.length - 1] : "");
+      var selHeatInfo = selHeat ? model.daySessions[selHeat] : null;
+      var heatMeta = model.activeDaysCount
+        ? (model.activeDaysCount + (model.activeDaysCount === 1 ? " giorno attivo" : " giorni attivi") + " negli ultimi 6 mesi" + (model.peakDay ? " · picco " + itNum(model.peakDay.volume) + " kg" : ""))
+        : "Nessun allenamento negli ultimi 6 mesi.";
+      var heatDetail = selHeatInfo
+        ? '<p class="heat-detail"><strong>' + esc(itDate(selHeatInfo.date)) + "</strong> · Scheda " + esc(selHeatInfo.codes.join("/")) + " · " + esc(seriesWord(selHeatInfo.sets)) + " · " + esc(itNum(selHeatInfo.volume)) + " kg</p>"
+        : "";
+      var heatCard = '<article class="card chart-card"><h3>Costanza · ultimi 6 mesi</h3>' +
+        '<p class="chart-sub">' + esc(heatMeta) + "</p>" +
+        (model.activeDaysCount ? svgHeatmap(model, selHeat) : '<div class="chart-empty"><p>Appena salvi la prima sessione, il calendario si colora qui.</p></div>') +
+        (model.activeDaysCount
+          ? '<div class="heat-legend"><span>Tocca un giorno per i dettagli</span><span class="heat-scale">Meno <i class="heat-swatch l0"></i><i class="heat-swatch l1"></i><i class="heat-swatch l2"></i><i class="heat-swatch l3"></i><i class="heat-swatch l4"></i> Più</span></div>'
+          : "") +
+        heatDetail + "</article>";
+
+      // 1. Weekly volume per muscle group
+      var selMuscle = (chartMuscle && (chartMuscle === "all" || model.muscles.indexOf(chartMuscle) !== -1)) ? chartMuscle : "all";
+      var muscleChips = '<div class="chart-pills" role="group" aria-label="Gruppo muscolare">' +
+        '<button type="button" data-action="chart-muscle" data-muscle="all"' + (selMuscle === "all" ? ' class="is-on" aria-pressed="true"' : ' aria-pressed="false"') + ">Tutti</button>" +
+        model.muscles.map(function (m) {
+          var on = selMuscle === m;
+          return '<button type="button" data-action="chart-muscle" data-muscle="' + esc(m) + '"' + (on ? ' class="is-on" aria-pressed="true"' : ' aria-pressed="false"') + ">" + esc(m) + "</button>";
+        }).join("") + "</div>";
+      var maxMuscleTot = 1;
+      model.muscles.forEach(function (m) { if (model.muscleTotals[m] > maxMuscleTot) maxMuscleTot = model.muscleTotals[m]; });
+      var muscleRows = model.muscles.map(function (m) {
+        var tot = model.muscleTotals[m] || 0;
+        var wkSets = model.latestActiveWeek ? (model.latestActiveWeek.byMuscle[m] || 0) : 0;
+        var pct = Math.max(4, Math.round((tot / maxMuscleTot) * 100));
+        var col = muscleColor(m, model.muscles);
+        return '<div class="muscle-row">' +
+          '<span><span class="dot" style="background:' + col + '"></span>' + esc(m) + "</span>" +
+          '<span class="muscle-track"><span class="muscle-fill" style="width:' + pct + '%;background:' + col + '"></span></span>' +
+          '<span class="muscle-val">' + wkSets + " / " + tot + "</span></div>";
       }).join("");
-      return '<section class="history"><div class="history-top"><h2>Grafici</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
-        '<label class="date">Esercizio<select id="chartExercise">' + options + "</select></label>" +
-        '<article class="card chart-card"><h3>Carico massimo</h3>' + svgChart(current.points, "maxLoad", cssVar("--red", "#ff4d2e")) + "</article>" +
-        '<article class="card chart-card"><h3>Volume (serie × rip × kg)</h3>' + svgChart(current.points, "volume", cssVar("--chalk-text", "#d4f05a")) + "</article></section>";
+      var muscleCard = '<article class="card chart-card"><h3>Serie a settimana per muscolo</h3>' +
+        '<p class="chart-sub">Ultime 8 settimane (escluso cardio). Valori: ultima sett. attiva / totale.</p>' +
+        (model.muscles.length ? muscleChips + svgStackedWeeklyMuscle(model, selMuscle) + '<div class="muscle-rows">' + muscleRows + "</div>"
+          : '<div class="chart-empty"><p>Ancora nessuna serie registrata per gruppo muscolare.</p></div>') +
+        "</article>";
+
+      // 2 & 6. Selectable exercise: 1RM trend + Strength/Weight ratio + classic load/volume
+      var exList = history.slice().sort(function (a, b) {
+        var ae = (model.e1rmByEx[a.name] || []).length > 0 ? 0 : 1;
+        var be = (model.e1rmByEx[b.name] || []).length > 0 ? 0 : 1;
+        if (ae !== be) return ae - be;
+        return a.name.localeCompare(b.name, "it");
+      });
+      if (!chartExercise || !exList.some(function (x) { return x.name === chartExercise; })) {
+        chartExercise = exList.length ? exList[0].name : "";
+      }
+      var currentHist = exList.find(function (item) { return item.name === chartExercise; }) || exList[0];
+      var exName = currentHist ? currentHist.name : "";
+      var e1rmPts = model.e1rmByEx[exName] || [];
+      var options = exList.map(function (item) {
+        return '<option value="' + esc(item.name) + '"' + (item.name === exName ? " selected" : "") + ">" + esc(item.name) + "</option>";
+      }).join("");
+      var exMetric = chartExMetric || "e1rm";
+      var exBody = "";
+      if (exMetric === "maxLoad") {
+        exBody = currentHist ? svgChart(currentHist.points, "maxLoad", cssVar("--red", "#d4321b")) : "";
+      } else if (exMetric === "volume") {
+        exBody = currentHist ? svgChart(currentHist.points, "volume", cssVar("--chalk-text", "#2f6b10")) : "";
+      } else {
+        exBody = svgE1rmTrendChart(e1rmPts);
+      }
+      var exPicker = exList.length
+        ? '<label class="date">Esercizio<select id="chartExercise">' + options + "</select></label>"
+        : "";
+      var exCard = '<article class="card chart-card"><h3>Andamento esercizio · 1RM stimato</h3>' +
+        exPicker +
+        '<div class="chart-pills" role="tablist" aria-label="Metrica esercizio">' +
+          '<button type="button" data-action="chart-ex-metric" data-metric="e1rm"' + (exMetric === "e1rm" ? ' class="is-on" aria-pressed="true"' : ' aria-pressed="false"') + ">1RM stimato</button>" +
+          '<button type="button" data-action="chart-ex-metric" data-metric="maxLoad"' + (exMetric === "maxLoad" ? ' class="is-on" aria-pressed="true"' : ' aria-pressed="false"') + ">Carico max</button>" +
+          '<button type="button" data-action="chart-ex-metric" data-metric="volume"' + (exMetric === "volume" ? ' class="is-on" aria-pressed="true"' : ' aria-pressed="false"') + ">Volume</button>" +
+        "</div>" + exBody + "</article>";
+
+      // 6. Strength-to-weight ratio
+      var ratioPts = [];
+      if (model.weightSeries.length && e1rmPts.length) {
+        e1rmPts.forEach(function (p) {
+          var nw = nearestWeightForDate(model.weightSeries, p.date);
+          if (nw && nw.kg > 0) {
+            ratioPts.push({
+              date: p.date,
+              e1rm: p.e1rm,
+              bodyKg: nw.kg,
+              bodyDate: nw.date,
+              ratio: Math.round((p.e1rm / nw.kg) * 100) / 100
+            });
+          }
+        });
+      }
+      var ratioBody = "";
+      if (!model.weightSeries.length) {
+        var latestE1 = e1rmPts.length ? e1rmPts[e1rmPts.length - 1].e1rm : null;
+        ratioBody = '<div class="chart-empty"><p>Manca il peso corporeo per calcolare il rapporto forza / peso (1RM stimato ÷ kg).' +
+          (latestE1 != null ? " Su " + esc(exName) + " il tuo 1RM stimato attuale è " + esc(itNum(latestE1)) + " kg." : "") + "</p>" +
+          '<button class="secondary" type="button" data-action="go-weight-log">Aggiungi pesata in Dieta</button></div>';
+      } else if (!ratioPts.length) {
+        ratioBody = '<div class="chart-empty"><p>Questo esercizio non ha ancora serie con carico per il rapporto forza / peso.</p></div>';
+      } else {
+        var rFirst = ratioPts[0], rLast = ratioPts[ratioPts.length - 1];
+        var rDelta = Math.round((rLast.ratio - rFirst.ratio) * 100) / 100;
+        ratioBody = '<p class="chart-sub">' + esc(exName) + " · attuale <strong>" + esc(itNum(rLast.ratio)) + "×</strong> il peso (" + esc(itNum(rLast.e1rm)) + " kg ÷ " + esc(itNum(rLast.bodyKg)) + " kg" +
+          (ratioPts.length > 1 ? " · " + (rDelta > 0 ? "+" : "") + esc(itNum(rDelta)) + "×" : "") + ")</p>" +
+          svgRatioChart(ratioPts);
+      }
+      var ratioCard = '<article class="card chart-card"><h3>Rapporto forza / peso</h3>' + ratioBody + "</article>";
+
+      // 5. Body weight + 7d moving avg + daily calories & macros
+      var weightBlock = "";
+      if (!model.weightSeries.length) {
+        weightBlock = '<div class="chart-empty"><p>Ancora nessuna pesata in Peso e Dieta. Registra il peso per vedere andamento e media mobile a 7 giorni.</p>' +
+          '<button class="secondary" type="button" data-action="go-weight-log">Registra peso</button></div>';
+      } else {
+        var wLast = model.weightSeries[model.weightSeries.length - 1];
+        weightBlock = '<p class="chart-sub">Ultimo: <strong>' + esc(itNum(wLast.kg)) + " kg</strong> (" + esc(itDateShort(wLast.date)) + ") · Media 7 giorni: <strong>" + esc(itNum(wLast.ma7)) + " kg</strong></p>" +
+          svgWeightWithMA(model.weightSeries);
+      }
+      var nutList = model.dailyNutrition || [];
+      var nutBlock = "";
+      if (!nutList.length) {
+        nutBlock = '<div class="chart-empty nut-block"><p>Nessun pasto segnato in Pasti Fatti. Quando spunti i pasti nella scheda Dieta vedrai calorie e macro giornalieri qui.</p></div>';
+      } else {
+        var nLast = nutList[nutList.length - 1];
+        var pctPlan = nLast.planKcal ? Math.min(100, Math.round((nLast.kcal / nLast.planKcal) * 100)) : 0;
+        var nutChart = nutList.length >= 2
+          ? svgNutritionBars(nutList)
+          : '<p class="chart-sub nut-block">Andamento calorie disponibile dal secondo giorno con pasti segnati.</p>';
+        nutBlock = nutChart + '<div class="macro-day-card">' +
+          "<strong>" + esc(itDate(nLast.date)) + " · " + esc(itNum(nLast.kcal)) + (nLast.planKcal ? " / " + esc(itNum(nLast.planKcal)) : "") + " kcal</strong>" +
+          (nLast.planKcal ? '<div class="macro-bar" aria-hidden="true"><span style="width:' + pctPlan + '%"></span></div>' : "") +
+          "<p>Prot " + esc(itNum(nLast.prot)) + " g · Carb " + esc(itNum(nLast.carb)) + " g · Grassi " + esc(itNum(nLast.fat)) + " g" +
+          (nLast.mealsTotal ? " · " + nLast.mealsDone + "/" + nLast.mealsTotal + " pasti segnati" : "") + "</p></div>";
+      }
+      var bodyNutritionCard = '<article class="card chart-card"><h3>Peso, calorie e macro</h3>' + weightBlock + nutBlock + "</article>";
+
+      return '<section class="history charts-view"><div class="history-top"><h2>Grafici</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+        cmpCard + heatCard + muscleCard + exCard + ratioCard + bodyNutritionCard + "</section>";
     }
 
     function weekdayNameIt(iso) {
@@ -4851,7 +5931,7 @@
       if (input.id === "weightDate") { weightDate = input.value; return; }
       if (input.id === "weightKg") { weightKg = input.value; return; }
       if (input.id === "weightNote") { weightNote = input.value; return; }
-      if (input.id === "chartExercise") { chartExercise = input.value; render(true); return; }
+      if (input.id === "chartExercise") { chartExercise = input.value; viewNeedsPaint.charts = true; viewNeedsPaint.report = true; render(true); return; }
       if (input.id === "reportMonth") { reportMonth = input.value; render(true); return; }
       if (input.id === "howtoVideo") { howtoVideoDraft = input.value; return; }
       if (updateReminderFromInput(input)) return;
@@ -4874,7 +5954,7 @@
     function onClick(event) {
       var button = event.target.closest("[data-action]");
       if (!button) return;
-      var action = button.dataset.action;
+      var action = button.getAttribute("data-action");
       if (action === "view-editor" || action === "history" || action === "charts" || action === "weight" || action === "records" || action === "settings" || action === "theme" || action === "pick" || action === "step" || action === "meal-check" || action === "meal-day" || action === "view-piano" || action === "view-peso" || action === "rest-default-minus" || action === "rest-default-plus" || action === "apply-progress" || action === "copy-last") {
         haptic(10);
       }
@@ -4980,6 +6060,42 @@
       if (action === "save-session-edit") { saveSessionEdit(); return; }
       if (action === "history") { view = "history"; errorText = ""; render(); return; }
       if (action === "charts") { view = "charts"; errorText = ""; render(); return; }
+      if (action === "chart-period") {
+        chartPeriodMode = button.getAttribute("data-mode") === "4w" ? "4w" : "month";
+        viewNeedsPaint.charts = true;
+        haptic(10);
+        render(true);
+        return;
+      }
+      if (action === "chart-muscle") {
+        chartMuscle = button.getAttribute("data-muscle") || "all";
+        viewNeedsPaint.charts = true;
+        haptic(10);
+        render(true);
+        return;
+      }
+      if (action === "chart-ex-metric") {
+        chartExMetric = button.getAttribute("data-metric") || "e1rm";
+        viewNeedsPaint.charts = true;
+        haptic(10);
+        render(true);
+        return;
+      }
+      if (action === "heatmap-day") {
+        chartHeatDate = button.getAttribute("data-date") || "";
+        viewNeedsPaint.charts = true;
+        haptic(8);
+        render(true);
+        return;
+      }
+      if (action === "go-weight-log") {
+        view = "weight";
+        weightSub = "peso";
+        errorText = "";
+        haptic(10);
+        render();
+        return;
+      }
       if (action === "weight") { view = "weight"; errorText = ""; if (!mealDay && data && data.today) mealDay = weekdayNameIt(data.today); render(); return; }
       if (action === "view-piano") { view = "weight"; weightSub = "piano"; render(); return; }
       if (action === "view-peso") { view = "weight"; weightSub = "peso"; render(); return; }
@@ -5215,6 +6331,7 @@
       if (!found) checks.push({ date: date, meal: meal, done: done, id: requestId || "" });
       data.mealChecks = checks;
       cacheState(data);
+      invalidateViews();
     }
 
     async function saveMealCheck(meal, done) {
@@ -5231,6 +6348,7 @@
           if (res.mealChecks) {
             data.mealChecks = res.mealChecks;
             cacheState(data);
+            invalidateViews();
           }
         } else {
           errorText = (res && res.error) || "Salvataggio non riuscito.";
@@ -5270,6 +6388,7 @@
         if (!data) data = {};
         data.weights = res.weights || data.weights;
         cacheState(data);
+        invalidateViews();
         weightNote = "";
         errorText = res.replayed ? "Questa voce era già stata salvata." : "Peso salvato.";
         render();
@@ -5473,6 +6592,8 @@
           persistQueue: persistQueue,
           initQueue: initQueue,
           getRecordModel: function () { return getRecordModel(); },
+          getChartsModel: function () { return getChartsModel(); },
+          linearRegression: linearRegression,
           detectClientPRs: detectClientPRs,
           showRecordToast: showRecordToast,
           hideRecordToast: hideRecordToast,
