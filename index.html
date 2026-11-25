@@ -1682,7 +1682,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.9.3</span></h1>
+          <h1>Palestra <span class="ver">v3.9.4</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -2860,6 +2860,45 @@
       return { sets: sets, tonnage: Math.round(tonnage * 10) / 10 };
     }
 
+    function draftLoggedStats(list) {
+      var sets = 0;
+      var tonnage = 0;
+      (list || []).forEach(function (ex) {
+        if (ex.skipped) return;
+        (ex.sets || []).forEach(function (set) {
+          if (!set.saved && !set.queued) return;
+          sets += 1;
+          var reps = parseNum(set.reps);
+          var kg = parseNum(set.kg);
+          if (reps != null && kg != null) tonnage += reps * kg;
+        });
+      });
+      return { sets: sets, tonnage: Math.round(tonnage * 10) / 10 };
+    }
+
+    function withCumulativeSummary(base, sent, list, savedCode, dateIso, flags) {
+      var day = draftLoggedStats(list);
+      var prev = workoutOf(savedCode) && workoutOf(savedCode).previous;
+      var summary = Object.assign({
+        code: savedCode,
+        date: dateIso,
+        sets: day.sets || sent.sets,
+        tonnage: day.sets ? day.tonnage : sent.tonnage,
+        delta: null,
+        previous: prev,
+        addedSets: sent.sets,
+        addedTonnage: sent.tonnage
+      }, base || {});
+      if (summary.addedSets == null && sent.sets) summary.addedSets = sent.sets;
+      if (summary.addedTonnage == null && sent.tonnage != null) summary.addedTonnage = sent.tonnage;
+      if (summary.delta == null && summary.previous && summary.previous.tonnage != null && summary.tonnage != null) {
+        summary.delta = Math.round((Number(summary.tonnage) - Number(summary.previous.tonnage)) * 10) / 10;
+      }
+      summary.partial = !!(flags && flags.partial);
+      summary.complete = !!(flags && flags.complete);
+      return summary;
+    }
+
     function draftSaveStats(list) {
       var total = 0;
       var done = 0;
@@ -3243,9 +3282,13 @@
       var mainBtn = isPartialConfirm
         ? '<button class="primary" type="button" data-action="continue-session">Continua la sessione</button>'
         : '<button class="primary" type="button" data-action="again">Nuova sessione</button>';
+      var addedLine = (summary.addedSets && summary.sets && summary.addedSets < summary.sets)
+        ? '<p class="muted">+' + esc(seriesWord(summary.addedSets)) + " aggiunte ora.</p>"
+        : "";
       return '<section class="confirm"><p class="eyebrow">' + eyebrow + '</p><h2>' + esc(summary.code) + " · " + esc(itDate(summary.date)) + "</h2>" +
         celebrate +
         '<div class="stat"><b>' + esc(seriesWord(summary.sets)) + '</b><span class="muted">' + esc(itNum(summary.tonnage)) + " kg di tonnellaggio</span></div>" +
+        addedLine +
         '<p class="' + cls + '">' + esc(deltaSentence(summary)) + "</p>" +
         (summary.replayed ? '<p class="muted">Questo salvataggio era già nel diario: non ho aggiunto righe doppie.</p>' : "") +
         (errorText ? '<p class="muted">' + esc(errorText) + "</p>" : '<p class="muted">' + defaultMsg + "</p>") +
@@ -7782,17 +7825,7 @@
         requestId = "";
         errorText = queueOrThrow("saveSession", payload, err);
         view = "confirm";
-        summary = {
-          code: savedCode,
-          date: dateValue,
-          sets: sentStats.sets,
-          tonnage: sentStats.tonnage,
-          delta: null,
-          previous: workoutOf(savedCode) && workoutOf(savedCode).previous,
-          replayed: false,
-          partial: isPartial,
-          complete: isComplete
-        };
+        summary = withCumulativeSummary(null, sentStats, list, savedCode, dateValue, { partial: isPartial, complete: isComplete });
         prs = detectClientPRs(exercisesPayload, (data && data.records) || []);
         render();
         showRecordToast(prs);
@@ -7819,17 +7852,8 @@
         s.queuedRequestId = "";
         s.savedId = savedMap[s.clientId] || s.savedId || s.clientId;
       });
-      summary = res.summary || {
-        code: savedCode,
-        date: dateValue,
-        sets: sentStats.sets,
-        tonnage: sentStats.tonnage,
-        delta: null,
-        previous: workoutOf(savedCode) && workoutOf(savedCode).previous,
-        replayed: !!res.replayed
-      };
-      summary.partial = isPartial;
-      summary.complete = isComplete;
+      summary = withCumulativeSummary(res.summary, sentStats, list, savedCode, dateValue, { partial: isPartial, complete: isComplete });
+      if (res.replayed) summary.replayed = true;
       prs = res.prs || [];
       if (!prs.length && !res.replayed) prs = detectClientPRs(exercisesPayload, (data && data.records) || []);
 
