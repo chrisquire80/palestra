@@ -829,6 +829,11 @@
     .remind-ics { margin: 0 0 var(--space-4); }
     .remind-ics .primary { width: 100%; }
     .remind-ics p { margin: 8px 0 0; font-size: var(--fs-xs); color: var(--muted); }
+    .calendar-card { margin: 0 0 var(--space-4); }
+    .calendar-card .remind-head { margin-bottom: 6px; }
+    .calendar-status { margin: 0 0 8px; font-size: var(--fs-sm); }
+    .calendar-status.ok { color: var(--chalk-text); font-weight: 650; }
+    .calendar-fallback { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--line); }
     .remind-notify { margin: 0 0 var(--space-4); }
     .remind-notify .text-btn { min-height: 44px; }
     .remind-card {
@@ -1628,7 +1633,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.5.1</span></h1>
+          <h1>Palestra <span class="ver">v3.6</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -1752,6 +1757,8 @@
     var STATE_KEY = "palestra-state";
     var REST_KEY = "palestra-rest-default";
     var REMINDER_KEY = "palestra-reminders";
+    var calendarStatus = null;
+    var calendarSyncTimer = 0;
     var REMINDER_FIRED_KEY = "palestra-reminders-fired";
     var THEME_KEY = "palestra-theme";
     var data = null;
@@ -2078,6 +2085,7 @@
       if (!dateValue) dateValue = state.today;
       if (!selected) selected = state.suggested || "A";
       if (!weightDate) weightDate = state.today;
+      if (state.calendar) calendarStatus = state.calendar;
       recordModel = null;
       invalidateViews();
     }
@@ -5169,7 +5177,8 @@
         training: { enabled: false, days: [], time: "18:30" },
         weighIn: { enabled: true, time: "07:30", freq: "daily", day: 1 },
         stale: { enabled: true, days: 4 },
-        plan: { enabled: true }
+        plan: { enabled: true },
+        calendarSync: false
       };
     }
 
@@ -5199,8 +5208,10 @@
           if (saved.plan && typeof saved.plan === "object") {
             cfg.plan.enabled = saved.plan.enabled !== false;
           }
+          if (saved.calendarSync != null) cfg.calendarSync = !!saved.calendarSync;
         }
       } catch (err) {}
+      if (calendarStatus && calendarStatus.enabled) cfg.calendarSync = true;
       return cfg;
     }
 
@@ -5222,7 +5233,8 @@
           enabled: !!(cfg.stale && cfg.stale.enabled),
           days: clampStaleDays(cfg.stale && cfg.stale.days)
         },
-        plan: { enabled: !(cfg.plan && cfg.plan.enabled === false) }
+        plan: { enabled: !(cfg.plan && cfg.plan.enabled === false) },
+        calendarSync: !!(cfg.calendarSync)
       };
       try { localStorage.setItem(REMINDER_KEY, JSON.stringify(clean)); } catch (err) {}
       return clean;
@@ -6029,6 +6041,109 @@
       render(true);
     }
 
+    function calendarSyncEnabled() {
+      var cfg = loadReminders();
+      return !!(cfg.calendarSync || (calendarStatus && calendarStatus.enabled));
+    }
+
+    function calendarStatusLine() {
+      if (calendarStatus && calendarStatus.needsAuth) {
+        return "Manca un’autorizzazione una tantum su Google Calendar. Dopo averla concessa, torna qui e tocca Riprova.";
+      }
+      if (calendarStatus && calendarStatus.error && calendarStatus.enabled) {
+        return calendarStatus.error;
+      }
+      if (calendarSyncEnabled() && calendarStatus && calendarStatus.authorized === false) {
+        return "La sincronizzazione è accesa, ma lo script non è ancora autorizzato su Google Calendar.";
+      }
+      if (calendarSyncEnabled()) {
+        return "Attivo sul calendario secondario «Palestra». Ogni allenamento salvato diventa un evento; i promemoria (se attivi) arrivano 10 minuti prima. Il calendario principale resta pulito.";
+      }
+      return "Spenta. Quando la attivi, Palestra crea il calendario «Palestra» e ci scrive allenamenti e promemoria, senza importare un file .ics.";
+    }
+
+    function scheduleCalendarSync() {
+      if (!calendarSyncEnabled()) return;
+      if (calendarSyncTimer) clearTimeout(calendarSyncTimer);
+      calendarSyncTimer = setTimeout(function () {
+        calendarSyncTimer = 0;
+        pushCalendarSync(true);
+      }, 700);
+    }
+
+    function pushCalendarSync(enabled) {
+      var cfg = loadReminders();
+      cfg.calendarSync = !!enabled;
+      storeReminders(cfg);
+      if (!enabled) {
+        calendarStatus = calendarStatus || {};
+        calendarStatus.enabled = false;
+      }
+      var payload = {
+        requestId: newRequestId(),
+        enabled: !!enabled,
+        training: {
+          enabled: !!(cfg.training && cfg.training.enabled),
+          days: ((cfg.training && cfg.training.days) || []).slice(),
+          time: (cfg.training && cfg.training.time) || "18:30"
+        },
+        weighIn: {
+          enabled: !!(cfg.weighIn && cfg.weighIn.enabled),
+          time: (cfg.weighIn && cfg.weighIn.time) || "07:30",
+          freq: cfg.weighIn && cfg.weighIn.freq === "weekly" ? "weekly" : "daily",
+          day: (cfg.weighIn && cfg.weighIn.day) || 1
+        }
+      };
+      function applyRes(res) {
+        if (!res) return;
+        calendarStatus = {
+          enabled: res.enabled != null ? !!res.enabled : !!enabled,
+          authorized: res.authorized,
+          needsAuth: !!res.needsAuth,
+          name: res.name || "Palestra",
+          calendarId: res.calendarId || (calendarStatus && calendarStatus.calendarId) || "",
+          training: res.training || payload.training,
+          weighIn: res.weighIn || payload.weighIn,
+          error: res.ok === false ? (res.error || "") : (res.needsAuth ? (res.error || "") : "")
+        };
+        if (res.ok === false) errorText = res.error || "Sincronizzazione calendario non riuscita.";
+        else if (res.needsAuth) errorText = res.error || "Serve un’autorizzazione una tantum a Google Calendar.";
+        else errorText = "";
+        viewNeedsPaint.settings = true;
+        if (view === "settings") render(true);
+      }
+      if (!navigator.onLine) {
+        errorText = "Sei offline. La preferenza è salvata sul telefono; la sincronizzazione partirà quando torna la rete.";
+        try {
+          enqueue({ action: "syncCalendar", requestId: payload.requestId, payload: payload, queuedAt: Date.now() });
+        } catch (err) {}
+        viewNeedsPaint.settings = true;
+        if (view === "settings") render(true);
+        return Promise.resolve();
+      }
+      return rpc("syncCalendar", payload).then(applyRes).catch(function (err) {
+        errorText = (err && err.message) || "Sincronizzazione calendario non riuscita.";
+        viewNeedsPaint.settings = true;
+        if (view === "settings") render(true);
+      });
+    }
+
+    function paintCalendarCard(cfg) {
+      var on = !!(cfg.calendarSync || (calendarStatus && calendarStatus.enabled));
+      var statusCls = on && !(calendarStatus && (calendarStatus.needsAuth || calendarStatus.error)) ? " ok" : "";
+      var retry = (calendarStatus && (calendarStatus.needsAuth || (calendarStatus.error && on)))
+        ? '<div class="remind-ics" style="margin-top:10px"><button class="secondary" type="button" data-action="calendar-retry">Riprova la sincronizzazione</button></div>'
+        : "";
+      return '<article class="card calendar-card"><h3>Google Calendar</h3>' +
+        '<p class="muted">Crea un calendario secondario «Palestra» e ci scrive gli allenamenti salvati e i promemoria attivi, con un avviso 10 minuti prima. Non serve importare un file .ics; il calendario principale resta pulito.</p>' +
+        '<div class="remind-head"><h4>Sincronizza</h4>' +
+        '<button class="seg-btn' + (on ? " is-on" : "") + '" type="button" data-action="calendar-sync" aria-pressed="' + (on ? "true" : "false") + '">' +
+        (on ? "Attivo" : "Spento") + "</button></div>" +
+        '<p class="calendar-status' + statusCls + '">' + esc(calendarStatusLine()) + "</p>" +
+        retry +
+        "</article>";
+    }
+
     function paintSettings() {
       var cfg = loadReminders();
       var perm = typeof Notification === "undefined" ? "non supportate" : Notification.permission;
@@ -6039,13 +6154,19 @@
         return '<button class="seg-btn' + (on ? " is-on" : "") + '" type="button" role="radio" data-action="theme" data-theme="' + id + '" aria-checked="' + (on ? "true" : "false") + '" aria-pressed="' + (on ? "true" : "false") + '">' +
           (on ? '<span class="seg-check" aria-hidden="true">✓</span>' : "") + esc(label) + "</button>";
       }
+      var syncOn = !!(cfg.calendarSync || (calendarStatus && calendarStatus.enabled));
+      var icsBlock = syncOn
+        ? ('<div class="remind-ics calendar-fallback"><button class="secondary" type="button" data-action="reminders-ics">Scarica una copia .ics</button>' +
+          '<p>La sincronizzazione è già attiva: non serve importare il file. Puoi comunque scaricarlo come copia di riserva.</p></div>')
+        : ('<p class="limit-note remind-intro">Le notifiche in app arrivano solo mentre Palestra è aperta. Per gli avvisi sul telefono anche a schermo spento, attiva la sincronizzazione con Google Calendar qui sopra, oppure scarica un file .ics.</p>' +
+          '<div class="remind-ics"><button class="secondary" type="button" data-action="reminders-ics">Scarica un file .ics</button>' +
+          '<p>Apri il file e conferma l’importazione. Gli eventi si ripetono da soli, con un avviso 10 minuti prima. Se importi di nuovo lo stesso file, il calendario aggiorna gli eventi già presenti invece di crearne di doppi. I vecchi promemoria dei pasti, se li avevi già aggiunti, vanno tolti a mano.</p></div>');
       return '<section class="history"><div class="history-top"><h2>Promemoria e altro</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
         '<article class="card"><h3>Tema</h3><p class="muted">Scegli come appare l’app. Automatico segue le impostazioni del telefono.</p>' +
         '<div class="theme-picks" role="radiogroup" aria-label="Tema">' + themeBtn("auto", "Automatico") + themeBtn("light", "Chiaro") + themeBtn("dark", "Scuro") + "</div></article>" +
+        paintCalendarCard(cfg) +
         '<article class="card"><h3>Promemoria</h3>' +
-        '<p class="limit-note remind-intro">Le notifiche in app arrivano solo mentre Palestra è aperta. Per essere avvisato anche a telefono spento, aggiungi gli orari al calendario del telefono.</p>' +
-        '<div class="remind-ics"><button class="primary" type="button" data-action="reminders-ics">Aggiungi al calendario</button>' +
-        '<p>Si scarica un file .ics: aprilo e conferma l’importazione. Gli eventi si ripetono da soli, con un avviso 10 minuti prima. Se importi di nuovo lo stesso file, il calendario aggiorna gli eventi già presenti invece di crearne di doppi. I vecchi promemoria dei pasti, se li avevi già aggiunti, vanno tolti a mano.</p></div>' +
+        icsBlock +
         '<p class="muted remind-notify">Permesso notifiche in app: ' + esc(permLabel) + '. Sono un extra, non sostituiscono il calendario.</p>' +
         '<div class="remind-notify"><button class="text-btn" type="button" data-action="notify-ask">Consenti notifiche in app</button></div>' +
         (errorText && view === "settings" ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
@@ -6518,6 +6639,7 @@
       storeReminders(cfg);
       viewNeedsPaint.settings = true;
       render(true);
+      if (calendarSyncEnabled()) scheduleCalendarSync();
       return true;
     }
 
@@ -6609,6 +6731,22 @@
       if (action === "print-report") { window.print(); return; }
       if (action === "notify-ask") { requestReminderPermission(); return; }
       if (action === "reminders-ics") { downloadRemindersIcs(); return; }
+      if (action === "calendar-sync") {
+        var cfg = loadReminders();
+        var next = !calendarSyncEnabled();
+        cfg.calendarSync = next;
+        storeReminders(cfg);
+        viewNeedsPaint.settings = true;
+        haptic(10);
+        render(true);
+        pushCalendarSync(next);
+        return;
+      }
+      if (action === "calendar-retry") {
+        haptic(10);
+        pushCalendarSync(true);
+        return;
+      }
       if (action === "remind-toggle") {
         var card = button.getAttribute("data-card");
         var cfg = loadReminders();
@@ -6622,6 +6760,7 @@
         updateNudgeBanners();
         haptic(10);
         render(true);
+        if ((card === "training" || card === "weigh") && calendarSyncEnabled()) scheduleCalendarSync();
         return;
       }
       if (action === "remind-day") {
@@ -6643,6 +6782,7 @@
         viewNeedsPaint.settings = true;
         haptic(10);
         render(true);
+        if (calendarSyncEnabled()) scheduleCalendarSync();
         return;
       }
       if (action === "remind-freq") {
@@ -6652,6 +6792,7 @@
         viewNeedsPaint.settings = true;
         haptic(10);
         render(true);
+        if (calendarSyncEnabled()) scheduleCalendarSync();
         return;
       }
       if (action === "remind-stale") {
