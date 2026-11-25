@@ -14,8 +14,26 @@
       try { pref = localStorage.getItem(KEY) || "auto"; } catch (err) {}
       if (pref !== "light" && pref !== "dark" && pref !== "auto") pref = "auto";
       var mode = pref;
+      var inTg = false;
+      try {
+        var src = String(window.location.search || "") + "&" + String(window.location.hash || "");
+        inTg = /(?:^|[?&#])tg=1(?:&|$)/.test(src) || /tgWebApp(?:Data|Version|Platform|ColorScheme)/.test(src) || !!(window.TelegramWebviewProxy);
+        if (inTg) document.documentElement.setAttribute("data-tg", "1");
+      } catch (err) {}
       if (pref === "auto") {
-        try { mode = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; } catch (err) { mode = "dark"; }
+        var tgScheme = null;
+        try {
+          var hashSrc = String(window.location.hash || "") + "&" + String(window.location.search || "");
+          var m = hashSrc.match(/tgWebAppColorScheme=([^&]+)/);
+          if (m) {
+            var v = decodeURIComponent(m[1]);
+            if (v === "light" || v === "dark") tgScheme = v;
+          }
+        } catch (err) {}
+        if (tgScheme) mode = tgScheme;
+        else {
+          try { mode = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; } catch (err) { mode = "dark"; }
+        }
       }
       document.documentElement.setAttribute("data-theme", mode);
       document.documentElement.setAttribute("data-theme-pref", pref);
@@ -860,6 +878,8 @@
     .tg-row .remind-head { margin-bottom: 2px; }
     .tg-row .muted { margin: 0; font-size: var(--fs-xs); }
     .tg-link { color: var(--chalk-text); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+    html[data-tg="1"] #installBanner,
+    html[data-tg="1"] #installApp { display: none !important; }
     .remind-notify { margin: 0 0 var(--space-4); }
     .remind-notify .text-btn { min-height: 44px; }
     .remind-card {
@@ -1659,7 +1679,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.8</span></h1>
+          <h1>Palestra <span class="ver">v3.9</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -1871,12 +1891,128 @@
       try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (err) { return ""; }
     }
 
+    function isTelegramMiniAppHint() {
+      try {
+        if (document.documentElement.getAttribute("data-tg") === "1") return true;
+        if (window.TelegramWebviewProxy) return true;
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) return true;
+        var q = window.location.search || "";
+        var h = window.location.hash || "";
+        if (/(?:^|[?&])tg=1(?:&|$)/.test(q) || /tgWebApp(?:Data|Version|Platform|ColorScheme)/.test(q + h)) return true;
+      } catch (err) {}
+      return false;
+    }
+
+    function getTelegramInitData() {
+      try {
+        var tg = window.Telegram && window.Telegram.WebApp;
+        return (tg && tg.initData) ? String(tg.initData) : "";
+      } catch (err) {
+        return "";
+      }
+    }
+
+    var telegramWebAppPromise = null;
+    function loadTelegramWebApp() {
+      if (telegramWebAppPromise) return telegramWebAppPromise;
+      if (window.Telegram && window.Telegram.WebApp) {
+        telegramWebAppPromise = Promise.resolve(window.Telegram.WebApp);
+        return telegramWebAppPromise;
+      }
+      if (!isTelegramMiniAppHint()) {
+        telegramWebAppPromise = Promise.resolve(null);
+        return telegramWebAppPromise;
+      }
+      telegramWebAppPromise = new Promise(function (resolve) {
+        var script = document.createElement("script");
+        script.src = "https://telegram.org/js/telegram-web-app.js";
+        script.async = true;
+        script.onload = function () {
+          resolve((window.Telegram && window.Telegram.WebApp) || null);
+        };
+        script.onerror = function () { resolve(null); };
+        document.head.appendChild(script);
+      });
+      return telegramWebAppPromise;
+    }
+
+    function setupTelegramMiniApp(tg) {
+      if (!tg) {
+        if (isTelegramMiniAppHint()) document.documentElement.setAttribute("data-tg", "1");
+        return;
+      }
+      document.documentElement.setAttribute("data-tg", "1");
+      try { if (tg.ready) tg.ready(); } catch (err) {}
+      try { if (tg.expand) tg.expand(); } catch (err) {}
+      applyTelegramTheme(tg);
+      try {
+        if (tg.onEvent) {
+          tg.onEvent("themeChanged", function () { applyTelegramTheme(tg); });
+          tg.onEvent("backButtonClicked", function () { goBackFromView(); });
+        }
+      } catch (err) {}
+      syncTelegramBackButton();
+    }
+
+    function applyTelegramTheme(tg) {
+      if (!tg) return;
+      applyTheme(loadThemePref());
+    }
+
+    function syncTelegramChrome(mode) {
+      var tg = window.Telegram && window.Telegram.WebApp;
+      if (!tg) return;
+      var color = mode === "light" ? "#f2eee6" : "#0e0f0c";
+      try { if (tg.setHeaderColor) tg.setHeaderColor(color); } catch (err) {}
+      try { if (tg.setBackgroundColor) tg.setBackgroundColor(color); } catch (err) {}
+      try { if (tg.setBottomBarColor) tg.setBottomBarColor(color); } catch (err) {}
+    }
+
+    function isTelegramDetailView() {
+      return view !== "editor" && view !== "loading" && view !== "error" && view !== "confirm";
+    }
+
+    function goBackFromView() {
+      if (view === "session-edit") {
+        editSession = null; editDraft = null; view = "history"; errorText = ""; render(); return;
+      }
+      if (view === "report") { view = "history"; errorText = ""; render(); return; }
+      if (view === "settings") { view = "editor"; errorText = ""; render(); return; }
+      if (view === "howto") { view = "editor"; howtoName = ""; errorText = ""; render(); return; }
+      if (view === "record-detail") {
+        recordDetailName = "";
+        view = detailReturnView || "records";
+        detailReturnView = "records";
+        errorText = "";
+        render();
+        return;
+      }
+      if (view === "editor" || view === "loading" || view === "error") return;
+      if (!data) { view = "error"; render(); return; }
+      view = "editor"; errorText = ""; prs = [];
+      render();
+    }
+
+    function syncTelegramBackButton() {
+      var tg = window.Telegram && window.Telegram.WebApp;
+      if (!tg || !tg.BackButton) return;
+      try {
+        if (isTelegramDetailView()) tg.BackButton.show();
+        else tg.BackButton.hide();
+      } catch (err) {}
+    }
+
     function rpc(name, arg) {
       var token = getToken();
-      if (!token) {
-        return Promise.reject(new Error("Per configurare l’app, apri dal telefono il link che trovi nel foglio Google, nella scheda App."));
+      var initData = getTelegramInitData();
+      if (!token && !initData) {
+        return Promise.reject(new Error(isTelegramMiniAppHint()
+          ? "Apri Palestra dal pulsante nel bot Coach Palestra su Telegram."
+          : "Per configurare l’app, apri dal telefono il link che trovi nel foglio Google, nella scheda App."));
       }
-      var body = { token: token, action: name };
+      var body = { action: name };
+      if (token) body.token = token;
+      if (initData) body.initData = initData;
       if (arg !== undefined) body.payload = arg;
       return fetch(API_URL, {
         method: "POST",
@@ -2762,6 +2898,7 @@
       updateNudgeBanners();
       if (keepScroll) window.scrollTo(0, y);
       else window.scrollTo(0, 0);
+      syncTelegramBackButton();
     }
 
     function syncNav() {
@@ -5801,6 +5938,10 @@
 
     function resolveThemeMode(pref) {
       if (pref === "light" || pref === "dark") return pref;
+      try {
+        var tg = window.Telegram && window.Telegram.WebApp;
+        if (tg && (tg.colorScheme === "light" || tg.colorScheme === "dark")) return tg.colorScheme;
+      } catch (err) {}
       try { return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; } catch (err) { return "dark"; }
     }
 
@@ -5825,6 +5966,7 @@
       if (bar) bar.setAttribute("content", mode === "light" ? "default" : "black-translucent");
       var manifest = document.querySelector('link[rel="manifest"]');
       if (manifest) manifest.setAttribute("href", mode === "light" ? "manifest-light.webmanifest" : "manifest.webmanifest");
+      syncTelegramChrome(mode);
       invalidateViews();
     }
 
@@ -6984,14 +7126,7 @@
         haptic(10);
       }
       if (action === "view-editor" || action === "back" || action === "again") {
-        if (!data && action !== "back") { view = "error"; render(); return; }
-        if (action === "back" && view === "session-edit") {
-          editSession = null; editDraft = null; view = "history"; errorText = ""; render(); return;
-        }
-        if (action === "back" && view === "report") { view = "history"; errorText = ""; render(); return; }
-        if (action === "back" && view === "settings") { view = "editor"; errorText = ""; render(); return; }
-        if (action === "back" && view === "howto") { view = "editor"; howtoName = ""; errorText = ""; render(); return; }
-        if (action === "back" && view === "record-detail") { recordDetailName = ""; view = detailReturnView || "records"; detailReturnView = "records"; errorText = ""; render(); return; }
+        if (action === "back") { goBackFromView(); return; }
         if (!data) { view = "error"; render(); return; }
         view = "editor"; errorText = ""; prs = [];
         if (action === "again") requestId = "";
@@ -7660,6 +7795,7 @@
     var deferredPrompt = null;
     window.addEventListener("beforeinstallprompt", function (event) {
       event.preventDefault();
+      if (isTelegramMiniAppHint()) return;
       deferredPrompt = event;
       var installBtn = document.getElementById("installApp");
       if (installBtn) installBtn.hidden = false;
@@ -7686,7 +7822,7 @@
     var mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     var installOff = false;
     try { installOff = localStorage.getItem("palestra-install-off") === "1"; } catch (err) { installOff = false; }
-    if (mobile && !standalone && !installOff) document.getElementById("installBanner").hidden = false;
+    if (mobile && !standalone && !installOff && !isTelegramMiniAppHint()) document.getElementById("installBanner").hidden = false;
 
     try {
       if (sessionStorage.getItem("palestra-test") === "1") {
@@ -7713,19 +7849,38 @@
           daysSinceLastSession: daysSinceLastSession,
           planNudgeInfo: planNudgeInfo,
           trainingSummary: trainingSummary,
-          weighInSummary: weighInSummary
+          weighInSummary: weighInSummary,
+          isTelegramMiniAppHint: isTelegramMiniAppHint,
+          getTelegramInitData: getTelegramInitData,
+          resolveThemeMode: resolveThemeMode,
+          goBackFromView: goBackFromView,
+          isTelegramDetailView: isTelegramDetailView
         };
       }
     } catch (err) {}
 
-    if (!getToken()) {
-      document.getElementById("setupBanner").hidden = false;
-      view = "error";
-      errorText = "Per configurare l’app, apri dal telefono il link che trovi nel foglio Google, nella scheda App.";
-      render();
-    } else {
+    function startApp() {
+      if (!getToken() && !getTelegramInitData()) {
+        document.getElementById("setupBanner").hidden = false;
+        view = "error";
+        errorText = isTelegramMiniAppHint()
+          ? "Apri Palestra dal pulsante nel bot Coach Palestra su Telegram."
+          : "Per configurare l’app, apri dal telefono il link che trovi nel foglio Google, nella scheda App.";
+        render();
+        return;
+      }
+      var setup = document.getElementById("setupBanner");
+      if (setup) setup.hidden = true;
       boot();
     }
+
+    loadTelegramWebApp().then(function (tg) {
+      setupTelegramMiniApp(tg);
+      applyTheme(loadThemePref());
+      startApp();
+    }).catch(function () {
+      startApp();
+    });
 
   </script>
 </body>
