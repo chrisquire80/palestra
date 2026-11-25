@@ -1633,7 +1633,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.6</span></h1>
+          <h1>Palestra <span class="ver">v3.6.1</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -5211,7 +5211,7 @@
           if (saved.calendarSync != null) cfg.calendarSync = !!saved.calendarSync;
         }
       } catch (err) {}
-      if (calendarStatus && calendarStatus.enabled) cfg.calendarSync = true;
+      if (calendarStatus && calendarStatus.ready && calendarStatus.calendarId) cfg.calendarSync = true;
       return cfg;
     }
 
@@ -6041,25 +6041,57 @@
       render(true);
     }
 
+    function calendarSyncReady() {
+      return !!(calendarStatus && calendarStatus.ready && calendarStatus.calendarId);
+    }
+
     function calendarSyncEnabled() {
-      var cfg = loadReminders();
-      return !!(cfg.calendarSync || (calendarStatus && calendarStatus.enabled));
+      // Intent only — never treat a local toggle as confirmation that the calendar exists.
+      return !!(calendarStatus && calendarStatus.enabled) || !!(loadReminders().calendarSync);
     }
 
     function calendarStatusLine() {
-      if (calendarStatus && calendarStatus.needsAuth) {
-        return "Manca un’autorizzazione una tantum su Google Calendar. Dopo averla concessa, torna qui e tocca Riprova.";
-      }
-      if (calendarStatus && calendarStatus.error && calendarStatus.enabled) {
-        return calendarStatus.error;
-      }
-      if (calendarSyncEnabled() && calendarStatus && calendarStatus.authorized === false) {
-        return "La sincronizzazione è accesa, ma lo script non è ancora autorizzato su Google Calendar.";
-      }
-      if (calendarSyncEnabled()) {
+      if (calendarSyncReady()) {
         return "Attivo sul calendario secondario «Palestra». Ogni allenamento salvato diventa un evento; i promemoria (se attivi) arrivano 10 minuti prima. Il calendario principale resta pulito.";
       }
+      if (calendarStatus && (calendarStatus.needsAuth || calendarStatus.authorized === false)) {
+        return "Manca un’autorizzazione una tantum su Google Calendar. Lo script non ha ancora il permesso di creare il calendario «Palestra». Dopo averla concessa, torna qui e tocca Riprova.";
+      }
+      if (calendarStatus && calendarStatus.error) {
+        return calendarStatus.error;
+      }
+      if (calendarSyncEnabled() && !(calendarStatus && calendarStatus.ready)) {
+        return "La sincronizzazione è stata richiesta, ma il calendario «Palestra» non risulta ancora creato. Tocca Riprova dopo l’autorizzazione.";
+      }
       return "Spenta. Quando la attivi, Palestra crea il calendario «Palestra» e ci scrive allenamenti e promemoria, senza importare un file .ics.";
+    }
+
+    function applyCalendarStatus(res, fallbackEnabled) {
+      if (!res) return;
+      calendarStatus = {
+        enabled: res.enabled != null ? !!res.enabled : !!fallbackEnabled,
+        ready: !!res.ready,
+        authorized: res.authorized,
+        needsAuth: !!res.needsAuth || (res.authorized === false && !res.ready),
+        name: res.name || "Palestra",
+        calendarId: res.calendarId || "",
+        training: res.training,
+        weighIn: res.weighIn,
+        error: res.ok === false ? (res.error || "") : (res.needsAuth ? (res.error || "") : "")
+      };
+      var cfg = loadReminders();
+      cfg.calendarSync = calendarSyncReady();
+      storeReminders(cfg);
+    }
+
+    function refreshCalendarStatus() {
+      if (!navigator.onLine) return Promise.resolve();
+      return rpc("getCalendarStatus").then(function (res) {
+        if (!res) return;
+        applyCalendarStatus(res, res.enabled);
+        viewNeedsPaint.settings = true;
+        if (view === "settings") render(true);
+      }).catch(function () {});
     }
 
     function scheduleCalendarSync() {
@@ -6073,11 +6105,12 @@
 
     function pushCalendarSync(enabled) {
       var cfg = loadReminders();
-      cfg.calendarSync = !!enabled;
-      storeReminders(cfg);
       if (!enabled) {
+        cfg.calendarSync = false;
+        storeReminders(cfg);
         calendarStatus = calendarStatus || {};
         calendarStatus.enabled = false;
+        calendarStatus.ready = false;
       }
       var payload = {
         requestId: newRequestId(),
@@ -6096,19 +6129,17 @@
       };
       function applyRes(res) {
         if (!res) return;
-        calendarStatus = {
-          enabled: res.enabled != null ? !!res.enabled : !!enabled,
-          authorized: res.authorized,
-          needsAuth: !!res.needsAuth,
-          name: res.name || "Palestra",
-          calendarId: res.calendarId || (calendarStatus && calendarStatus.calendarId) || "",
-          training: res.training || payload.training,
-          weighIn: res.weighIn || payload.weighIn,
-          error: res.ok === false ? (res.error || "") : (res.needsAuth ? (res.error || "") : "")
-        };
-        if (res.ok === false) errorText = res.error || "Sincronizzazione calendario non riuscita.";
-        else if (res.needsAuth) errorText = res.error || "Serve un’autorizzazione una tantum a Google Calendar.";
-        else errorText = "";
+        applyCalendarStatus(res, enabled);
+        if (!res.ready) {
+          var cfg2 = loadReminders();
+          cfg2.calendarSync = false;
+          storeReminders(cfg2);
+        }
+        if (res.ok === false || res.needsAuth || (enabled && !res.ready)) {
+          errorText = res.error || "La sincronizzazione non è ancora attiva: manca l’autorizzazione a Google Calendar, oppure il calendario non è stato creato.";
+        } else {
+          errorText = "";
+        }
         viewNeedsPaint.settings = true;
         if (view === "settings") render(true);
       }
@@ -6129,16 +6160,17 @@
     }
 
     function paintCalendarCard(cfg) {
-      var on = !!(cfg.calendarSync || (calendarStatus && calendarStatus.enabled));
-      var statusCls = on && !(calendarStatus && (calendarStatus.needsAuth || calendarStatus.error)) ? " ok" : "";
-      var retry = (calendarStatus && (calendarStatus.needsAuth || (calendarStatus.error && on)))
+      var ready = calendarSyncReady();
+      var pending = !ready && (calendarSyncEnabled() || (calendarStatus && (calendarStatus.needsAuth || calendarStatus.authorized === false || calendarStatus.error)));
+      var statusCls = ready ? " ok" : "";
+      var retry = pending
         ? '<div class="remind-ics" style="margin-top:10px"><button class="secondary" type="button" data-action="calendar-retry">Riprova la sincronizzazione</button></div>'
         : "";
       return '<article class="card calendar-card"><h3>Google Calendar</h3>' +
         '<p class="muted">Crea un calendario secondario «Palestra» e ci scrive gli allenamenti salvati e i promemoria attivi, con un avviso 10 minuti prima. Non serve importare un file .ics; il calendario principale resta pulito.</p>' +
         '<div class="remind-head"><h4>Sincronizza</h4>' +
-        '<button class="seg-btn' + (on ? " is-on" : "") + '" type="button" data-action="calendar-sync" aria-pressed="' + (on ? "true" : "false") + '">' +
-        (on ? "Attivo" : "Spento") + "</button></div>" +
+        '<button class="seg-btn' + (ready || pending ? " is-on" : "") + '" type="button" data-action="calendar-sync" aria-pressed="' + (ready ? "true" : "false") + '">' +
+        (ready ? "Attivo" : (pending ? "In attesa" : "Spento")) + "</button></div>" +
         '<p class="calendar-status' + statusCls + '">' + esc(calendarStatusLine()) + "</p>" +
         retry +
         "</article>";
@@ -6154,10 +6186,10 @@
         return '<button class="seg-btn' + (on ? " is-on" : "") + '" type="button" role="radio" data-action="theme" data-theme="' + id + '" aria-checked="' + (on ? "true" : "false") + '" aria-pressed="' + (on ? "true" : "false") + '">' +
           (on ? '<span class="seg-check" aria-hidden="true">✓</span>' : "") + esc(label) + "</button>";
       }
-      var syncOn = !!(cfg.calendarSync || (calendarStatus && calendarStatus.enabled));
+      var syncOn = calendarSyncReady();
       var icsBlock = syncOn
         ? ('<div class="remind-ics calendar-fallback"><button class="secondary" type="button" data-action="reminders-ics">Scarica una copia .ics</button>' +
-          '<p>La sincronizzazione è già attiva: non serve importare il file. Puoi comunque scaricarlo come copia di riserva.</p></div>')
+          '<p>La sincronizzazione è attiva sul calendario «Palestra»: non serve importare il file. Puoi comunque scaricarlo come copia di riserva.</p></div>')
         : ('<p class="limit-note remind-intro">Le notifiche in app arrivano solo mentre Palestra è aperta. Per gli avvisi sul telefono anche a schermo spento, attiva la sincronizzazione con Google Calendar qui sopra, oppure scarica un file .ics.</p>' +
           '<div class="remind-ics"><button class="secondary" type="button" data-action="reminders-ics">Scarica un file .ics</button>' +
           '<p>Apri il file e conferma l’importazione. Gli eventi si ripetono da soli, con un avviso 10 minuti prima. Se importi di nuovo lo stesso file, il calendario aggiorna gli eventi già presenti invece di crearne di doppi. I vecchi promemoria dei pasti, se li avevi già aggiunti, vanno tolti a mano.</p></div>');
@@ -6708,7 +6740,7 @@
         if (action === "again") requestId = "";
         render(); return;
       }
-      if (action === "settings") { view = "settings"; errorText = ""; render(); return; }
+      if (action === "settings") { view = "settings"; errorText = ""; render(); refreshCalendarStatus(); return; }
       if (action === "theme") { applyTheme(button.getAttribute("data-theme") || "auto"); render(true); return; }
       if (action === "howto") { openHowto(button.getAttribute("data-name") || ""); return; }
       if (action === "howto-open") { return; }
