@@ -1679,7 +1679,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.9</span></h1>
+          <h1>Palestra <span class="ver">v3.9.1</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -1797,7 +1797,11 @@
       showErrorToast(event.reason);
     });
 
-    var API_URL = "https://script.google.com/macros/s/AKfycby5BbhGQxfGqEHD71yl8Z3csntO-mlf7LZrXSHkl1_fnCODC8oJUBCTf-2LIdjrZAE/exec";
+    var DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycby5BbhGQxfGqEHD71yl8Z3csntO-mlf7LZrXSHkl1_fnCODC8oJUBCTf-2LIdjrZAE/exec";
+    var API_URL = DEFAULT_API_URL;
+    function apiUrl() {
+      return API_URL || DEFAULT_API_URL;
+    }
     var TOKEN_KEY = "palestra-token";
     var QUEUE_KEY = "palestra-queue";
     var STATE_KEY = "palestra-state";
@@ -2002,6 +2006,40 @@
       } catch (err) {}
     }
 
+    function describeMiniAppError_(message) {
+      var msg = String(message || "");
+      if (!isTelegramMiniAppHint()) return msg;
+      if (/Non autorizzato|riconoscerti|initData|firma non valida|auth_date/i.test(msg)) {
+        return "Telegram non è riuscito a riconoscerti. Chiudi la Mini App e aprila di nuovo dal bot Coach Palestra.";
+      }
+      if (/Failed to fetch|NetworkError|Load failed|network request failed|Failed to load/i.test(msg)) {
+        return "Non riesco a raggiungere il foglio da Telegram. Chiudi la Mini App e riaprila; se vedi l’avviso di nuova versione, tocca Aggiorna.";
+      }
+      return msg;
+    }
+
+    function parseRpcResponse_(res, text) {
+      var parsed;
+      try { parsed = JSON.parse(text); } catch (err) {
+        throw new Error(describeMiniAppError_(res && res.ok ? "Risposta non valida dal foglio." : "Il server ha risposto " + ((res && res.status) || "") + "."));
+      }
+      if (parsed && parsed.error) parsed.error = describeMiniAppError_(parsed.error);
+      if (res && !res.ok && (!parsed || parsed.ok !== false)) {
+        throw new Error((parsed && parsed.error) || describeMiniAppError_("Il server ha risposto " + res.status + "."));
+      }
+      return parsed;
+    }
+
+    function rpcGetFallback_(name, body) {
+      if (!body || !body.initData || body.token) return null;
+      if (!/^get/i.test(name) && name !== "getState") return null;
+      var parts = ["action=" + encodeURIComponent(name), "initData=" + encodeURIComponent(body.initData)];
+      if (body.payload !== undefined) parts.push("payload=" + encodeURIComponent(JSON.stringify(body.payload)));
+      var url = apiUrl() + "?" + parts.join("&");
+      if (url.length > 1800) return null;
+      return url;
+    }
+
     function rpc(name, arg) {
       var token = getToken();
       var initData = getTelegramInitData();
@@ -2014,22 +2052,28 @@
       if (token) body.token = token;
       if (initData) body.initData = initData;
       if (arg !== undefined) body.payload = arg;
-      return fetch(API_URL, {
+      var post = fetch(apiUrl(), {
         method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify(body),
         redirect: "follow",
+        mode: "cors",
         credentials: "omit"
       }).then(function (res) {
-        return res.text().then(function (text) {
-          var parsed;
-          try { parsed = JSON.parse(text); } catch (err) {
-            throw new Error(res.ok ? "Risposta non valida dal foglio." : "Il server ha risposto " + res.status + ".");
-          }
-          if (!res.ok && (!parsed || parsed.ok !== false)) {
-            throw new Error((parsed && parsed.error) || ("Il server ha risposto " + res.status + "."));
-          }
-          return parsed;
+        return res.text().then(function (text) { return parseRpcResponse_(res, text); });
+      });
+      return post.catch(function (err) {
+        var getUrl = rpcGetFallback_(name, body);
+        if (!getUrl) throw new Error(describeMiniAppError_((err && err.message) || err));
+        return fetch(getUrl, {
+          method: "GET",
+          redirect: "follow",
+          mode: "cors",
+          credentials: "omit"
+        }).then(function (res) {
+          return res.text().then(function (text) { return parseRpcResponse_(res, text); });
+        }).catch(function (err2) {
+          throw new Error(describeMiniAppError_((err2 && err2.message) || (err && err.message) || err2));
         });
       });
     }
@@ -2920,7 +2964,8 @@
         if (!errorText) errorText = "Non riesco a leggere il foglio.";
       }
       if (view === "error") {
-        return '<section class="error-box"><h2>Qualcosa non ha risposto</h2><p>' + esc(errorText) + '</p><button class="primary" type="button" data-action="retry">Riprova</button></section>';
+        var errTitle = /Telegram|Mini App/i.test(errorText || "") ? "Non riesco ad aprirti da Telegram" : "Qualcosa non ha risposto";
+        return '<section class="error-box"><h2>' + esc(errTitle) + '</h2><p>' + esc(errorText) + '</p><button class="primary" type="button" data-action="retry">Riprova</button></section>';
       }
       if (view === "history") return paintHistory();
       if (view === "charts") return paintCharts();
@@ -7655,7 +7700,7 @@
           render(true);
         } else {
           state = await rpc("getState");
-          if (!state || state.ok === false) throw new Error((state && state.error) || "Non riesco a leggere il foglio.");
+          if (!state || state.ok === false) throw new Error(describeMiniAppError_((state && state.error) || "Non riesco a leggere il foglio."));
           var keepDrafts = showedCache;
           var keepSelection = showedCache && selected && selected !== cachedSuggested;
           var keepDate = showedCache && dateValue && dateValue !== cachedToday;
@@ -7681,7 +7726,7 @@
           render();
         } else {
           view = "error";
-          errorText = (err && err.message) || "Non riesco a leggere il foglio.";
+          errorText = describeMiniAppError_((err && err.message) || "Non riesco a leggere il foglio.");
           render();
         }
       }
