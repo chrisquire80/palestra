@@ -870,6 +870,309 @@
     .empty svg { width: 56px; height: 56px; margin: 0 auto 12px; stroke: var(--chalk-text); fill: none; stroke-width: 1.8; display: block; }
     .empty h3 { margin: 0 0 6px; color: var(--ink); font-size: var(--fs-lg); }
     .empty p { margin: 0; }
+
+    /* Record v3.3 */
+    .record-hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+      margin: 0 0 var(--space-4);
+    }
+    .record-stat {
+      background: var(--card-2);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      padding: var(--space-3);
+      min-height: 76px;
+    }
+    .record-stat b {
+      display: block;
+      font-size: var(--fs-2xl);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink);
+      line-height: 1.05;
+      white-space: nowrap;
+    }
+    .record-stat span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: var(--fs-xs);
+      font-weight: 650;
+    }
+    .record-section {
+      margin: 0 0 var(--space-5);
+    }
+    .record-section > h3 {
+      margin: 0 0 var(--space-3);
+      font-size: var(--fs-sm);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 750;
+    }
+    .record-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0 0 var(--space-4);
+    }
+    .record-filters button {
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: var(--r-full);
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      font-size: var(--fs-sm);
+      font-weight: 650;
+    }
+    .record-filters button.is-on {
+      background: var(--chalk);
+      color: var(--on-chalk);
+      border-color: transparent;
+      font-weight: 800;
+    }
+    .record-recent {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 0 0 4px;
+      margin: 0;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+    .record-recent button {
+      flex: none;
+      width: 168px;
+      text-align: left;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      padding: 10px 12px;
+      min-height: 88px;
+      color: inherit;
+      box-shadow: var(--shadow-soft);
+    }
+    .record-recent button.is-new { border-color: var(--chalk); }
+    .record-recent strong {
+      display: block;
+      font-size: var(--fs-sm);
+      font-weight: 750;
+      line-height: 1.25;
+      margin: 4px 0 2px;
+    }
+    .record-recent p {
+      margin: 0;
+      color: var(--muted);
+      font-size: var(--fs-xs);
+    }
+    .pr-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: var(--r-full);
+      background: var(--done-bg);
+      color: var(--chalk-text);
+      font-size: var(--fs-2xs);
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      position: relative;
+    }
+    .pr-badge.is-pop::before,
+    .pr-badge.is-pop::after {
+      content: "";
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--chalk);
+      pointer-events: none;
+      animation: confetti-lite 900ms ease-out 1;
+    }
+    .pr-badge.is-pop::before { top: -4px; right: 4px; }
+    .pr-badge.is-pop::after { top: -2px; right: -4px; animation-delay: 80ms; background: var(--chalk-deep); }
+    @keyframes confetti-lite {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-10px) scale(0.4); opacity: 0; }
+    }
+    .mile-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .mile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card-2);
+      border: 1px dashed var(--line);
+      border-radius: var(--r-md);
+      padding: 10px 12px;
+      min-height: 68px;
+      text-align: left;
+    }
+    .mile.is-on {
+      border-style: solid;
+      border-color: var(--chalk);
+      background: var(--done-bg);
+    }
+    .mile.is-close { border-style: solid; }
+    .mile-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--r-full);
+      display: grid;
+      place-items: center;
+      background: var(--card);
+      color: var(--faint);
+      font-weight: 800;
+      font-size: var(--fs-sm);
+      flex: none;
+    }
+    .mile.is-on .mile-icon {
+      background: var(--chalk);
+      color: var(--on-chalk);
+    }
+    .mile p { margin: 0; font-size: var(--fs-sm); font-weight: 750; line-height: 1.2; color: var(--ink); }
+    .mile span { display: block; color: var(--muted); font-size: var(--fs-xs); font-weight: 550; margin-top: 2px; }
+    .pr-card {
+      width: 100%;
+      text-align: left;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px var(--space-3);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      padding: var(--space-3);
+      margin: 0 0 var(--space-3);
+      box-shadow: var(--shadow-soft);
+      color: inherit;
+      min-height: 44px;
+    }
+    .pr-card.is-new { border-color: var(--chalk); }
+    .pr-kicker {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 2px;
+      color: var(--muted);
+      font-size: var(--fs-xs);
+      font-weight: 650;
+    }
+    .pr-scheda {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: var(--r-full);
+      background: var(--card-2);
+      color: var(--ink);
+      font-size: var(--fs-2xs);
+      font-weight: 800;
+    }
+    .pr-name {
+      margin: 0;
+      font-size: var(--fs-lg);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+    }
+    .pr-load {
+      margin: 4px 0 0;
+      font-size: var(--fs-2xl);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.05;
+    }
+    .pr-load small {
+      font-size: var(--fs-sm);
+      font-weight: 650;
+      color: var(--muted);
+      letter-spacing: 0;
+    }
+    .pr-spark {
+      width: 72px;
+      height: 36px;
+      align-self: center;
+    }
+    .pr-spark svg { display: block; width: 100%; height: 100%; }
+    .pr-meta {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: var(--fs-xs);
+    }
+    .pr-meta .up { font-weight: 750; }
+    .record-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--fs-sm);
+    }
+    .record-table th {
+      text-align: left;
+      color: var(--muted);
+      font-size: var(--fs-xs);
+      font-weight: 650;
+      padding: 8px 6px;
+      border-bottom: 1px solid var(--line);
+    }
+    .record-table td {
+      padding: 10px 6px;
+      border-bottom: 1px solid var(--line);
+      font-variant-numeric: tabular-nums;
+      vertical-align: top;
+    }
+    .record-table tr.is-pr td { color: var(--chalk-text); font-weight: 700; }
+    .record-toast {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: calc(var(--tabbar-h) + 76px + env(safe-area-inset-bottom));
+      z-index: 21;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 12px 14px;
+      border-radius: var(--r-md);
+      background: var(--done-bg);
+      color: var(--ink);
+      border: 1px solid var(--chalk);
+      box-shadow: var(--shadow);
+    }
+    .record-toast[hidden] { display: none !important; }
+    .record-toast p { margin: 0; flex: 1; font-size: var(--fs-sm); }
+    .record-toast strong { color: var(--chalk-text); font-weight: 800; }
+    .record-stat b small,
+    .record-stat b .unit {
+      font-size: var(--fs-md);
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0;
+      font-variant-numeric: normal;
+      vertical-align: baseline;
+    }
+    .record-detail-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+      margin: 0 0 var(--space-4);
+    }
+    .records-detail .chart { height: 112px; }
+    .records-detail .chart-card { margin-bottom: var(--space-3); }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         transition: none !important;
@@ -878,7 +1181,7 @@
     }
     @media print {
       html, html[data-theme="dark"], html[data-theme="light"] { color-scheme: light; }
-      header, nav, .banner, .timer, .header-tools, .no-print, #errorToast, #modal,
+      header, nav, .banner, .timer, .header-tools, .no-print, #errorToast, #recordToast, #modal,
       #pendingBanner, #setupBanner, #installBanner, #updateBanner, .tabbar, .bar { display: none !important; }
       body { background: #fff; color: #111; padding: 12px; }
       .shell { max-width: none; padding: 0; }
@@ -901,7 +1204,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.2.1</span></h1>
+          <h1>Palestra <span class="ver">v3.3</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -982,6 +1285,10 @@
     <p id="errorToastText"></p>
     <button class="ghost" type="button" id="errorToastDismiss">Ok</button>
   </div>
+  <div id="recordToast" class="record-toast" hidden role="status">
+    <p id="recordToastText"></p>
+    <button class="ghost" type="button" id="recordToastDismiss">Ok</button>
+  </div>
   <script>
     function showErrorToast(raw) {
       var text = "";
@@ -1045,6 +1352,10 @@
     var howtoName = "";
     var howtoVideoDraft = "";
     var howtoPhotoUrl = "";
+    var recordFilter = "all";
+    var recordDetailName = "";
+    var recordModel = null;
+    var recordToastTimer = null;
     var DEFAULT_MEAL_TIMES = {
       "Colazione": "08:00",
       "Spuntino mattutino": "10:30",
@@ -1334,6 +1645,7 @@
       if (!dateValue) dateValue = state.today;
       if (!selected) selected = state.suggested || "A";
       if (!weightDate) weightDate = state.today;
+      recordModel = null;
       invalidateViews();
     }
 
@@ -1454,6 +1766,14 @@
       if (parts.length !== 3) return iso || "";
       return new Intl.DateTimeFormat("it-IT", {
         weekday: "short", day: "numeric", month: "short", timeZone: "Europe/Rome"
+      }).format(new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12)));
+    }
+
+    function itDateShort(iso) {
+      var parts = String(iso || "").split("-").map(Number);
+      if (parts.length !== 3) return iso || "";
+      return new Intl.DateTimeFormat("it-IT", {
+        day: "numeric", month: "short", timeZone: "Europe/Rome"
       }).format(new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12)));
     }
 
@@ -1958,7 +2278,7 @@
     }
 
     function syncNav() {
-      var map = { editor: "view-editor", history: "history", charts: "charts", weight: "weight", records: "records", confirm: "view-editor", settings: "settings", report: "history", "session-edit": "history", howto: "view-editor" };
+      var map = { editor: "view-editor", history: "history", charts: "charts", weight: "weight", records: "records", "record-detail": "records", confirm: "view-editor", settings: "settings", report: "history", "session-edit": "history", howto: "view-editor" };
       var current = map[view] || "";
       var buttons = document.querySelectorAll(".tab-btn");
       var i;
@@ -1982,6 +2302,7 @@
       if (view === "charts") return paintCharts();
       if (view === "weight") return paintWeight();
       if (view === "records") return paintRecords();
+      if (view === "record-detail") return paintRecordDetail();
       if (view === "settings") return paintSettings();
       if (view === "report") return paintReport();
       if (view === "session-edit") return paintSessionEdit();
@@ -2512,16 +2833,532 @@
         tabs + alert + (pianoOn ? paintMealPlan() : paintWeightLog()) + "</section>";
     }
 
+
+    var MUSCLE_ORDER = ["Petto", "Dorso", "Tricipiti", "Bicipiti", "Gambe", "Spalle", "Addome", "Circuito"];
+
+    function parseIsoDate(iso) {
+      var p = String(iso || "").split("-");
+      if (p.length < 3) return null;
+      var y = Number(p[0]), m = Number(p[1]), d = Number(p[2]);
+      if (!y || !m || !d) return null;
+      return new Date(y, m - 1, d);
+    }
+
+    function isoFromDate(d) {
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+
+    function addDaysIso(iso, days) {
+      var d = parseIsoDate(iso);
+      if (!d) return "";
+      d.setDate(d.getDate() + days);
+      return isoFromDate(d);
+    }
+
+    function isoWeekKey(iso) {
+      var d = parseIsoDate(iso);
+      if (!d) return "";
+      var day = d.getDay();
+      var diff = day === 0 ? 6 : day - 1;
+      d.setDate(d.getDate() - diff);
+      return isoFromDate(d);
+    }
+
+    function todayIso() {
+      return (data && data.today) || isoFromDate(new Date());
+    }
+
+    function epley1RM(kg, reps) {
+      kg = Number(kg);
+      reps = Number(reps);
+      if (!isFinite(kg) || kg <= 0 || !isFinite(reps) || reps <= 0) return null;
+      return Math.round(kg * (1 + reps / 30) * 10) / 10;
+    }
+
+    function detectClientPRs(list, records) {
+      var map = {};
+      var i, rec, ex, items, maxLoad, bestEpley, s, kg, reps, est;
+      (records || []).forEach(function (r) { if (r && r.name) map[r.name] = r; });
+      var out = [];
+      for (i = 0; i < (list || []).length; i++) {
+        ex = list[i];
+        if (!ex || ex.skipped) continue;
+        rec = map[ex.name] || {};
+        maxLoad = rec.maxLoad;
+        bestEpley = rec.bestEpley;
+        items = [];
+        (ex.sets || []).forEach(function (set) {
+          kg = parseNum(set.kg);
+          reps = parseNum(set.reps);
+          if (kg == null || kg <= 0 || reps == null || reps <= 0) return;
+          if (maxLoad == null || kg > maxLoad + 1e-6) {
+            items.push({ label: "Carico max", value: kg, previous: maxLoad == null ? null : maxLoad });
+            maxLoad = kg;
+          }
+          est = epley1RM(kg, reps);
+          if (est != null && (bestEpley == null || est > bestEpley + 1e-6)) {
+            items.push({ label: "1RM stimato", value: est, previous: bestEpley == null ? null : bestEpley });
+            bestEpley = est;
+          }
+        });
+        if (items.length) out.push({ name: ex.name, items: items });
+      }
+      return out;
+    }
+
+    function exerciseCatalog() {
+      var map = {};
+      ((data && data.workouts) || []).forEach(function (wo) {
+        ((wo && wo.exercises) || []).forEach(function (ex) {
+          var name = ex && ex.name;
+          if (!name) return;
+          if (!map[name]) map[name] = { name: name, muscle: ex.muscle || "Altro", kind: ex.kind || "", codes: [] };
+          if (wo.code && map[name].codes.indexOf(wo.code) === -1) map[name].codes.push(wo.code);
+        });
+      });
+      return map;
+    }
+
+    function weekStreak(dates, today) {
+      var weeks = {};
+      var i, key, cursor, n;
+      for (i = 0; i < dates.length; i++) {
+        key = isoWeekKey(dates[i]);
+        if (key) weeks[key] = true;
+      }
+      if (!Object.keys(weeks).length) return 0;
+      cursor = isoWeekKey(today);
+      if (!weeks[cursor]) {
+        cursor = addDaysIso(cursor, -7);
+        if (!weeks[cursor]) return 0;
+      }
+      n = 0;
+      while (cursor && weeks[cursor]) {
+        n += 1;
+        cursor = addDaysIso(cursor, -7);
+      }
+      return n;
+    }
+
+    function sparklineSvg(values) {
+      var vals = (values || []).filter(function (v) { return v != null && isFinite(v); });
+      if (!vals.length) return "";
+      var w = 72, h = 36, pad = 3;
+      var min = vals[0], max = vals[0], i, d, x, y;
+      for (i = 1; i < vals.length; i++) {
+        if (vals[i] < min) min = vals[i];
+        if (vals[i] > max) max = vals[i];
+      }
+      if (min === max) { min -= 1; max += 1; }
+      var color = cssVar("--chalk-text", "#2f6b10");
+      function X(idx) { return pad + (vals.length === 1 ? (w - pad * 2) / 2 : (idx / (vals.length - 1)) * (w - pad * 2)); }
+      function Y(v) { return h - pad - ((v - min) / (max - min)) * (h - pad * 2); }
+      d = "";
+      for (i = 0; i < vals.length; i++) {
+        x = X(i).toFixed(1);
+        y = Y(vals[i]).toFixed(1);
+        d += (i ? " L" : "M") + x + " " + y;
+      }
+      var lastX = X(vals.length - 1).toFixed(1);
+      var lastY = Y(vals[vals.length - 1]).toFixed(1);
+      return '<svg class="spark" viewBox="0 0 ' + w + " " + h + '" aria-hidden="true">' +
+        (vals.length > 1 ? '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>' : "") +
+        '<circle cx="' + lastX + '" cy="' + lastY + '" r="2.2" fill="' + color + '"></circle></svg>';
+    }
+
+    function buildRecordModel() {
+      var catalog = exerciseCatalog();
+      var today = todayIso();
+      var recentCutoff = addDaysIso(today, -30);
+      var newCutoff = addDaysIso(today, -14);
+      var monthPrefix = today.slice(0, 7);
+      var sessions = ((data && data.recent) || []).slice();
+      var dates = sessions.map(function (s) { return s.date; }).filter(Boolean);
+      var totalSessions = sessions.length;
+      var totalTonnage = 0;
+      var sessionsMonth = 0;
+      sessions.forEach(function (s) {
+        if (s.tonnage) totalTonnage += Number(s.tonnage) || 0;
+        if (s.date && String(s.date).slice(0, 7) === monthPrefix) sessionsMonth += 1;
+      });
+      totalTonnage = Math.round(totalTonnage * 10) / 10;
+      var streak = weekStreak(dates, today);
+      var histMap = {};
+      ((data && data.history) || []).forEach(function (h) {
+        if (h && h.name) histMap[h.name] = h.points || [];
+      });
+      var recMap = {};
+      ((data && data.records) || []).forEach(function (r) {
+        if (r && r.name) recMap[r.name] = r;
+      });
+      var names = {};
+      Object.keys(recMap).forEach(function (n) { names[n] = true; });
+      Object.keys(histMap).forEach(function (n) { names[n] = true; });
+      var cards = [];
+      Object.keys(names).forEach(function (name) {
+        var rec = recMap[name] || {};
+        var points = (histMap[name] || []).slice().sort(function (a, b) {
+          return String(a.date).localeCompare(String(b.date));
+        });
+        var cat = catalog[name] || { muscle: "Altro", kind: "", codes: [] };
+        if (cat.kind === "cardio") return;
+        var maxLoad = rec.maxLoad;
+        var maxLoadReps = rec.maxLoadReps;
+        var maxLoadDate = rec.maxLoadDate || "";
+        var bestEpley = rec.bestEpley;
+        var bestEpleyDate = rec.bestEpleyDate || "";
+        var bestEpleyReps = rec.bestEpleyReps;
+        var bestEpleyLoad = rec.bestEpleyLoad;
+        var bestVolume = null, bestVolumeDate = "";
+        var loads = [];
+        var runningMax = null, prevLoad = null, prevDate = "";
+        var firstDate = "";
+        var i, p, hit;
+        for (i = 0; i < points.length; i++) {
+          p = points[i];
+          if (!firstDate && p.date) firstDate = p.date;
+          if (p.volume != null && isFinite(p.volume) && p.volume > 0) {
+            if (bestVolume == null || p.volume > bestVolume) {
+              bestVolume = p.volume;
+              bestVolumeDate = p.date || "";
+            }
+          }
+          if (p.maxLoad != null && isFinite(p.maxLoad) && p.maxLoad > 0) loads.push(p.maxLoad);
+        }
+        runningMax = null;
+        prevLoad = null;
+        prevDate = "";
+        hit = false;
+        for (i = 0; i < points.length; i++) {
+          p = points[i];
+          if (p.maxLoad == null || !isFinite(p.maxLoad) || p.maxLoad <= 0) continue;
+          if (!hit && maxLoad != null && Math.abs(p.maxLoad - maxLoad) < 1e-6) {
+            if (runningMax != null) prevLoad = runningMax;
+            hit = true;
+          }
+          if (!hit && (runningMax == null || p.maxLoad > runningMax + 1e-6)) {
+            runningMax = p.maxLoad;
+            prevDate = p.date || "";
+          }
+        }
+        if (prevLoad == null) prevDate = "";
+        if (maxLoad == null && loads.length) {
+          maxLoad = Math.max.apply(null, loads);
+        }
+        if (maxLoad == null) return;
+        var deltaKg = prevLoad != null ? Math.round((maxLoad - prevLoad) * 10) / 10 : null;
+        var deltaPct = prevLoad ? Math.round(((maxLoad - prevLoad) / prevLoad) * 1000) / 10 : null;
+        var latestPrDate = maxLoadDate || bestEpleyDate || bestVolumeDate || firstDate || "";
+        if (bestEpleyDate && latestPrDate && bestEpleyDate > latestPrDate) latestPrDate = bestEpleyDate;
+        if (bestVolumeDate && latestPrDate && bestVolumeDate > latestPrDate) latestPrDate = bestVolumeDate;
+        var isRecent = !!(latestPrDate && latestPrDate >= recentCutoff);
+        var isNew = !!(latestPrDate && latestPrDate >= newCutoff);
+        var isFirst = prevLoad == null;
+        cards.push({
+          name: name,
+          muscle: cat.muscle || "Altro",
+          kind: cat.kind || "",
+          codes: cat.codes || [],
+          maxLoad: maxLoad,
+          maxLoadReps: maxLoadReps,
+          maxLoadDate: maxLoadDate,
+          bestEpley: bestEpley,
+          bestEpleyDate: bestEpleyDate,
+          bestEpleyReps: bestEpleyReps,
+          bestEpleyLoad: bestEpleyLoad,
+          bestVolume: bestVolume,
+          bestVolumeDate: bestVolumeDate,
+          prevLoad: prevLoad,
+          prevDate: prevDate,
+          deltaKg: deltaKg,
+          deltaPct: deltaPct,
+          isFirst: isFirst,
+          isRecent: isRecent,
+          isNew: isNew,
+          latestPrDate: latestPrDate,
+          spark: loads,
+          points: points
+        });
+      });
+      cards.sort(function (a, b) {
+        var ia = MUSCLE_ORDER.indexOf(a.muscle);
+        var ib = MUSCLE_ORDER.indexOf(b.muscle);
+        if (ia < 0) ia = 99;
+        if (ib < 0) ib = 99;
+        if (ia !== ib) return ia - ib;
+        return a.name.localeCompare(b.name, "it");
+      });
+      var weights = ((data && data.weights) || []).slice().sort(function (a, b) {
+        return String(a.date).localeCompare(String(b.date));
+      });
+      var lastWeight = weights.length ? weights[weights.length - 1] : null;
+      var milestones = [
+        { id: "s10", title: "10 sessioni", target: 10, value: totalSessions, unit: "sessioni", kind: "count" },
+        { id: "s25", title: "25 sessioni", target: 25, value: totalSessions, unit: "sessioni", kind: "count" },
+        { id: "s50", title: "50 sessioni", target: 50, value: totalSessions, unit: "sessioni", kind: "count" },
+        { id: "t10", title: "10 tonnellate", target: 10000, value: totalTonnage, unit: "t", kind: "tonnes" },
+        { id: "t50", title: "50 tonnellate", target: 50000, value: totalTonnage, unit: "t", kind: "tonnes" },
+        { id: "t100", title: "100 tonnellate", target: 100000, value: totalTonnage, unit: "t", kind: "tonnes" },
+        { id: "first", title: "Primo record", target: 1, value: cards.length ? 1 : 0, unit: "", kind: "flag" },
+        { id: "w4", title: "4 settimane di fila", target: 4, value: streak, unit: "settimane", kind: "count" }
+      ];
+      milestones.forEach(function (m) {
+        m.unlocked = m.value >= m.target;
+        if (m.kind === "tonnes") {
+          m.remain = Math.max(0, Math.round((m.target - m.value) * 10) / 10);
+          m.close = !m.unlocked && m.value >= m.target * 0.7;
+        } else if (m.kind === "flag") {
+          m.remain = m.unlocked ? 0 : 1;
+          m.close = false;
+        } else {
+          m.remain = Math.max(0, m.target - m.value);
+          m.close = !m.unlocked && m.remain <= Math.max(1, Math.round(m.target * 0.2));
+        }
+      });
+      return {
+        today: today,
+        totalSessions: totalSessions,
+        totalTonnage: totalTonnage,
+        tonnes: Math.round((totalTonnage / 1000) * 10) / 10,
+        streak: streak,
+        sessionsMonth: sessionsMonth,
+        monthPrefix: monthPrefix,
+        lastWeight: lastWeight,
+        cards: cards,
+        milestones: milestones
+      };
+    }
+
+    function getRecordModel() {
+      if (recordModel) return recordModel;
+      recordModel = buildRecordModel();
+      return recordModel;
+    }
+
+    function filteredRecordCards(model) {
+      var cards = (model.cards || []).slice();
+      var filter = recordFilter || "all";
+      if (filter === "A" || filter === "B" || filter === "C") {
+        cards = cards.filter(function (c) { return (c.codes || []).indexOf(filter) !== -1; });
+      } else if (filter === "recent") {
+        cards = cards.filter(function (c) { return c.isRecent; });
+        cards.sort(function (a, b) { return String(b.latestPrDate).localeCompare(String(a.latestPrDate)); });
+      } else if (filter === "improve") {
+        cards.sort(function (a, b) {
+          var pa = a.deltaPct == null ? -1 : a.deltaPct;
+          var pb = b.deltaPct == null ? -1 : b.deltaPct;
+          if (pb !== pa) return pb - pa;
+          return String(b.latestPrDate).localeCompare(String(a.latestPrDate));
+        });
+      }
+      return cards;
+    }
+
+    function recordCardHtml(card, compact) {
+      var setLine = card.maxLoad != null
+        ? itNum(card.maxLoad) + " kg" + (card.maxLoadReps != null ? " × " + card.maxLoadReps : "")
+        : "—";
+      var epley = card.bestEpley != null
+        ? itNum(card.bestEpley) + " kg stimato"
+        : "";
+      var vol = card.bestVolume != null
+        ? "Volume " + itNum(card.bestVolume) + " kg"
+        : "";
+      if (vol && card.bestVolumeDate && card.bestVolumeDate !== card.maxLoadDate) {
+        vol += " · " + itDate(card.bestVolumeDate);
+      }
+      var delta = "";
+      if (card.isFirst) delta = "Primo record";
+      else if (card.deltaKg != null) {
+        var sign = card.deltaKg > 0 ? "+" : "";
+        delta = sign + itNum(card.deltaKg) + " kg";
+        if (card.deltaPct != null) delta += " · " + (card.deltaPct > 0 ? "+" : "") + itNum(card.deltaPct) + "%";
+        if (card.prevDate) delta += " sul precedente (" + itDate(card.prevDate) + ")";
+      }
+      var date = card.maxLoadDate ? itDate(card.maxLoadDate) : (card.latestPrDate ? itDate(card.latestPrDate) : "");
+      var codes = (card.codes || []).map(function (c) { return '<span class="pr-scheda">' + esc(c) + "</span>"; }).join("");
+      var badge = card.isNew ? '<span class="pr-badge is-pop">Nuovo</span>' : (card.isRecent ? '<span class="pr-badge">Recente</span>' : "");
+      if (compact) {
+        return '<button class="pr-card-mini' + (card.isNew ? " is-new" : "") + '" type="button" data-action="record-detail" data-name="' + esc(card.name) + '">' +
+          (card.isNew ? '<span class="pr-badge is-pop">Nuovo</span>' : (badge || '<span class="pr-badge">PR</span>')) +
+          "<strong>" + esc(card.name) + "</strong>" +
+          "<p>" + esc(setLine) + (date ? " · " + date : "") + "</p></button>";
+      }
+      var spark = sparklineSvg(card.spark);
+      return '<button class="pr-card' + (card.isNew ? " is-new" : "") + '" type="button" data-action="record-detail" data-name="' + esc(card.name) + '">' +
+        '<div><p class="pr-kicker">' + codes + badge + "</p>" +
+        '<h4 class="pr-name">' + esc(card.name) + "</h4>" +
+        '<p class="pr-load">' + esc(itNum(card.maxLoad)) + ' <small>kg' + (card.maxLoadReps != null ? " × " + card.maxLoadReps : "") + "</small></p></div>" +
+        (spark ? '<div class="pr-spark">' + spark + "</div>" : "<div></div>") +
+        '<p class="pr-meta">' +
+          (epley ? "<span>1RM " + esc(epley) + "</span>" : "") +
+          (vol ? "<span>" + esc(vol) + "</span>" : "") +
+          (date ? "<span>" + date + "</span>" : "") +
+          (delta ? '<span class="' + (card.deltaKg > 0 ? "up" : "") + '">' + esc(delta) + "</span>" : "") +
+        "</p></button>";
+    }
+
+    function milestoneHtml(m) {
+      var sub;
+      if (m.kind === "flag") sub = m.unlocked ? "Sbloccato" : "Ancora da conquistare";
+      else if (m.kind === "tonnes") {
+        if (m.unlocked) sub = "Sbloccato · " + itNum(Math.round((m.value / 1000) * 10) / 10) + " t";
+        else sub = itNum(Math.round((m.value / 1000) * 10) / 10) + " / " + itNum(m.target / 1000) + " t" + (m.remain ? " · ancora " + itNum(Math.round((m.remain / 1000) * 10) / 10) + " t" : "");
+      } else {
+        if (m.unlocked) sub = "Sbloccato · " + itNum(m.value);
+        else sub = itNum(m.value) + " / " + itNum(m.target) + (m.remain ? " · ancora " + itNum(m.remain) : "");
+      }
+      var cls = "mile" + (m.unlocked ? " is-on" : m.close ? " is-close" : "");
+      var icon = m.unlocked ? "✓" : (m.close ? "!" : "–");
+      return '<div class="' + cls + '"><div class="mile-icon" aria-hidden="true">' + icon + "</div><div><p>" + esc(m.title) + "</p><span>" + esc(sub) + "</span></div></div>";
+    }
+
     function paintRecords() {
-      var records = (data && data.records) || [];
-      var body = records.length ? "<ul>" + records.map(function (rec) {
-        return "<li><strong>" + esc(rec.name) + "</strong><br>Carico max: " + itNum(rec.maxLoad) + " kg" +
-          (rec.maxLoadReps != null ? " × " + rec.maxLoadReps + " rip" : "") +
-          (rec.maxLoadDate ? " · " + itDate(rec.maxLoadDate) : "") +
-          (rec.bestEpley != null ? "<br>1RM stimato: " + itNum(rec.bestEpley) + " kg" + (rec.bestEpleyDate ? " · " + itDate(rec.bestEpleyDate) : "") : "") +
-          "</li>";
-      }).join("") + "</ul>" : emptyState("Ancora nessun record", "I carichi massimi compariranno dopo le prime sessioni.");
-      return '<section class="history"><div class="history-top"><h2>Record personali</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' + body + "</section>";
+      if (!data) {
+        return '<section class="history"><div class="history-top"><h2>Record personali</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+          emptyState("Ancora nessun record", "I carichi massimi compariranno dopo le prime sessioni.") + "</section>";
+      }
+      var model = getRecordModel();
+      var monthLabel = "Questo mese";
+      try {
+        var parts = (model.monthPrefix || "").split("-");
+        if (parts.length === 2) {
+          var label = new Date(Number(parts[0]), Number(parts[1]) - 1, 1).toLocaleDateString("it-IT", { month: "long" });
+          monthLabel = "A " + label;
+        }
+      } catch (err) {}
+      var hero = '<div class="record-hero">' +
+        '<div class="record-stat"><b>' + model.totalSessions + "</b><span>Sessioni totali</span></div>" +
+        '<div class="record-stat"><b>' + esc(itNum(model.tonnes)) + '</b><span>Tonnellaggio</span></div>' +
+        '<div class="record-stat"><b>' + model.streak + "</b><span>Settimane di fila</span></div>" +
+        '<div class="record-stat"><b>' + model.sessionsMonth + "</b><span>" + esc(monthLabel) + "</span></div>" +
+        "</div>";
+      if (model.lastWeight && model.lastWeight.kg != null) {
+        hero += '<p class="muted">Ultimo peso corporeo: ' + esc(itNum(model.lastWeight.kg)) + " kg" +
+          (model.lastWeight.date ? " · " + itDate(model.lastWeight.date) : "") + "</p>";
+      }
+      var recentCards = model.cards.filter(function (c) { return c.isRecent; })
+        .sort(function (a, b) { return String(b.latestPrDate).localeCompare(String(a.latestPrDate)); })
+        .slice(0, 8);
+      var recentBlock = '<div class="record-section"><h3>Record recenti</h3>';
+      if (!recentCards.length) {
+        recentBlock += emptyState("Nessun record recente", "Quando superi un carico, un 1RM o un volume nei prossimi 30 giorni, lo vedrai qui.");
+      } else {
+        recentBlock += '<div class="record-recent">' + recentCards.map(function (c) { return recordCardHtml(c, true); }).join("") + "</div>";
+      }
+      recentBlock += "</div>";
+      var miles = '<div class="record-section"><h3>Traguardi</h3><div class="mile-row">' +
+        model.milestones.map(milestoneHtml).join("") + "</div></div>";
+      var filters = [
+        { id: "all", label: "Tutti" },
+        { id: "A", label: "Scheda A" },
+        { id: "B", label: "Scheda B" },
+        { id: "C", label: "Scheda C" },
+        { id: "recent", label: "Recenti" },
+        { id: "improve", label: "Progresso" }
+      ];
+      var filterBar = '<div class="record-filters" role="tablist" aria-label="Filtra i record">' + filters.map(function (f) {
+        var on = (recordFilter || "all") === f.id;
+        return '<button type="button" data-action="record-filter" data-filter="' + f.id + '"' +
+          (on ? ' class="is-on" aria-pressed="true"' : ' aria-pressed="false"') + ">" + f.label + "</button>";
+      }).join("") + "</div>";
+      var cards = filteredRecordCards(model);
+      var body = "";
+      if (!model.cards.length) {
+        body = emptyState("Ancora nessun record", "Dopo le prime sessioni con i pesi compariranno i tuoi primati, i grafici e i traguardi.");
+      } else if (!cards.length) {
+        var emptyMsg = recordFilter === "recent"
+          ? "Nessun primato negli ultimi 30 giorni."
+          : (recordFilter === "A" || recordFilter === "B" || recordFilter === "C"
+            ? "In questa scheda non ho ancora un carico massimo da mostrare."
+            : "Nessun record con questo filtro.");
+        body = emptyState("Niente da mostrare", emptyMsg);
+      } else if (recordFilter === "improve" || recordFilter === "recent") {
+        body = '<div class="record-section"><h3>' + (recordFilter === "improve" ? "Per miglioramento" : "Ultimi 30 giorni") + "</h3>" +
+          cards.map(function (c) { return recordCardHtml(c, false); }).join("") + "</div>";
+      } else {
+        var groups = [];
+        var seen = {};
+        cards.forEach(function (c) {
+          var g = c.muscle || "Altro";
+          if (!seen[g]) { seen[g] = []; groups.push(g); }
+          seen[g].push(c);
+        });
+        body = groups.map(function (g) {
+          return '<div class="record-section"><h3>' + esc(g) + "</h3>" +
+            seen[g].map(function (c) { return recordCardHtml(c, false); }).join("") + "</div>";
+        }).join("");
+      }
+      return '<section class="history records-view"><div class="history-top"><h2>Record personali</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+        hero + recentBlock + miles + '<div class="record-section"><h3>Record per esercizio</h3>' + filterBar + "</div>" + body + "</section>";
+    }
+
+    function findRecordCard(name) {
+      var model = getRecordModel();
+      var i;
+      for (i = 0; i < model.cards.length; i++) {
+        if (sameExerciseName(model.cards[i].name, name)) return model.cards[i];
+      }
+      return null;
+    }
+
+    function paintRecordDetail() {
+      var name = recordDetailName;
+      var card = findRecordCard(name);
+      if (!card) {
+        return '<section class="history"><div class="history-top"><h2>Record</h2><button class="ghost" type="button" data-action="back">Indietro</button></div>' +
+          emptyState("Esercizio non trovato", "Torna ai record e scegli un altro esercizio.") + "</section>";
+      }
+      var stats = '<div class="record-detail-stats">' +
+        '<div class="record-stat"><b>' + esc(itNum(card.maxLoad)) + ' <small>kg</small></b><span>Carico max' + (card.maxLoadReps != null ? " · " + card.maxLoadReps + " rip" : "") + (card.maxLoadDate ? " · " + itDateShort(card.maxLoadDate) : "") + "</span></div>" +
+        '<div class="record-stat"><b>' + (card.bestEpley != null ? esc(itNum(card.bestEpley)) + ' <small>kg</small>' : "—") + "</b><span>1RM stimato" + (card.bestEpleyDate ? " · " + itDateShort(card.bestEpleyDate) : "") + "</span></div>" +
+        '<div class="record-stat"><b>' + (card.bestVolume != null ? esc(itNum(card.bestVolume)) + ' <small>kg</small>' : "—") + "</b><span>Miglior volume" + (card.bestVolumeDate ? " · " + itDateShort(card.bestVolumeDate) : "") + "</span></div>" +
+        '<div class="record-stat"><b>' + (card.isFirst ? "—" : (card.deltaKg != null ? (card.deltaKg > 0 ? "+" : "") + esc(itNum(card.deltaKg)) + " kg" : "—")) + "</b><span>" + (card.isFirst ? "Primo record" : ("Sul precedente" + (card.prevDate ? " · " + itDateShort(card.prevDate) : ""))) + "</span></div>" +
+        "</div>";
+      var points = card.points || [];
+      var loadChart = '<div class="chart-card"><h3>Andamento del carico</h3>' + svgChart(points, "maxLoad", cssVar("--chalk-text", "#2f6b10")) + "</div>";
+      var volChart = '<div class="chart-card"><h3>Volume per sessione</h3>' + svgChart(points, "volume", cssVar("--chalk-text", "#2f6b10")) + "</div>";
+      var rows = points.map(function (p) {
+        var isPr = card.maxLoadDate && p.date === card.maxLoadDate && p.maxLoad != null && Math.abs(p.maxLoad - card.maxLoad) < 1e-6;
+        return '<tr' + (isPr ? ' class="is-pr"' : "") + "><td>" + esc(itDate(p.date)) + "</td><td>" +
+          (p.maxLoad != null ? esc(itNum(p.maxLoad)) + " kg" : "—") + "</td><td>" +
+          (p.volume != null ? esc(itNum(p.volume)) + " kg" : "—") + "</td><td>" +
+          (p.sets != null ? esc(String(p.sets)) : "—") + (isPr ? " · PR" : "") + "</td></tr>";
+      }).join("");
+      var table = points.length
+        ? '<div class="record-section"><h3>Storico</h3><table class="record-table"><thead><tr><th>Data</th><th>Carico max</th><th>Volume</th><th>Serie</th></tr></thead><tbody>' + rows + "</tbody></table></div>"
+        : emptyState("Ancora pochi dati", "Serve almeno una sessione di questo esercizio.");
+      var codes = (card.codes || []).map(function (c) { return "Scheda " + c; }).join(" · ");
+      return '<section class="history records-detail"><div class="history-top"><h2>' + esc(card.name) + '</h2><button class="ghost" type="button" data-action="back">Indietro</button></div>' +
+        '<p class="muted">' + esc(card.muscle) + (codes ? " · " + esc(codes) : "") + "</p>" +
+        stats + loadChart + volChart + table + "</section>";
+    }
+
+    function showRecordToast(list) {
+      if (!list || !list.length) return;
+      var toast = document.getElementById("recordToast");
+      var label = document.getElementById("recordToastText");
+      if (!toast || !label) return;
+      var names = list.map(function (pr) { return pr.name; }).filter(Boolean);
+      var text = names.length === 1
+        ? "Hai migliorato " + names[0] + "."
+        : "Hai migliorato " + names.length + " esercizi.";
+      label.innerHTML = "<strong>Nuovo record!</strong> " + esc(text);
+      toast.hidden = false;
+      if (recordToastTimer) clearTimeout(recordToastTimer);
+      recordToastTimer = setTimeout(function () {
+        toast.hidden = true;
+        recordToastTimer = null;
+      }, 5200);
+    }
+
+    function hideRecordToast() {
+      var toast = document.getElementById("recordToast");
+      if (toast) toast.hidden = true;
+      if (recordToastTimer) {
+        clearTimeout(recordToastTimer);
+        recordToastTimer = null;
+      }
     }
 
 
@@ -3485,6 +4322,7 @@
         if (action === "back" && view === "report") { view = "history"; errorText = ""; render(); return; }
         if (action === "back" && view === "settings") { view = "editor"; errorText = ""; render(); return; }
         if (action === "back" && view === "howto") { view = "editor"; howtoName = ""; errorText = ""; render(); return; }
+        if (action === "back" && view === "record-detail") { recordDetailName = ""; view = "records"; errorText = ""; render(); return; }
         if (!data) { view = "error"; render(); return; }
         view = "editor"; errorText = ""; prs = [];
         if (action === "again") requestId = "";
@@ -3531,7 +4369,24 @@
       }
       if (action === "meal-plan-cancel") { resetMealUpload(); render(true); return; }
       if (action === "meal-plan-confirm") { confirmMealPlanUpload(); return; }
-      if (action === "records") { view = "records"; errorText = ""; render(); return; }
+      if (action === "records") { view = "records"; recordDetailName = ""; errorText = ""; render(); return; }
+      if (action === "record-filter") {
+        recordFilter = button.getAttribute("data-filter") || "all";
+        viewNeedsPaint.records = true;
+        haptic(10);
+        render(true);
+        return;
+      }
+      if (action === "record-detail") {
+        recordDetailName = button.getAttribute("data-name") || "";
+        if (!recordDetailName) return;
+        view = "record-detail";
+        viewNeedsPaint["record-detail"] = true;
+        errorText = "";
+        haptic(10);
+        render();
+        return;
+      }
       if (action === "retry") { boot(); return; }
       if (action === "flush") { flushQueue(); return; }
       if (action === "pick") { selected = button.dataset.code; errorText = ""; render(true); return; }
@@ -3684,8 +4539,9 @@
         errorText = queueOrThrow("saveSession", payload, err);
         view = "confirm";
         summary = { code: selected, date: dateValue, sets: draftStats(list).sets, tonnage: draftStats(list).tonnage, delta: null, previous: workoutOf(selected) && workoutOf(selected).previous, replayed: false };
-        prs = [];
+        prs = detectClientPRs(list, (data && data.records) || []);
         render();
+        showRecordToast(prs);
         return;
       }
       if (res && res.needsConfirm) {
@@ -3703,6 +4559,7 @@
       }
       summary = res.summary;
       prs = res.prs || [];
+      if (!prs.length) prs = detectClientPRs(list, (data && data.records) || []);
       delete drafts[selected];
       if (res.state) {
         var keepDate = dateValue;
@@ -3713,6 +4570,7 @@
       requestId = "";
       view = "confirm";
       render();
+      showRecordToast(prs);
     }
 
     function mealCheckId(date, meal) {
@@ -3990,7 +4848,11 @@
           flushQueue: flushQueue,
           loadQueue: loadQueue,
           persistQueue: persistQueue,
-          initQueue: initQueue
+          initQueue: initQueue,
+          getRecordModel: function () { return getRecordModel(); },
+          detectClientPRs: detectClientPRs,
+          showRecordToast: showRecordToast,
+          hideRecordToast: hideRecordToast
         };
       }
     } catch (err) {}
