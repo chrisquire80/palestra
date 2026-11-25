@@ -1679,7 +1679,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.9.1</span></h1>
+          <h1>Palestra <span class="ver">v3.9.2</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -1910,7 +1910,11 @@
     function getTelegramInitData() {
       try {
         var tg = window.Telegram && window.Telegram.WebApp;
-        return (tg && tg.initData) ? String(tg.initData) : "";
+        if (tg && tg.initData) return String(tg.initData);
+        var src = String(window.location.hash || "").replace(/^#/, "") + "&" + String(window.location.search || "").replace(/^\?/, "");
+        var m = src.match(/(?:^|&)tgWebAppData=([^&]+)/);
+        if (m && m[1]) return decodeURIComponent(m[1]);
+        return "";
       } catch (err) {
         return "";
       }
