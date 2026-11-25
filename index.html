@@ -1512,7 +1512,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.4</span></h1>
+          <h1>Palestra <span class="ver">v3.4.1</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -2571,6 +2571,13 @@
     function setRefreshing(on) {
       var el = document.getElementById("refreshPill");
       if (el) el.hidden = !on;
+    }
+
+    function openWeightSub(sub) {
+      view = "weight";
+      weightSub = sub === "peso" ? "peso" : "piano";
+      viewNeedsPaint.weight = true;
+      render();
     }
 
     function render(keepScroll) {
@@ -6052,7 +6059,7 @@
       }
       if (action === "stale-open") { view = "editor"; errorText = ""; render(); return; }
       if (action === "stale-dismiss") { dismissStaleNudge(); return; }
-      if (action === "plan-open") { view = "weight"; weightSub = "piano"; errorText = ""; render(); return; }
+      if (action === "plan-open") { errorText = ""; openWeightSub("piano"); return; }
       if (action === "plan-dismiss") { dismissPlanNudge(); return; }
       if (action === "edit-session") { openSessionEdit(button.dataset.index); return; }
       if (action === "delete-session") { deleteSessionByIndex(button.dataset.index, false); return; }
@@ -6089,17 +6096,15 @@
         return;
       }
       if (action === "go-weight-log") {
-        view = "weight";
-        weightSub = "peso";
         errorText = "";
         haptic(10);
-        render();
+        openWeightSub("peso");
         return;
       }
-      if (action === "weight") { view = "weight"; errorText = ""; if (!mealDay && data && data.today) mealDay = weekdayNameIt(data.today); render(); return; }
-      if (action === "view-piano") { view = "weight"; weightSub = "piano"; render(); return; }
-      if (action === "view-peso") { view = "weight"; weightSub = "peso"; render(); return; }
-      if (action === "meal-day") { mealDay = button.getAttribute("data-day") || ""; render(true); return; }
+      if (action === "weight") { errorText = ""; if (!mealDay && data && data.today) mealDay = weekdayNameIt(data.today); openWeightSub(weightSub || "piano"); return; }
+      if (action === "view-piano") { openWeightSub("piano"); return; }
+      if (action === "view-peso") { openWeightSub("peso"); return; }
+      if (action === "meal-day") { mealDay = button.getAttribute("data-day") || ""; viewNeedsPaint.weight = true; render(true); return; }
       if (action === "meal-check") { saveMealCheck(button.getAttribute("data-meal"), !mealIsDone(button.getAttribute("data-meal"))); return; }
       if (action === "meal-plan-pick") {
         var input = document.getElementById("mealPlanFile");
@@ -6465,6 +6470,11 @@
       if (pendingCount) setTimeout(function () { flushQueue(); }, 4000);
     }
 
+    document.body.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var form = event.target;
+      if (form && form.getAttribute("data-action") === "weight-form") saveWeight();
+    });
     document.body.addEventListener("click", onClick);
     document.body.addEventListener("input", onInput);
     document.body.addEventListener("change", function (event) {
@@ -6593,6 +6603,7 @@
           initQueue: initQueue,
           getRecordModel: function () { return getRecordModel(); },
           getChartsModel: function () { return getChartsModel(); },
+          openWeightSub: openWeightSub,
           linearRegression: linearRegression,
           detectClientPRs: detectClientPRs,
           showRecordToast: showRecordToast,
