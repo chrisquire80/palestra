@@ -680,6 +680,12 @@
       padding: 3px 8px;
       min-height: 28px;
     }
+    .celebrate-line {
+      margin: 0 0 12px;
+      color: var(--chalk-text);
+      font-weight: 750;
+      font-size: var(--fs-sm);
+    }
     .celebrate {
       margin: 0 0 14px;
       padding: 14px;
@@ -1622,12 +1628,11 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.5</span></h1>
+          <h1>Palestra <span class="ver">v3.5.1</span></h1>
         </div>
       </div>
       <div class="header-tools">
         <span id="offlineBadge" class="offline-badge" hidden>Offline</span>
-        <span id="pendingPill" class="pending-pill" hidden></span>
         <span id="refreshPill" class="refresh-pill" hidden>Aggiorno…</span>
         <button class="icon-link" type="button" data-action="settings" aria-label="Promemoria e altre opzioni">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09A1.65 1.65 0 0 0 19.4 15z"/></svg>
@@ -1770,7 +1775,6 @@
     var chartExercise = "";
     var chartMuscle = "all";
     var chartPeriodMode = "month";
-    var chartExMetric = "e1rm";
     var chartHeatDate = "";
     var chartsModel = null;
     var weightDate = "";
@@ -1803,17 +1807,6 @@
     var undoToastTimer = null;
     var editorNotice = "";
     var recordToastTimer = null;
-    var DEFAULT_MEAL_TIMES = {
-      "Colazione": "08:00",
-      "Spuntino mattutino": "10:30",
-      "Pranzo": "13:00",
-      "Spuntino pomeridiano": "16:30",
-      "Spuntino": "16:30",
-      "Cena": "20:00",
-      "Cena (LIBERA)": "20:00",
-      "Spuntino serale": "21:30"
-    };
-
     function captureToken() {
       var hash = String(window.location.hash || "");
       if (!hash) return;
@@ -1976,14 +1969,7 @@
 
     function updateQueueUi(items) {
       pendingCount = (items || []).length;
-      var pill = document.getElementById("pendingPill");
       var banner = document.getElementById("pendingBanner");
-      if (pill) {
-        pill.hidden = !pendingCount;
-        pill.textContent = pendingCount
-          ? (pendingCount + " in attesa di sincronizzazione")
-          : "";
-      }
       if (banner) {
         banner.hidden = !pendingCount;
         var label = document.getElementById("pendingLabel");
@@ -2736,7 +2722,7 @@
     }
 
     function syncNav() {
-      var map = { editor: "view-editor", history: "history", charts: "charts", weight: "weight", records: "records", "record-detail": (detailReturnView === "history" ? "history" : "records"), confirm: "view-editor", settings: "settings", report: "history", "session-edit": "history", howto: "view-editor" };
+      var map = { editor: "view-editor", history: "history", charts: "charts", weight: "weight", records: "records", "record-detail": (detailReturnView === "history" || detailReturnView === "charts" ? detailReturnView : "records"), confirm: "view-editor", settings: "settings", report: "history", "session-edit": "history", howto: "view-editor" };
       var current = map[view] || "";
       var buttons = document.querySelectorAll(".tab-btn");
       var i;
@@ -2860,14 +2846,11 @@
       var cls = summary.delta > 0 ? "up" : summary.delta < 0 ? "down" : "";
       var celebrate = "";
       if (prs && prs.length) {
-        var items = prs.map(function (pr) {
-          var bits = pr.items.map(function (item) {
-            var prev = item.previous != null ? " (prima " + itNum(item.previous) + " kg)" : "";
-            return esc(item.label) + ": " + itNum(item.value) + " kg" + prev;
-          }).join(" · ");
-          return "<li><strong>" + esc(pr.name) + "</strong><br>" + bits + "</li>";
-        }).join("");
-        celebrate = '<div class="celebrate"><h3>Nuovo record!</h3><ul>' + items + "</ul></div>";
+        var names = prs.map(function (pr) { return pr.name; }).filter(Boolean);
+        var line = names.length === 1
+          ? "Hai migliorato " + names[0] + "."
+          : "Hai migliorato " + names.length + " esercizi.";
+        celebrate = '<p class="celebrate-line">Nuovo record: ' + esc(line) + "</p>";
       }
       return '<section class="confirm"><p class="eyebrow">Registrato</p><h2>' + esc(summary.code) + " · " + esc(itDate(summary.date)) + "</h2>" +
         celebrate +
@@ -2880,14 +2863,6 @@
         '<div class="confirm-actions"><button class="secondary" type="button" data-action="history">Vedi lo storico</button></div></section>';
     }
 
-    function mondayOfIso(iso) {
-      var d = parseIsoDate(iso);
-      if (!d) return "";
-      var offset = (d.getDay() + 6) % 7;
-      d.setDate(d.getDate() - offset);
-      return isoFromDate(d);
-    }
-
     function weekLabelIt(weekStartIso, todayIso) {
       var start = parseIsoDate(weekStartIso);
       if (!start) return weekStartIso || "Settimana";
@@ -2898,7 +2873,7 @@
       var span = start.getMonth() === end.getMonth()
         ? (start.getDate() + "–" + end.getDate() + " " + mEnd)
         : (start.getDate() + " " + mStart + " – " + end.getDate() + " " + mEnd);
-      var thisMon = todayIso ? mondayOfIso(todayIso) : "";
+      var thisMon = todayIso ? isoWeekKey(todayIso) : "";
       var prevMon = thisMon ? addDaysIso(thisMon, -7) : "";
       if (weekStartIso === thisMon) return "Questa settimana · " + span;
       if (weekStartIso === prevMon) return "Settimana scorsa · " + span;
@@ -2956,38 +2931,48 @@
           exSet[exName] = true;
           blobParts.push(exName);
           var isCardio = /cardio/i.test(exName);
-          var exMaxLoad = null;
-          var exBestEpley = null;
           (it.sets || []).forEach(function (st) {
             if (st.note) blobParts.push(st.note);
             if (st.rir) blobParts.push(st.rir);
             var reps = Number(st.reps);
-            var kg = st.kg != null && st.kg !== "" ? Number(st.kg) : null;
             if (isCardio && isFinite(reps) && reps > 0) cardioMin += reps;
-            if (!isCardio && isFinite(reps) && reps > 0 && kg != null && isFinite(kg) && kg > 0) {
-              if (exMaxLoad == null || kg > exMaxLoad) exMaxLoad = kg;
-              var epley = Math.round(kg * (1 + reps / 30) * 10) / 10;
-              if (exBestEpley == null || epley > exBestEpley) exBestEpley = epley;
+          });
+        });
+        var foundPrs = sessionPrsAgainstBest(s, (function () {
+          var best = {};
+          Object.keys(bestLoad).forEach(function (k) {
+            best[k] = { maxLoad: bestLoad[k], bestEpley: bestEpley[k] };
+          });
+          Object.keys(bestEpley).forEach(function (k) {
+            if (!best[k]) best[k] = {};
+            best[k].bestEpley = bestEpley[k];
+          });
+          return best;
+        })());
+        foundPrs.forEach(function (pr) {
+          var tags = pr.items.filter(function (item) { return item.previous != null; }).map(function (item) {
+            return item.label + " " + itNum(item.value) + " kg";
+          });
+          if (!tags.length) return;
+          sessionPRs.push({ name: pr.name, tags: tags, items: pr.items });
+          prByEx[pr.name.toLowerCase()] = tags;
+        });
+        (s.items || []).forEach(function (it) {
+          if (!it || !it.name) return;
+          var key = it.name.toLowerCase();
+          (it.sets || []).forEach(function (st) {
+            var kg = st.kg != null && st.kg !== "" ? Number(st.kg) : null;
+            var reps = Number(st.reps);
+            if (kg != null && isFinite(kg) && kg > 0 && isFinite(reps) && reps > 0) {
+              if (bestLoad[key] == null || kg > bestLoad[key]) bestLoad[key] = kg;
+              var est = epley1RM(kg, reps);
+              if (est != null && (bestEpley[key] == null || est > bestEpley[key])) bestEpley[key] = est;
             }
           });
-          var key = exName.toLowerCase();
-          var tags = [];
-          if (exMaxLoad != null) {
-            if (bestLoad[key] != null && exMaxLoad > bestLoad[key] + 1e-6) tags.push("Carico max " + itNum(exMaxLoad) + " kg");
-            if (bestLoad[key] == null || exMaxLoad > bestLoad[key]) bestLoad[key] = exMaxLoad;
-          }
-          if (exBestEpley != null) {
-            if (bestEpley[key] != null && exBestEpley > bestEpley[key] + 1e-6) tags.push("1RM " + itNum(exBestEpley) + " kg");
-            if (bestEpley[key] == null || exBestEpley > bestEpley[key]) bestEpley[key] = exBestEpley;
-          }
-          if (tags.length) {
-            sessionPRs.push({ name: exName, tags: tags });
-            prByEx[key] = tags;
-          }
         });
 
         enrichedByIdx[wrap.recentIdx] = {
-          session: s, recentIdx: wrap.recentIdx, weekStart: mondayOfIso(s.date),
+          session: s, recentIdx: wrap.recentIdx, weekStart: isoWeekKey(s.date),
           cmp: cmp, prs: sessionPRs, prByEx: prByEx,
           cardioMin: Math.round(cardioMin * 10) / 10, searchBlob: blobParts.join(" ").toLowerCase()
         };
@@ -3096,7 +3081,7 @@
           cmpBox +
           '<div class="session-ex-list">' + exRows + "</div>" +
           '<div class="session-actions">' +
-            '<button class="secondary" type="button" data-action="repeat-session" data-index="' + idx + '">Ripeti</button>' +
+            '<button class="secondary" type="button" data-action="repeat-session" data-index="' + idx + '">Ripeti questa</button>' +
             '<button class="secondary" type="button" data-action="edit-session" data-index="' + idx + '">Modifica</button>' +
             '<button class="ghost danger" type="button" data-action="delete-session" data-index="' + idx + '">Elimina</button>' +
           "</div>" +
@@ -3989,25 +3974,15 @@
       var options = exList.map(function (item) {
         return '<option value="' + esc(item.name) + '"' + (item.name === exName ? " selected" : "") + ">" + esc(item.name) + "</option>";
       }).join("");
-      var exMetric = chartExMetric || "e1rm";
-      var exBody = "";
-      if (exMetric === "maxLoad") {
-        exBody = currentHist ? svgChart(currentHist.points, "maxLoad", cssVar("--red", "#d4321b")) : "";
-      } else if (exMetric === "volume") {
-        exBody = currentHist ? svgChart(currentHist.points, "volume", cssVar("--chalk-text", "#2f6b10")) : "";
-      } else {
-        exBody = svgE1rmTrendChart(e1rmPts);
-      }
+      var exBody = svgE1rmTrendChart(e1rmPts);
       var exPicker = exList.length
         ? '<label class="date">Esercizio<select id="chartExercise">' + options + "</select></label>"
         : "";
+      var exDetailBtn = exName
+        ? '<div class="session-actions" style="margin-top:10px"><button class="secondary" type="button" data-action="chart-exercise-detail" data-name="' + esc(exName) + '">Vedi tutte le volte</button></div>'
+        : "";
       var exCard = '<article class="card chart-card"><h3>Andamento esercizio · 1RM stimato</h3>' +
-        exPicker +
-        '<div class="chart-pills" role="tablist" aria-label="Metrica esercizio">' +
-          '<button type="button" data-action="chart-ex-metric" data-metric="e1rm"' + (exMetric === "e1rm" ? ' class="is-on" aria-pressed="true"' : ' aria-pressed="false"') + ">1RM stimato</button>" +
-          '<button type="button" data-action="chart-ex-metric" data-metric="maxLoad"' + (exMetric === "maxLoad" ? ' class="is-on" aria-pressed="true"' : ' aria-pressed="false"') + ">Carico max</button>" +
-          '<button type="button" data-action="chart-ex-metric" data-metric="volume"' + (exMetric === "volume" ? ' class="is-on" aria-pressed="true"' : ' aria-pressed="false"') + ">Volume</button>" +
-        "</div>" + exBody + "</article>";
+        exPicker + exBody + exDetailBtn + "</article>";
 
       // 6. Strength-to-weight ratio
       var ratioPts = [];
@@ -4030,7 +4005,7 @@
         var latestE1 = e1rmPts.length ? e1rmPts[e1rmPts.length - 1].e1rm : null;
         ratioBody = '<div class="chart-empty"><p>Manca il peso corporeo per calcolare il rapporto forza / peso (1RM stimato ÷ kg).' +
           (latestE1 != null ? " Su " + esc(exName) + " il tuo 1RM stimato attuale è " + esc(itNum(latestE1)) + " kg." : "") + "</p>" +
-          '<button class="secondary" type="button" data-action="go-weight-log">Aggiungi pesata in Dieta</button></div>';
+          '<button class="secondary" type="button" data-action="go-weight-log">Registra peso</button></div>';
       } else if (!ratioPts.length) {
         ratioBody = '<div class="chart-empty"><p>Questo esercizio non ha ancora serie con carico per il rapporto forza / peso.</p></div>';
       } else {
@@ -4057,16 +4032,9 @@
       if (!nutList.length) {
         nutBlock = '<div class="chart-empty nut-block"><p>Nessun pasto segnato in Pasti Fatti. Quando spunti i pasti nella scheda Dieta vedrai calorie e macro giornalieri qui.</p></div>';
       } else {
-        var nLast = nutList[nutList.length - 1];
-        var pctPlan = nLast.planKcal ? Math.min(100, Math.round((nLast.kcal / nLast.planKcal) * 100)) : 0;
-        var nutChart = nutList.length >= 2
+        nutBlock = nutList.length >= 2
           ? svgNutritionBars(nutList)
           : '<p class="chart-sub nut-block">Andamento calorie disponibile dal secondo giorno con pasti segnati.</p>';
-        nutBlock = nutChart + '<div class="macro-day-card">' +
-          "<strong>" + esc(itDate(nLast.date)) + " · " + esc(itNum(nLast.kcal)) + (nLast.planKcal ? " / " + esc(itNum(nLast.planKcal)) : "") + " kcal</strong>" +
-          (nLast.planKcal ? '<div class="macro-bar" aria-hidden="true"><span style="width:' + pctPlan + '%"></span></div>' : "") +
-          "<p>Prot " + esc(itNum(nLast.prot)) + " g · Carb " + esc(itNum(nLast.carb)) + " g · Grassi " + esc(itNum(nLast.fat)) + " g" +
-          (nLast.mealsTotal ? " · " + nLast.mealsDone + "/" + nLast.mealsTotal + " pasti segnati" : "") + "</p></div>";
       }
       var bodyNutritionCard = '<article class="card chart-card"><h3>Peso, calorie e macro</h3>' + weightBlock + nutBlock + "</article>";
 
@@ -4083,11 +4051,6 @@
 
     function sameWeekday(a, b) {
       return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
-    }
-
-    function planDayNames() {
-      var days = (data && data.mealPlan && data.mealPlan.days) || [];
-      return days.map(function (day) { return day.name; });
     }
 
     function selectedPlanDay() {
@@ -4468,35 +4431,61 @@
       return Math.round(kg * (1 + reps / 30) * 10) / 10;
     }
 
-    function detectClientPRs(list, records) {
+    function priorByNameFromRecords(records) {
       var map = {};
-      var i, rec, ex, items, maxLoad, bestEpley, s, kg, reps, est;
-      (records || []).forEach(function (r) { if (r && r.name) map[r.name] = r; });
+      (records || []).forEach(function (r) {
+        if (!r || !r.name) return;
+        map[r.name] = { maxLoad: r.maxLoad, bestEpley: r.bestEpley };
+      });
+      return map;
+    }
+
+    function prsFromExerciseSets(exercises, priorByName) {
+      var prior = priorByName || {};
       var out = [];
-      for (i = 0; i < (list || []).length; i++) {
-        ex = list[i];
+      var i, ex, rec, items, maxLoad, bestEpley, kg, reps, est, name;
+      for (i = 0; i < (exercises || []).length; i++) {
+        ex = exercises[i];
         if (!ex || ex.skipped) continue;
-        rec = map[ex.name] || {};
+        name = ex.name || "";
+        if (!name) continue;
+        rec = prior[name] || prior[name.toLowerCase()] || {};
         maxLoad = rec.maxLoad;
         bestEpley = rec.bestEpley;
         items = [];
         (ex.sets || []).forEach(function (set) {
           kg = parseNum(set.kg);
+          if (kg == null) kg = set.kg != null && set.kg !== "" ? Number(set.kg) : null;
           reps = parseNum(set.reps);
-          if (kg == null || kg <= 0 || reps == null || reps <= 0) return;
+          if (reps == null) reps = set.reps != null && set.reps !== "" ? Number(set.reps) : null;
+          if (kg == null || !isFinite(kg) || kg <= 0 || reps == null || !isFinite(reps) || reps <= 0) return;
           if (maxLoad == null || kg > maxLoad + 1e-6) {
-            items.push({ label: "Carico max", value: kg, previous: maxLoad == null ? null : maxLoad });
+            items.push({ type: "load", label: "Carico max", value: Math.round(kg * 10) / 10, previous: maxLoad == null ? null : maxLoad });
             maxLoad = kg;
           }
           est = epley1RM(kg, reps);
           if (est != null && (bestEpley == null || est > bestEpley + 1e-6)) {
-            items.push({ label: "1RM stimato", value: est, previous: bestEpley == null ? null : bestEpley });
+            items.push({ type: "epley", label: "1RM stimato", value: est, previous: bestEpley == null ? null : bestEpley });
             bestEpley = est;
           }
         });
-        if (items.length) out.push({ name: ex.name, items: items });
+        if (items.length) out.push({ name: name, items: items });
       }
       return out;
+    }
+
+    function detectClientPRs(list, records) {
+      return prsFromExerciseSets(list, priorByNameFromRecords(records));
+    }
+
+    function sessionPrsAgainstBest(session, bestByKey) {
+      var prior = {};
+      (session.items || []).forEach(function (it) {
+        if (!it || !it.name) return;
+        var rec = bestByKey[it.name.toLowerCase()] || {};
+        prior[it.name] = { maxLoad: rec.maxLoad, bestEpley: rec.bestEpley };
+      });
+      return prsFromExerciseSets(session.items || [], prior);
     }
 
     function exerciseCatalog() {
@@ -4812,24 +4801,6 @@
           emptyState("Ancora nessun record", "I carichi massimi compariranno dopo le prime sessioni.") + "</section>";
       }
       var model = getRecordModel();
-      var monthLabel = "Questo mese";
-      try {
-        var parts = (model.monthPrefix || "").split("-");
-        if (parts.length === 2) {
-          var label = new Date(Number(parts[0]), Number(parts[1]) - 1, 1).toLocaleDateString("it-IT", { month: "long" });
-          monthLabel = "A " + label;
-        }
-      } catch (err) {}
-      var hero = '<div class="record-hero">' +
-        '<div class="record-stat"><b>' + model.totalSessions + "</b><span>Sessioni totali</span></div>" +
-        '<div class="record-stat"><b>' + esc(itNum(model.tonnes)) + '</b><span>Tonnellaggio</span></div>' +
-        '<div class="record-stat"><b>' + model.streak + "</b><span>Settimane di fila</span></div>" +
-        '<div class="record-stat"><b>' + model.sessionsMonth + "</b><span>" + esc(monthLabel) + "</span></div>" +
-        "</div>";
-      if (model.lastWeight && model.lastWeight.kg != null) {
-        hero += '<p class="muted">Ultimo peso corporeo: ' + esc(itNum(model.lastWeight.kg)) + " kg" +
-          (model.lastWeight.date ? " · " + itDate(model.lastWeight.date) : "") + "</p>";
-      }
       var recentCards = model.cards.filter(function (c) { return c.isRecent; })
         .sort(function (a, b) { return String(b.latestPrDate).localeCompare(String(a.latestPrDate)); })
         .slice(0, 8);
@@ -4883,7 +4854,7 @@
         }).join("");
       }
       return '<section class="history records-view"><div class="history-top"><h2>Record personali</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
-        hero + recentBlock + miles + '<div class="record-section"><h3>Record per esercizio</h3>' + filterBar + "</div>" + body + "</section>";
+        recentBlock + miles + '<div class="record-section"><h3>Record per esercizio</h3>' + filterBar + "</div>" + body + "</section>";
     }
 
     function findRecordCard(name) {
@@ -5136,37 +5107,6 @@
       return h * 60 + m;
     }
 
-    function mealNamesFromPlan() {
-      var names = [];
-      var seen = {};
-      var days = (data && data.mealPlan && data.mealPlan.days) || [];
-      var i;
-      var j;
-      for (i = 0; i < days.length; i++) {
-        var meals = days[i].meals || [];
-        for (j = 0; j < meals.length; j++) {
-          var name = meals[j].name;
-          if (name && !seen[name]) {
-            seen[name] = true;
-            names.push(name);
-          }
-        }
-      }
-      if (!names.length) names = Object.keys(DEFAULT_MEAL_TIMES);
-      return names;
-    }
-
-    function defaultMealTime(name) {
-      if (DEFAULT_MEAL_TIMES[name]) return DEFAULT_MEAL_TIMES[name];
-      var lower = String(name || "").toLowerCase();
-      var key;
-      for (key in DEFAULT_MEAL_TIMES) {
-        if (lower.indexOf(key.toLowerCase()) !== -1) return DEFAULT_MEAL_TIMES[key];
-      }
-      return "13:00";
-    }
-
-
     var WEEKDAYS = [
       { id: 1, short: "Lun", long: "Lunedì", by: "MO" },
       { id: 2, short: "Mar", long: "Martedì", by: "TU" },
@@ -5398,10 +5338,6 @@
       return isoFromDate(d);
     }
 
-    function addDaysIsoSafe(iso, days) {
-      return addDaysIso(iso, days);
-    }
-
     function planNudgeInfo(plan, today) {
       today = today || todayIso();
       var month = parseMealPlanMonth(plan);
@@ -5409,27 +5345,23 @@
       var label;
       if (month) {
         var end = lastDateOfMonth(month);
-        start = addDaysIsoSafe(end, -2);
+        start = addDaysIso(end, -2);
         label = monthLabelIt(month);
         if (today < start) return null;
         return { month: month, label: label, ended: today > end, key: month + "|" + String((plan && plan.title) || "") };
       }
       var current = today.slice(0, 7);
       var endCur = lastDateOfMonth(current);
-      var startCur = addDaysIsoSafe(endCur, -2);
+      var startCur = addDaysIso(endCur, -2);
       if (today >= startCur) {
         return { month: current, label: monthLabelIt(current), ended: today > endCur, key: "cal|" + current };
       }
-      var prevDate = addDaysIsoSafe(today.slice(0, 8) + "01", -1);
+      var prevDate = addDaysIso(today.slice(0, 8) + "01", -1);
       var prev = prevDate.slice(0, 7);
-      if (today <= addDaysIsoSafe(prevDate, 5)) {
+      if (today <= addDaysIso(prevDate, 5)) {
         return { month: prev, label: monthLabelIt(prev), ended: true, key: "cal|" + prev };
       }
       return null;
-    }
-
-    function notificationAllowed() {
-      return typeof Notification !== "undefined" && Notification.permission === "granted";
     }
 
     async function requestReminderPermission() {
@@ -6118,9 +6050,7 @@
         '<div class="remind-notify"><button class="text-btn" type="button" data-action="notify-ask">Consenti notifiche in app</button></div>' +
         (errorText && view === "settings" ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
         paintReminderCards(cfg) +
-        "</article>" +
-        '<article class="card"><h3>Riepilogo mensile</h3><p class="muted">Genera una pagina da salvare come PDF, con sessioni, carichi, peso e aderenza ai pasti.</p>' +
-        '<button class="secondary" type="button" data-action="report">Apri il riepilogo</button></article></section>';
+        "</article></section>";
     }
 
     function sessionsInMonth(yearMonth) {
@@ -6193,30 +6123,12 @@
       return { planned: planned, done: done, rows: rows };
     }
 
-    function monthWeightPoints(yearMonth) {
-      return ((data && data.weights) || []).filter(function (item) {
-        return String(item.date || "").slice(0, 7) === yearMonth;
-      }).map(function (item) { return { date: item.date, kg: item.kg }; });
-    }
-
-    function monthLoadPoints(yearMonth, exerciseName) {
-      var history = (data && data.history) || [];
-      var current = history.find(function (item) { return item.name === exerciseName; });
-      if (!current) return [];
-      return (current.points || []).filter(function (p) { return String(p.date || "").slice(0, 7) === yearMonth; });
-    }
-
     function paintReport() {
       if (!reportMonth) reportMonth = monthValueRome();
       var label = monthLabelIt(reportMonth);
       var sessions = sessionsInMonth(reportMonth);
       var prs = prsInMonth(reportMonth);
       var adh = mealAdherence(reportMonth);
-      var weights = monthWeightPoints(reportMonth);
-      var history = (data && data.history) || [];
-      if (!chartExercise && history.length) chartExercise = history[0].name;
-      var currentName = chartExercise || (history[0] && history[0].name) || "";
-      var loadPoints = currentName ? monthLoadPoints(reportMonth, currentName) : [];
       var sessionRows = sessions.length ? '<table class="report-table"><thead><tr><th>Data</th><th>Scheda</th><th>Serie</th><th>Tonnellaggio</th></tr></thead><tbody>' +
         sessions.map(function (session) {
           return "<tr><td>" + esc(itDate(session.date)) + "</td><td>" + esc(session.code) + "</td><td>" + esc(session.sets) + "</td><td>" + esc(itNum(session.tonnage)) + " kg</td></tr>";
@@ -6229,9 +6141,6 @@
       else if (!adh.planned) adhBody = '<p class="muted">Nessun giorno da confrontare in questo mese.</p>';
       else adhBody = "<p><strong>" + esc(adh.done) + " / " + esc(adh.planned) + " pasti</strong> segnati come fatti (" + Math.round((adh.done / adh.planned) * 100) + "%).</p>" +
         (adh.done === 0 ? '<p class="muted">Se non hai usato «Segna fatto» in questo mese, l’aderenza risulta vuota.</p>' : "");
-      var options = history.map(function (item) {
-        return '<option value="' + esc(item.name) + '"' + (item.name === currentName ? " selected" : "") + ">" + esc(item.name) + "</option>";
-      }).join("");
       return '<section class="history"><div class="history-top no-print"><h2>Riepilogo</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
         '<div class="no-print form-grid" style="margin-bottom:16px"><label>Mese<input type="month" id="reportMonth" value="' + esc(reportMonth) + '"></label>' +
         '<p class="limit-note">Per salvare il PDF: tocca «Stampa / Salva come PDF» e, in Chrome, scegli «Salva come PDF» come stampante.</p>' +
@@ -6239,9 +6148,6 @@
         "<h2>Riepilogo " + esc(label) + "</h2>" +
         '<div class="report-block"><h3>Sessioni</h3>' + sessionRows + "</div>" +
         '<div class="report-block"><h3>Nuovi record di carico</h3>' + prBody + "</div>" +
-        (options ? '<div class="report-block"><h3>Carichi · ' + esc(currentName) + '</h3><label class="date no-print">Esercizio<select id="chartExercise">' + options + "</select></label>" +
-          (loadPoints.length ? svgChart(loadPoints, "maxLoad", cssVar("--red", "#ff4d2e")) : '<p class="muted">Nessun carico di questo esercizio nel mese.</p>') + "</div>" : "") +
-        '<div class="report-block"><h3>Andamento del peso</h3>' + (weights.length ? svgChart(weights, "kg", cssVar("--chalk-text", "#d4f05a")) : '<p class="muted">Nessuna pesata in questo mese.</p>') + "</div>" +
         '<div class="report-block"><h3>Aderenza ai pasti</h3>' + adhBody + "</div></section>";
     }
 
@@ -6621,7 +6527,7 @@
       if (input.id === "weightDate") { weightDate = input.value; return; }
       if (input.id === "weightKg") { weightKg = input.value; return; }
       if (input.id === "weightNote") { weightNote = input.value; return; }
-      if (input.id === "chartExercise") { chartExercise = input.value; viewNeedsPaint.charts = true; viewNeedsPaint.report = true; render(true); return; }
+      if (input.id === "chartExercise") { chartExercise = input.value; viewNeedsPaint.charts = true; render(true); return; }
       if (input.id === "historySearch") {
         historyQuery = input.value || "";
         var listEl = document.getElementById("historyList");
@@ -6807,11 +6713,14 @@
         render(true);
         return;
       }
-      if (action === "chart-ex-metric") {
-        chartExMetric = button.getAttribute("data-metric") || "e1rm";
-        viewNeedsPaint.charts = true;
+      if (action === "chart-exercise-detail") {
+        recordDetailName = button.getAttribute("data-name") || chartExercise || "";
+        if (!recordDetailName) return;
+        detailReturnView = "charts";
+        view = "record-detail";
+        viewNeedsPaint["record-detail"] = true;
         haptic(10);
-        render(true);
+        render();
         return;
       }
       if (action === "heatmap-day") {
