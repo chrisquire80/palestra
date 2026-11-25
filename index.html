@@ -856,6 +856,10 @@
     .calendar-banner.is-ok { color: var(--chalk-text); font-weight: 650; }
     .calendar-banner.is-err { color: var(--danger, #b42318); }
     .calendar-fallback { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--line); }
+    .tg-toggles { display: grid; gap: var(--space-3); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--line); }
+    .tg-row .remind-head { margin-bottom: 2px; }
+    .tg-row .muted { margin: 0; font-size: var(--fs-xs); }
+    .tg-link { color: var(--chalk-text); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
     .remind-notify { margin: 0 0 var(--space-4); }
     .remind-notify .text-btn { min-height: 44px; }
     .remind-card {
@@ -1655,7 +1659,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.6.2</span></h1>
+          <h1>Palestra <span class="ver">v3.7</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -1784,6 +1788,11 @@
     var calendarSyncBusy = false;
     var calendarSyncNote = "";
     var calendarSyncNoteKind = "";
+    var telegramStatus = null;
+    var telegramSyncBusy = false;
+    var telegramSyncNote = "";
+    var telegramSyncNoteKind = "";
+    var telegramSyncTimer = 0;
     var REMINDER_FIRED_KEY = "palestra-reminders-fired";
     var THEME_KEY = "palestra-theme";
     var data = null;
@@ -2111,6 +2120,7 @@
       if (!selected) selected = state.suggested || "A";
       if (!weightDate) weightDate = state.today;
       if (state.calendar) calendarStatus = state.calendar;
+      if (state.telegram) telegramStatus = state.telegram;
       recordModel = null;
       invalidateViews();
     }
@@ -6246,6 +6256,174 @@
         "</article>";
     }
 
+    function telegramToggles() {
+      var t = (telegramStatus && telegramStatus.toggles) || {};
+      return {
+        training: t.training !== false,
+        weighIn: t.weighIn !== false,
+        postSave: t.postSave !== false,
+        weekly: t.weekly !== false
+      };
+    }
+
+    function telegramBotHandle() {
+      var u = (telegramStatus && telegramStatus.botUsername) || "coach_beard_christian_bot";
+      return String(u).replace(/^@/, "");
+    }
+
+    function applyTelegramStatus(res) {
+      if (!res) return;
+      telegramStatus = {
+        ok: res.ok !== false,
+        hasToken: !!res.hasToken,
+        linked: !!res.linked,
+        authorized: res.authorized,
+        needsAuth: !!res.needsAuth || res.authorized === false,
+        triggerActive: res.triggerActive,
+        botUsername: res.botUsername || telegramBotHandle(),
+        username: res.username || "",
+        firstName: res.firstName || "",
+        toggles: res.toggles || telegramToggles(),
+        schedule: res.schedule || (telegramStatus && telegramStatus.schedule) || null,
+        error: res.ok === false ? (res.error || "") : ""
+      };
+    }
+
+    function refreshTelegramStatus() {
+      if (!navigator.onLine || telegramSyncBusy) return Promise.resolve();
+      return rpc("getTelegramStatus").then(function (res) {
+        if (!res || telegramSyncBusy) return;
+        applyTelegramStatus(res);
+        viewNeedsPaint.settings = true;
+        if (view === "settings") render(true);
+      }).catch(function () {});
+    }
+
+    function scheduleTelegramSync() {
+      if (!telegramStatus || !telegramStatus.linked) return;
+      if (telegramSyncTimer) clearTimeout(telegramSyncTimer);
+      telegramSyncTimer = setTimeout(function () {
+        telegramSyncTimer = 0;
+        pushTelegramSync(null, true);
+      }, 700);
+    }
+
+    function pushTelegramSync(togglesOverride, silent) {
+      if (telegramSyncBusy && !silent) return Promise.resolve();
+      var cfg = loadReminders();
+      var nextToggles = togglesOverride || telegramToggles();
+      telegramStatus = telegramStatus || {};
+      telegramStatus.toggles = {
+        training: nextToggles.training !== false,
+        weighIn: nextToggles.weighIn !== false,
+        postSave: nextToggles.postSave !== false,
+        weekly: nextToggles.weekly !== false
+      };
+      if (!silent) {
+        telegramSyncBusy = true;
+        telegramSyncNote = "Verifico e aggiorno Telegram…";
+        telegramSyncNoteKind = "busy";
+        viewNeedsPaint.settings = true;
+        render(true);
+      }
+      var payload = {
+        toggles: telegramStatus.toggles,
+        training: {
+          enabled: !!(cfg.training && cfg.training.enabled),
+          days: ((cfg.training && cfg.training.days) || []).slice(),
+          time: (cfg.training && cfg.training.time) || "18:30"
+        },
+        weighIn: {
+          enabled: !!(cfg.weighIn && cfg.weighIn.enabled),
+          time: (cfg.weighIn && cfg.weighIn.time) || "07:30",
+          freq: cfg.weighIn && cfg.weighIn.freq === "weekly" ? "weekly" : "daily",
+          day: (cfg.weighIn && cfg.weighIn.day) || 1
+        }
+      };
+      if (!navigator.onLine) {
+        telegramSyncBusy = false;
+        if (!silent) {
+          telegramSyncNote = "Sei offline. Le preferenze restano qui; riprova quando torna la rete.";
+          telegramSyncNoteKind = "err";
+        }
+        viewNeedsPaint.settings = true;
+        if (view === "settings") render(true);
+        return Promise.resolve();
+      }
+      return rpc("syncTelegram", payload).then(function (res) {
+        telegramSyncBusy = false;
+        if (!res) return;
+        applyTelegramStatus(res);
+        if (!silent) {
+          if (res.ok === false || res.needsAuth || res.authorized === false) {
+            telegramSyncNote = res.error || "Manca l’autorizzazione una tantum in Apps Script (authorizePalestraTelegram).";
+            telegramSyncNoteKind = "err";
+          } else if (res.linked) {
+            telegramSyncNote = "Telegram collegato e preferenze salvate.";
+            telegramSyncNoteKind = "ok";
+          } else {
+            telegramSyncNote = "Bot pronto (@" + telegramBotHandle() + "): aprilo su Telegram e tocca Avvia (/start), poi tocca Verifica collegamento.";
+            telegramSyncNoteKind = "err";
+          }
+        }
+        viewNeedsPaint.settings = true;
+        if (view === "settings") render(true);
+      }).catch(function (err) {
+        telegramSyncBusy = false;
+        if (!silent) {
+          telegramSyncNote = (err && err.message) || "Aggiornamento Telegram non riuscito.";
+          telegramSyncNoteKind = "err";
+        }
+        viewNeedsPaint.settings = true;
+        if (view === "settings") render(true);
+      });
+    }
+
+    function paintTelegramCard(cfg) {
+      var st = telegramStatus || {};
+      var linked = !!st.linked;
+      var handle = telegramBotHandle();
+      var statusCls = linked && !(st.needsAuth || st.authorized === false) ? " ok" : "";
+      var statusText;
+      if (st.needsAuth || st.authorized === false) {
+        statusText = "Non collegato: serve l’autorizzazione una tantum in Apps Script (authorizePalestraTelegram).";
+      } else if (linked) {
+        statusText = "Collegato (@" + handle + "). Solo la tua chat è autorizzata. Comandi: /peso 80,5 (o il numero), /oggi, /stato, /aiuto.";
+      } else {
+        statusText = "Non ancora collegato. Apri @" + handle + " su Telegram, tocca Avvia (/start) e poi Verifica collegamento.";
+      }
+      var toggles = telegramToggles();
+      function tgRow(key, title, sub) {
+        var on = !!toggles[key];
+        return '<div class="tg-row">' +
+          '<div class="remind-head"><h4>' + esc(title) + '</h4>' +
+          '<button class="seg-btn' + (on ? " is-on" : "") + '" type="button" data-action="telegram-toggle" data-tg-key="' + esc(key) + '" aria-pressed="' + (on ? "true" : "false") + '"' + (telegramSyncBusy ? " disabled" : "") + '>' +
+          (on ? "Attivo" : "Spento") + "</button></div>" +
+          '<p class="muted">' + esc(sub) + "</p></div>";
+      }
+      var live = "";
+      if (telegramSyncBusy) {
+        live = '<p class="calendar-progress" role="status" aria-live="polite"><span class="calendar-spinner" aria-hidden="true"></span><span>' + esc(telegramSyncNote || "Verifico Telegram…") + "</span></p>";
+      } else if (telegramSyncNote) {
+        live = '<p class="calendar-banner ' + (telegramSyncNoteKind === "ok" ? "is-ok" : "is-err") + '" role="status" aria-live="polite">' + esc(telegramSyncNote) + "</p>";
+      }
+      var botLink = !linked
+        ? '<p class="muted" style="margin:6px 0 0"><a class="tg-link" href="https://t.me/' + esc(handle) + '" target="_blank" rel="noopener">Apri @' + esc(handle) + ' su Telegram</a></p>'
+        : "";
+      var btnLabel = telegramSyncBusy ? "Verifico…" : (linked ? "Aggiorna stato" : "Verifica collegamento");
+      return '<article class="card calendar-card"><h3>Telegram</h3>' +
+        '<p class="calendar-status' + statusCls + '">' + esc(statusText) + "</p>" +
+        botLink +
+        live +
+        '<div class="remind-ics" style="margin-top:10px"><button class="secondary" type="button" data-action="telegram-refresh"' + (telegramSyncBusy ? " disabled" : "") + '>' + btnLabel + "</button></div>" +
+        '<div class="tg-toggles">' +
+          tgRow("training", "Promemoria allenamento", "Nei giorni e all’orario scelti qui sotto, con la prossima scheda.") +
+          tgRow("weighIn", "Promemoria pesata", "All’orario e frequenza scelti qui sotto; puoi rispondere col peso.") +
+          tgRow("postSave", "Dopo ogni sessione", "Volume, serie e nuovi record appena salvi.") +
+          tgRow("weekly", "Riepilogo settimanale", "Ogni domenica verso le 20:00.") +
+        "</div></article>";
+    }
+
     function paintSettings() {
       var cfg = loadReminders();
       var perm = typeof Notification === "undefined" ? "non supportate" : Notification.permission;
@@ -6267,6 +6445,7 @@
         '<article class="card"><h3>Tema</h3><p class="muted">Scegli come appare l’app. Automatico segue le impostazioni del telefono.</p>' +
         '<div class="theme-picks" role="radiogroup" aria-label="Tema">' + themeBtn("auto", "Automatico") + themeBtn("light", "Chiaro") + themeBtn("dark", "Scuro") + "</div></article>" +
         paintCalendarCard(cfg) +
+        paintTelegramCard(cfg) +
         '<article class="card"><h3>Promemoria</h3>' +
         icsBlock +
         '<p class="muted remind-notify">Permesso notifiche in app: ' + esc(permLabel) + '. Sono un extra, non sostituiscono il calendario.</p>' +
@@ -6742,6 +6921,7 @@
       viewNeedsPaint.settings = true;
       render(true);
       if (calendarSyncEnabled()) scheduleCalendarSync();
+        scheduleTelegramSync();
       return true;
     }
 
@@ -6810,7 +6990,7 @@
         if (action === "again") requestId = "";
         render(); return;
       }
-      if (action === "settings") { view = "settings"; errorText = ""; render(); refreshCalendarStatus(); return; }
+      if (action === "settings") { view = "settings"; errorText = ""; render(); refreshCalendarStatus(); refreshTelegramStatus(); return; }
       if (action === "theme") { applyTheme(button.getAttribute("data-theme") || "auto"); render(true); return; }
       if (action === "howto") { openHowto(button.getAttribute("data-name") || ""); return; }
       if (action === "howto-open") { return; }
@@ -6851,6 +7031,22 @@
         pushCalendarSync(true);
         return;
       }
+      if (action === "telegram-refresh") {
+        if (telegramSyncBusy) return;
+        haptic(10);
+        pushTelegramSync(null, false);
+        return;
+      }
+      if (action === "telegram-toggle") {
+        if (telegramSyncBusy) return;
+        var key = button.getAttribute("data-tg-key");
+        var toggles = telegramToggles();
+        if (!Object.prototype.hasOwnProperty.call(toggles, key)) return;
+        toggles[key] = !toggles[key];
+        haptic(10);
+        pushTelegramSync(toggles, false);
+        return;
+      }
       if (action === "remind-toggle") {
         var card = button.getAttribute("data-card");
         var cfg = loadReminders();
@@ -6865,6 +7061,7 @@
         haptic(10);
         render(true);
         if ((card === "training" || card === "weigh") && calendarSyncEnabled()) scheduleCalendarSync();
+        if (card === "training" || card === "weigh") scheduleTelegramSync();
         return;
       }
       if (action === "remind-day") {
@@ -6887,6 +7084,7 @@
         haptic(10);
         render(true);
         if (calendarSyncEnabled()) scheduleCalendarSync();
+        scheduleTelegramSync();
         return;
       }
       if (action === "remind-freq") {
@@ -6897,6 +7095,7 @@
         haptic(10);
         render(true);
         if (calendarSyncEnabled()) scheduleCalendarSync();
+        scheduleTelegramSync();
         return;
       }
       if (action === "remind-stale") {
