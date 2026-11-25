@@ -419,7 +419,14 @@
     }
     .grids { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .grids.one { grid-template-columns: 1fr; }
-    .field { display: flex; flex-direction: column; gap: 6px; color: var(--faint); font-size: var(--fs-xs); font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; }
+    .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; color: var(--faint); font-size: var(--fs-xs); font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; }
+    .field > input {
+      width: 100%; min-width: 0; min-height: 48px; padding: 0 12px;
+      border-radius: var(--r-md); border: 1px solid var(--line);
+      background: var(--field-bg); color: var(--ink);
+      font-size: var(--fs-lg); font-weight: 700; font-variant-numeric: tabular-nums;
+      box-sizing: border-box;
+    }
     .stepper {
       display: grid;
       grid-template-columns: 48px 1fr 48px;
@@ -1481,6 +1488,109 @@
     .heat-swatch.l4 { background: var(--heat-4); }
     .nut-block { margin-top: var(--space-3); }
 
+    /* Storico v3.5 */
+    .history-toolbar {
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg);
+      padding: var(--space-3); margin: 0 0 var(--space-3); box-shadow: var(--shadow-soft);
+      display: grid; gap: 10px;
+    }
+    .history-search { display: flex; gap: 8px; align-items: center; }
+    .history-search input {
+      flex: 1; min-width: 0; min-height: 44px; padding: 0 12px;
+      border-radius: var(--r-md); border: 1px solid var(--line);
+      background: var(--field-bg); color: var(--ink); font-size: var(--fs-md); font-weight: 500;
+    }
+    .history-search input::placeholder { color: var(--faint); }
+    .history-clear {
+      min-width: 44px; min-height: 44px; padding: 0 10px; border-radius: var(--r-md);
+      border: 1px solid var(--line); background: var(--card-2); color: var(--ink); font-weight: 700;
+    }
+    .history-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .history-chip-row button {
+      min-height: 40px; padding: 0 12px; border-radius: var(--r-full);
+      border: 1px solid var(--line); background: var(--card-2); color: var(--ink);
+      font-size: var(--fs-sm); font-weight: 650;
+    }
+    .history-chip-row button.is-on {
+      background: var(--chalk); color: var(--on-chalk); border-color: transparent; font-weight: 800;
+    }
+    .history-select {
+      width: 100%; min-height: 44px; padding: 0 12px; border-radius: var(--r-md);
+      border: 1px solid var(--line); background: var(--field-bg); color: var(--ink);
+      font-size: var(--fs-sm); font-weight: 600;
+    }
+    .history-meta-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      margin: 0 0 var(--space-2); color: var(--muted); font-size: var(--fs-xs); font-weight: 650;
+    }
+    .history-meta-bar button { min-height: 36px; padding: 0 10px; font-size: var(--fs-xs); }
+    .week-group { margin: 0 0 var(--space-4); }
+    .week-head {
+      display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 12px;
+      padding: 10px 12px; margin: 0 0 var(--space-2); border-radius: var(--r-md);
+      background: var(--card-2); border: 1px solid var(--line);
+    }
+    .week-head strong { font-size: var(--fs-sm); font-weight: 750; letter-spacing: -0.02em; }
+    .week-head span { font-size: var(--fs-xs); color: var(--muted); font-weight: 650; font-variant-numeric: tabular-nums; }
+    .session summary { display: grid; gap: 4px; min-height: 74px; padding: 12px 14px; }
+    .session-sum-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .session-sum-top strong { display: inline; font-size: var(--fs-md); font-weight: 750; letter-spacing: -0.02em; }
+    .session-sum-badges { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+    .session-chev { display: inline-block; color: var(--muted); font-size: var(--fs-sm); transition: transform var(--ease); }
+    .session[open] .session-chev { transform: rotate(180deg); }
+    .session-sum-meta {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+      font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums;
+    }
+    .session-sum-delta { font-size: var(--fs-xs); font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .session-sum-delta.up { color: var(--chalk-text); }
+    .session-sum-delta.down { color: var(--down); }
+    .detail .session-cmp {
+      display: block; padding: 8px 10px; margin: 0 0 8px; border-top: 0; border-radius: var(--r-sm);
+      background: var(--card-2); font-size: var(--fs-xs); color: var(--muted); line-height: 1.35;
+    }
+    .detail .session-cmp strong { display: inline; color: var(--ink); }
+    .detail .session-ex-list { display: grid; gap: 0; padding: 0; border-top: 0; }
+    .history-ex-btn {
+      width: 100%; min-height: 50px; padding: 8px 4px; border: 0; border-top: 1px solid var(--line);
+      border-radius: 0; background: transparent; color: var(--ink); text-align: left;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .history-ex-btn:hover, .history-ex-btn:active { background: var(--ghost-bg); }
+    .history-ex-main { min-width: 0; flex: 1; }
+    .history-ex-title { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: var(--fs-sm); font-weight: 700; line-height: 1.25; }
+    .history-ex-sets { display: block; margin-top: 2px; color: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; line-height: 1.3; }
+    .history-ex-right { flex: none; text-align: right; font-size: var(--fs-xs); color: var(--muted); font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .history-ex-right span { display: block; }
+    .detail .session-actions {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      padding: 10px 0 0; margin: 6px 0 0; border-top: 1px solid var(--line);
+    }
+    .detail .session-actions button { min-height: 44px; padding: 0 8px; font-size: var(--fs-sm); }
+    .undo-toast {
+      position: fixed; left: 12px; right: 12px; bottom: calc(var(--tabbar-h) + 12px + env(safe-area-inset-bottom));
+      z-index: 22; display: flex; gap: 10px; align-items: center; padding: 10px 14px;
+      border-radius: var(--r-md); background: var(--card); color: var(--ink);
+      border: 1px solid var(--chalk); box-shadow: var(--shadow);
+    }
+    .undo-toast[hidden] { display: none !important; }
+    .undo-toast p { margin: 0; flex: 1; font-size: var(--fs-sm); font-weight: 600; }
+    .undo-toast .undo-btn {
+      min-height: 40px; padding: 0 12px; border-radius: var(--r-full);
+      background: var(--chalk); color: var(--on-chalk); font-weight: 800; font-size: var(--fs-sm); border: 0;
+    }
+    .editor-notice {
+      margin: 0 0 12px; padding: 10px 12px; border-radius: var(--r-md);
+      background: var(--done-bg); border: 1px solid var(--chalk); color: var(--ink);
+      font-size: var(--fs-sm); font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .detail-session-list { display: grid; gap: 8px; }
+    .detail-session-row { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; }
+    .detail-session-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 4px; }
+    .detail-session-head strong { font-size: var(--fs-sm); font-weight: 750; }
+    .detail-session-sets { margin: 0; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; line-height: 1.4; }
+    .detail-session-meta { margin: 4px 0 0; font-size: var(--fs-xs); color: var(--muted); }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         transition: none !important;
@@ -1489,7 +1599,7 @@
     }
     @media print {
       html, html[data-theme="dark"], html[data-theme="light"] { color-scheme: light; }
-      header, nav, .banner, .timer, .header-tools, .no-print, #errorToast, #recordToast, #modal,
+      header, nav, .banner, .timer, .header-tools, .no-print, #errorToast, #recordToast, #undoToast, #modal,
       #pendingBanner, #setupBanner, #installBanner, #updateBanner, .tabbar, .bar { display: none !important; }
       body { background: #fff; color: #111; padding: 12px; }
       .shell { max-width: none; padding: 0; }
@@ -1512,7 +1622,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.4.1</span></h1>
+          <h1>Palestra <span class="ver">v3.5</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -1607,6 +1717,11 @@
     <p id="recordToastText"></p>
     <button class="ghost" type="button" id="recordToastDismiss">Ok</button>
   </div>
+  <div id="undoToast" class="undo-toast" hidden role="status">
+    <p id="undoToastText"></p>
+    <button class="undo-btn" type="button" data-action="undo-delete">Annulla</button>
+    <button class="ghost" type="button" data-action="undo-dismiss" aria-label="Chiudi">×</button>
+  </div>
   <script>
     function showErrorToast(raw) {
       var text = "";
@@ -1677,7 +1792,16 @@
     var howtoPhotoUrl = "";
     var recordFilter = "all";
     var recordDetailName = "";
+    var detailReturnView = "records";
     var recordModel = null;
+    var historyQuery = "";
+    var historyCode = "all";
+    var historyPeriod = "all";
+    var historyExercise = "all";
+    var historyModel = null;
+    var undoDeletedSession = null;
+    var undoToastTimer = null;
+    var editorNotice = "";
     var recordToastTimer = null;
     var DEFAULT_MEAL_TIMES = {
       "Colazione": "08:00",
@@ -2022,7 +2146,7 @@
             next.push(item);
             continue;
           }
-          if (res.state) applyState(res.state, true);
+          if (res.state) mergeState(res.state);
           if (res.weights) {
             if (!data) data = {};
             data.weights = res.weights;
@@ -2562,6 +2686,7 @@
     function invalidateViews() {
       chartsModel = null;
       recordModel = null;
+      historyModel = null;
       var key;
       for (key in viewRoots) {
         if (Object.prototype.hasOwnProperty.call(viewRoots, key)) viewNeedsPaint[key] = true;
@@ -2611,7 +2736,7 @@
     }
 
     function syncNav() {
-      var map = { editor: "view-editor", history: "history", charts: "charts", weight: "weight", records: "records", "record-detail": "records", confirm: "view-editor", settings: "settings", report: "history", "session-edit": "history", howto: "view-editor" };
+      var map = { editor: "view-editor", history: "history", charts: "charts", weight: "weight", records: "records", "record-detail": (detailReturnView === "history" ? "history" : "records"), confirm: "view-editor", settings: "settings", report: "history", "session-edit": "history", howto: "view-editor" };
       var current = map[view] || "";
       var buttons = document.querySelectorAll(".tab-btn");
       var i;
@@ -2677,6 +2802,7 @@
         '<p class="last-line">' + last + "</p>" +
         '<p class="prog-rule">Se per 2 volte fai tutte le ripetizioni nello stesso peso, ti suggerisco un aumento (+2,5 kg macchine e composti, +1 kg isolamenti). Se manchi le ripetizioni due volte, tienilo o scendi del 5%. Tocca il suggerimento o «ultima» per copiare i valori: non cambio i carichi da solo.</p>' +
         sessionProgress(list) +
+        (editorNotice ? '<div class="editor-notice"><span>' + esc(editorNotice) + '</span><button class="ghost" type="button" data-action="dismiss-editor-notice" aria-label="Chiudi avviso">×</button></div>' : "") +
         (errorText ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
         cards +
         '<div class="bar"><p>' + esc(seriesWord(stats.sets)) + " · " + esc(itNum(stats.tonnage)) + " kg" + preview + "</p>" +
@@ -2754,19 +2880,292 @@
         '<div class="confirm-actions"><button class="secondary" type="button" data-action="history">Vedi lo storico</button></div></section>';
     }
 
+    function mondayOfIso(iso) {
+      var d = parseIsoDate(iso);
+      if (!d) return "";
+      var offset = (d.getDay() + 6) % 7;
+      d.setDate(d.getDate() - offset);
+      return isoFromDate(d);
+    }
+
+    function weekLabelIt(weekStartIso, todayIso) {
+      var start = parseIsoDate(weekStartIso);
+      if (!start) return weekStartIso || "Settimana";
+      var end = new Date(start.getTime());
+      end.setDate(end.getDate() + 6);
+      var mStart = new Intl.DateTimeFormat("it-IT", { month: "short" }).format(start);
+      var mEnd = new Intl.DateTimeFormat("it-IT", { month: "short" }).format(end);
+      var span = start.getMonth() === end.getMonth()
+        ? (start.getDate() + "–" + end.getDate() + " " + mEnd)
+        : (start.getDate() + " " + mStart + " – " + end.getDate() + " " + mEnd);
+      var thisMon = todayIso ? mondayOfIso(todayIso) : "";
+      var prevMon = thisMon ? addDaysIso(thisMon, -7) : "";
+      if (weekStartIso === thisMon) return "Questa settimana · " + span;
+      if (weekStartIso === prevMon) return "Settimana scorsa · " + span;
+      return "Settimana " + span;
+    }
+
+    function formatSetShort(set, isCardio) {
+      if (!set) return "";
+      var reps = set.reps != null && set.reps !== "" ? itNum(set.reps) : "";
+      if (isCardio) return reps ? (reps + " min") : "Cardio";
+      var kg = set.kg != null && set.kg !== "" ? itNum(set.kg) : "";
+      if (reps && kg) return reps + "×" + kg + " kg";
+      if (reps) return reps + " rip";
+      if (kg) return kg + " kg";
+      return "—";
+    }
+
+    function getHistoryModel() {
+      if (historyModel) return historyModel;
+      var recent = (data && data.recent) || [];
+      var chrono = recent.map(function (session, idx) { return { session: session, recentIdx: idx }; });
+      chrono.sort(function (a, b) {
+        if (a.session.date !== b.session.date) return a.session.date < b.session.date ? -1 : 1;
+        return b.recentIdx - a.recentIdx;
+      });
+      var prevByCode = {};
+      var bestLoad = {};
+      var bestEpley = {};
+      var enrichedByIdx = {};
+      var exSet = {};
+
+      chrono.forEach(function (wrap) {
+        var s = wrap.session;
+        var code = s.code || "";
+        var prev = prevByCode[code] || null;
+        var cmp = null;
+        if (prev) {
+          var dKg = Math.round(((s.tonnage || 0) - (prev.tonnage || 0)) * 10) / 10;
+          var dPct = prev.tonnage > 0 ? Math.round((dKg / prev.tonnage) * 1000) / 10 : null;
+          cmp = {
+            prevDate: prev.date, prevTonnage: prev.tonnage || 0, prevSets: prev.sets || 0,
+            deltaKg: dKg, deltaPct: dPct, deltaSets: (s.sets || 0) - (prev.sets || 0)
+          };
+        }
+        prevByCode[code] = s;
+
+        var sessionPRs = [];
+        var prByEx = {};
+        var cardioMin = 0;
+        var blobParts = [code, s.name || "", s.date || "", itDate(s.date), itDateShort(s.date)];
+
+        (s.items || []).forEach(function (it) {
+          var exName = it.name || "";
+          if (!exName) return;
+          exSet[exName] = true;
+          blobParts.push(exName);
+          var isCardio = /cardio/i.test(exName);
+          var exMaxLoad = null;
+          var exBestEpley = null;
+          (it.sets || []).forEach(function (st) {
+            if (st.note) blobParts.push(st.note);
+            if (st.rir) blobParts.push(st.rir);
+            var reps = Number(st.reps);
+            var kg = st.kg != null && st.kg !== "" ? Number(st.kg) : null;
+            if (isCardio && isFinite(reps) && reps > 0) cardioMin += reps;
+            if (!isCardio && isFinite(reps) && reps > 0 && kg != null && isFinite(kg) && kg > 0) {
+              if (exMaxLoad == null || kg > exMaxLoad) exMaxLoad = kg;
+              var epley = Math.round(kg * (1 + reps / 30) * 10) / 10;
+              if (exBestEpley == null || epley > exBestEpley) exBestEpley = epley;
+            }
+          });
+          var key = exName.toLowerCase();
+          var tags = [];
+          if (exMaxLoad != null) {
+            if (bestLoad[key] != null && exMaxLoad > bestLoad[key] + 1e-6) tags.push("Carico max " + itNum(exMaxLoad) + " kg");
+            if (bestLoad[key] == null || exMaxLoad > bestLoad[key]) bestLoad[key] = exMaxLoad;
+          }
+          if (exBestEpley != null) {
+            if (bestEpley[key] != null && exBestEpley > bestEpley[key] + 1e-6) tags.push("1RM " + itNum(exBestEpley) + " kg");
+            if (bestEpley[key] == null || exBestEpley > bestEpley[key]) bestEpley[key] = exBestEpley;
+          }
+          if (tags.length) {
+            sessionPRs.push({ name: exName, tags: tags });
+            prByEx[key] = tags;
+          }
+        });
+
+        enrichedByIdx[wrap.recentIdx] = {
+          session: s, recentIdx: wrap.recentIdx, weekStart: mondayOfIso(s.date),
+          cmp: cmp, prs: sessionPRs, prByEx: prByEx,
+          cardioMin: Math.round(cardioMin * 10) / 10, searchBlob: blobParts.join(" ").toLowerCase()
+        };
+      });
+
+      var list = recent.map(function (_s, idx) { return enrichedByIdx[idx]; });
+      var exercises = Object.keys(exSet).sort(function (a, b) { return a.localeCompare(b, "it"); });
+      historyModel = { entries: list, exercises: exercises };
+      return historyModel;
+    }
+
+    function filterHistoryEntries(model) {
+      var q = String(historyQuery || "").trim().toLowerCase();
+      var todayIso = (data && data.today) || isoFromDate(new Date());
+      var cutoff = "";
+      if (historyPeriod === "7d") cutoff = addDaysIso(todayIso, -6);
+      else if (historyPeriod === "30d") cutoff = addDaysIso(todayIso, -29);
+      else if (historyPeriod === "90d") cutoff = addDaysIso(todayIso, -89);
+
+      return (model.entries || []).filter(function (entry) {
+        var s = entry.session;
+        if (historyCode !== "all" && s.code !== historyCode) return false;
+        if (cutoff && (!s.date || s.date < cutoff)) return false;
+        if (historyExercise !== "all") {
+          var hitEx = (s.items || []).some(function (it) { return sameExerciseName(it.name, historyExercise); });
+          if (!hitEx) return false;
+        }
+        if (q && entry.searchBlob.indexOf(q) === -1) return false;
+        return true;
+      });
+    }
+
+    function historyActiveFilterCount() {
+      var n = 0;
+      if (String(historyQuery || "").trim()) n += 1;
+      if (historyCode !== "all") n += 1;
+      if (historyPeriod !== "all") n += 1;
+      if (historyExercise !== "all") n += 1;
+      return n;
+    }
+
+    function paintHistorySessionCard(entry) {
+      var s = entry.session;
+      var idx = entry.recentIdx;
+      var prBadge = entry.prs.length ? '<span class="pr-badge">' + entry.prs.length + " PR</span>" : "";
+      var cmpLine = "";
+      if (entry.cmp) {
+        var dKg = entry.cmp.deltaKg;
+        var sign = dKg > 0 ? "+" : "";
+        var cls = dKg > 0 ? " up" : dKg < 0 ? " down" : "";
+        var pctText = entry.cmp.deltaPct != null ? (" (" + (entry.cmp.deltaPct > 0 ? "+" : "") + itNum(entry.cmp.deltaPct) + "%)") : "";
+        cmpLine = '<span class="session-sum-delta' + cls + '">' +
+          esc(sign + itNum(dKg) + " kg" + pctText + " vs " + s.code + " del " + itDateShort(entry.cmp.prevDate)) + "</span>";
+      } else {
+        cmpLine = '<span class="session-sum-delta">Prima sessione ' + esc(s.code) + "</span>";
+      }
+
+      var cardioText = entry.cardioMin > 0 ? " · Cardio " + itNum(entry.cardioMin) + " min" : "";
+      var prSummary = entry.prs.length
+        ? '<span class="session-sum-delta up">PR: ' + esc(entry.prs.map(function (p) { return p.name; }).slice(0, 2).join(", ")) + (entry.prs.length > 2 ? " +" + (entry.prs.length - 2) : "") + "</span>"
+        : "";
+
+      var detailMap = {};
+      (s.detail || []).forEach(function (d) { detailMap[String(d.name || "").toLowerCase()] = d; });
+      var exRows = (s.items && s.items.length ? s.items : (s.detail || []).map(function (d) { return { name: d.name, sets: [] }; })).map(function (it) {
+        var key = String(it.name || "").toLowerCase();
+        var isCardio = /cardio/i.test(it.name);
+        var det = detailMap[key];
+        var setCount = (it.sets && it.sets.length) || (det && det.sets) || 0;
+        var ton = 0;
+        if (det && det.tonnage != null) ton = det.tonnage;
+        else {
+          (it.sets || []).forEach(function (st) {
+            var r = Number(st.reps), k = Number(st.kg);
+            if (isFinite(r) && isFinite(k)) ton += r * k;
+          });
+          ton = Math.round(ton * 10) / 10;
+        }
+        var setsPreview = (it.sets || []).slice(0, 4).map(function (st) { return formatSetShort(st, isCardio); }).filter(Boolean).join(" · ");
+        if ((it.sets || []).length > 4) setsPreview += " · +" + (it.sets.length - 4);
+        var prTags = entry.prByEx[key];
+        var prTagHtml = prTags && prTags.length ? '<span class="pr-badge">PR</span>' : "";
+        return '<button class="history-ex-btn" type="button" data-action="history-exercise" data-name="' + esc(it.name) + '">' +
+          '<span class="history-ex-main"><span class="history-ex-title">' + esc(it.name) + prTagHtml + "</span>" +
+          (setsPreview ? '<span class="history-ex-sets">' + esc(setsPreview) + "</span>" : "") +
+          '</span><span class="history-ex-right"><span>' + esc(seriesWord(setCount)) + "</span><span>" + (ton > 0 ? esc(itNum(ton)) + " kg ›" : "Dettaglio ›") + "</span></span></button>";
+      }).join("");
+
+      var cmpBox = "";
+      if (entry.cmp) {
+        var dSets = entry.cmp.deltaSets;
+        var dSetsTxt = dSets === 0 ? "stesse serie" : ((dSets > 0 ? "+" : "") + dSets + " serie");
+        var dKg2 = entry.cmp.deltaKg;
+        var dPct2 = entry.cmp.deltaPct != null ? (" (" + (dKg2 > 0 ? "+" : "") + itNum(dKg2) + " kg, " + (entry.cmp.deltaPct > 0 ? "+" : "") + itNum(entry.cmp.deltaPct) + "%)") : "";
+        cmpBox = '<div class="session-cmp">Confronto con <strong>' + esc(s.code + " del " + itDate(entry.cmp.prevDate)) + "</strong>: " +
+          esc(itNum(entry.cmp.prevTonnage) + " kg" + dPct2 + " · " + dSetsTxt) + "</div>";
+      }
+
+      return '<details class="session">' +
+        '<summary>' +
+          '<span class="session-sum-top"><strong>Scheda ' + esc(s.code) + " · " + esc(itDate(s.date)) + '</strong><span class="session-sum-badges">' + prBadge + '<span class="session-chev" aria-hidden="true">▾</span></span></span>' +
+          '<span class="session-sum-meta"><span>' + esc(seriesWord(s.sets)) + " · " + esc(itNum(s.tonnage)) + " kg" + esc(cardioText) + "</span></span>" +
+          cmpLine + prSummary +
+        "</summary>" +
+        '<div class="detail">' +
+          cmpBox +
+          '<div class="session-ex-list">' + exRows + "</div>" +
+          '<div class="session-actions">' +
+            '<button class="secondary" type="button" data-action="repeat-session" data-index="' + idx + '">Ripeti</button>' +
+            '<button class="secondary" type="button" data-action="edit-session" data-index="' + idx + '">Modifica</button>' +
+            '<button class="ghost danger" type="button" data-action="delete-session" data-index="' + idx + '">Elimina</button>' +
+          "</div>" +
+        "</div></details>";
+    }
+
+    function paintHistoryList() {
+      var model = getHistoryModel();
+      var all = model.entries || [];
+      if (!all.length) return emptyState("Ancora nessuna sessione", "Quando salvi un allenamento, lo trovi qui.");
+      var filtered = filterHistoryEntries(model);
+      var activeCount = historyActiveFilterCount();
+      var metaBar = activeCount
+        ? '<div class="history-meta-bar"><span>' + filtered.length + (filtered.length === 1 ? " sessione trovata" : " sessioni trovate") + " su " + all.length + '</span><button class="ghost" type="button" data-action="history-reset">Azzera filtri</button></div>'
+        : "";
+      if (!filtered.length) return metaBar + emptyState("Nessuna sessione trovata", "Prova a cambiare filtro o testo di ricerca.");
+
+      var groups = [];
+      var byWeek = {};
+      var todayIso = (data && data.today) || isoFromDate(new Date());
+      filtered.forEach(function (entry) {
+        var wk = entry.weekStart || "other";
+        if (!byWeek[wk]) {
+          byWeek[wk] = { weekStart: wk, entries: [], sets: 0, tonnage: 0 };
+          groups.push(byWeek[wk]);
+        }
+        byWeek[wk].entries.push(entry);
+        byWeek[wk].sets += Number(entry.session.sets) || 0;
+        byWeek[wk].tonnage = Math.round((byWeek[wk].tonnage + (Number(entry.session.tonnage) || 0)) * 10) / 10;
+      });
+
+      var body = groups.map(function (g) {
+        var sessLabel = g.entries.length === 1 ? "1 sessione" : (g.entries.length + " sessioni");
+        var head = '<div class="week-head"><strong>' + esc(weekLabelIt(g.weekStart, todayIso)) + "</strong><span>" +
+          esc(sessLabel + " · " + seriesWord(g.sets) + " · " + itNum(g.tonnage) + " kg") + "</span></div>";
+        return '<div class="week-group">' + head + g.entries.map(paintHistorySessionCard).join("") + "</div>";
+      }).join("");
+      return metaBar + body;
+    }
+
     function paintHistory() {
-      var sessions = (data && data.recent) || [];
-      var body = sessions.length ? sessions.map(function (session, idx) {
-        var lines = (session.detail || []).map(function (item) {
-          return "<div><span>" + esc(item.name) + "</span><span>" + item.sets + " × · " + esc(itNum(item.tonnage)) + " kg</span></div>";
+      var model = getHistoryModel();
+      var hasAny = (model.entries || []).length > 0;
+      var toolbar = "";
+      if (hasAny) {
+        var codeChips = [["all", "Tutte"], ["A", "A"], ["B", "B"], ["C", "C"]].map(function (c) {
+          var on = historyCode === c[0];
+          return '<button type="button" data-action="history-code" data-code="' + esc(c[0]) + '" class="' + (on ? "is-on" : "") + '" aria-pressed="' + (on ? "true" : "false") + '">' + esc(c[1]) + "</button>";
         }).join("");
-        return '<details class="session"><summary><strong>' + esc(session.code) + " · " + esc(itDate(session.date)) + '</strong><span class="muted">' + esc(seriesWord(session.sets)) + " · " + esc(itNum(session.tonnage)) + " kg</span></summary><div class=\"detail\">" + lines +
-          '<div class="session-actions"><button class="secondary" type="button" data-action="edit-session" data-index="' + idx + '">Modifica</button>' +
-          '<button class="ghost danger" type="button" data-action="delete-session" data-index="' + idx + '">Elimina</button></div></div></details>';
-      }).join("") : emptyState("Ancora nessuna sessione", "Quando salvi un allenamento, lo trovi qui.");
-      return '<section class="history"><div class="history-top"><h2>Ultime sessioni</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
-        '<div class="session-actions no-print" style="margin:0 0 14px"><button class="secondary" type="button" data-action="report">Esporta riepilogo</button></div>' +
-        body + "</section>";
+        var periodChips = [["all", "Tutto"], ["7d", "7 gg"], ["30d", "30 gg"], ["90d", "90 gg"]].map(function (p) {
+          var on = historyPeriod === p[0];
+          return '<button type="button" data-action="history-period" data-period="' + esc(p[0]) + '" class="' + (on ? "is-on" : "") + '" aria-pressed="' + (on ? "true" : "false") + '">' + esc(p[1]) + "</button>";
+        }).join("");
+        var exOpts = '<option value="all">Tutti gli esercizi</option>' + (model.exercises || []).map(function (ex) {
+          return '<option value="' + esc(ex) + '"' + (sameExerciseName(historyExercise, ex) ? " selected" : "") + ">" + esc(ex) + "</option>";
+        }).join("");
+        var clearBtn = historyQuery ? '<button class="history-clear" type="button" data-action="history-clear-search" aria-label="Pulisci ricerca">×</button>' : "";
+        toolbar = '<div class="history-toolbar">' +
+          '<div class="history-search"><input id="historySearch" type="search" value="' + esc(historyQuery) + '" placeholder="Cerca esercizio, data o nota…" aria-label="Cerca nello storico">' + clearBtn + "</div>" +
+          '<div class="history-chip-row" role="group" aria-label="Filtra per scheda">' + codeChips + "</div>" +
+          '<div class="history-chip-row" role="group" aria-label="Filtra per periodo">' + periodChips + "</div>" +
+          '<select id="historyExercise" class="history-select" aria-label="Filtra per esercizio">' + exOpts + "</select>" +
+          "</div>";
+      }
+      return '<section class="history"><div class="history-top"><h2>Storico</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
+        '<div class="session-actions no-print" style="margin:0 0 12px"><button class="secondary" type="button" data-action="report">Esporta riepilogo</button></div>' +
+        (errorText ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
+        toolbar +
+        '<div id="historyList">' + paintHistoryList() + "</div></section>";
     }
 
     function svgChart(points, key, color) {
@@ -4496,36 +4895,96 @@
       return null;
     }
 
+    function exerciseSessionDetails(name) {
+      var recent = (data && data.recent) || [];
+      var isCardio = /cardio/i.test(name);
+      var out = [];
+      recent.forEach(function (s) {
+        var found = (s.items || []).find(function (it) { return sameExerciseName(it.name, name); });
+        if (!found) return;
+        var sets = found.sets || [];
+        var ton = 0, maxLoad = null, totalReps = 0, notes = [];
+        sets.forEach(function (st) {
+          var r = Number(st.reps), k = st.kg != null && st.kg !== "" ? Number(st.kg) : null;
+          if (isFinite(r) && r > 0) totalReps += r;
+          if (!isCardio && isFinite(r) && k != null && isFinite(k)) {
+            ton += r * k;
+            if (maxLoad == null || k > maxLoad) maxLoad = k;
+          }
+          if (st.rir) notes.push("RIR " + st.rir);
+          if (st.note && notes.indexOf(st.note) === -1) notes.push(st.note);
+        });
+        out.push({ date: s.date, code: s.code, sets: sets, tonnage: Math.round(ton * 10) / 10, maxLoad: maxLoad, totalReps: Math.round(totalReps * 10) / 10, notes: notes });
+      });
+      return out;
+    }
+
     function paintRecordDetail() {
       var name = recordDetailName;
       var card = findRecordCard(name);
-      if (!card) {
-        return '<section class="history"><div class="history-top"><h2>Record</h2><button class="ghost" type="button" data-action="back">Indietro</button></div>' +
-          emptyState("Esercizio non trovato", "Torna ai record e scegli un altro esercizio.") + "</section>";
+      var sessList = exerciseSessionDetails(name);
+      var histEntry = ((data && data.history) || []).find(function (h) { return sameExerciseName(h.name, name); });
+      if (!card && !sessList.length && !histEntry) {
+        return '<section class="history"><div class="history-top"><h2>Esercizio</h2><button class="ghost" type="button" data-action="back">Indietro</button></div>' +
+          emptyState("Esercizio non trovato", "Scegli un altro esercizio.") + "</section>";
       }
-      var stats = '<div class="record-detail-stats">' +
-        '<div class="record-stat"><b>' + esc(itNum(card.maxLoad)) + ' <small>kg</small></b><span>Carico max' + (card.maxLoadReps != null ? " · " + card.maxLoadReps + " rip" : "") + (card.maxLoadDate ? " · " + itDateShort(card.maxLoadDate) : "") + "</span></div>" +
-        '<div class="record-stat"><b>' + (card.bestEpley != null ? esc(itNum(card.bestEpley)) + ' <small>kg</small>' : "—") + "</b><span>1RM stimato" + (card.bestEpleyDate ? " · " + itDateShort(card.bestEpleyDate) : "") + "</span></div>" +
-        '<div class="record-stat"><b>' + (card.bestVolume != null ? esc(itNum(card.bestVolume)) + ' <small>kg</small>' : "—") + "</b><span>Miglior volume" + (card.bestVolumeDate ? " · " + itDateShort(card.bestVolumeDate) : "") + "</span></div>" +
-        '<div class="record-stat"><b>' + (card.isFirst ? "—" : (card.deltaKg != null ? (card.deltaKg > 0 ? "+" : "") + esc(itNum(card.deltaKg)) + " kg" : "—")) + "</b><span>" + (card.isFirst ? "Primo record" : ("Sul precedente" + (card.prevDate ? " · " + itDateShort(card.prevDate) : ""))) + "</span></div>" +
-        "</div>";
-      var points = card.points || [];
-      var loadChart = '<div class="chart-card"><h3>Andamento del carico</h3>' + svgChart(points, "maxLoad", cssVar("--chalk-text", "#2f6b10")) + "</div>";
-      var volChart = '<div class="chart-card"><h3>Volume per sessione</h3>' + svgChart(points, "volume", cssVar("--chalk-text", "#2f6b10")) + "</div>";
-      var rows = points.map(function (p) {
-        var isPr = card.maxLoadDate && p.date === card.maxLoadDate && p.maxLoad != null && Math.abs(p.maxLoad - card.maxLoad) < 1e-6;
-        return '<tr' + (isPr ? ' class="is-pr"' : "") + "><td>" + esc(itDate(p.date)) + "</td><td>" +
-          (p.maxLoad != null ? esc(itNum(p.maxLoad)) + " kg" : "—") + "</td><td>" +
-          (p.volume != null ? esc(itNum(p.volume)) + " kg" : "—") + "</td><td>" +
-          (p.sets != null ? esc(String(p.sets)) : "—") + (isPr ? " · PR" : "") + "</td></tr>";
-      }).join("");
-      var table = points.length
-        ? '<div class="record-section"><h3>Storico</h3><table class="record-table"><thead><tr><th>Data</th><th>Carico max</th><th>Volume</th><th>Serie</th></tr></thead><tbody>' + rows + "</tbody></table></div>"
+      var isCardio = /cardio/i.test(name);
+      var cat = (typeof exerciseCatalog === "function" ? exerciseCatalog()[String(name || "").toLowerCase()] : null) || {};
+      var stats = "", charts = "";
+      if (card) {
+        stats = '<div class="record-detail-stats">' +
+          '<div class="record-stat"><b>' + esc(itNum(card.maxLoad)) + ' <small>kg</small></b><span>Carico max' + (card.maxLoadReps != null ? " · " + card.maxLoadReps + " rip" : "") + (card.maxLoadDate ? " · " + itDateShort(card.maxLoadDate) : "") + "</span></div>" +
+          '<div class="record-stat"><b>' + (card.bestEpley != null ? esc(itNum(card.bestEpley)) + ' <small>kg</small>' : "—") + "</b><span>1RM stimato" + (card.bestEpleyDate ? " · " + itDateShort(card.bestEpleyDate) : "") + "</span></div>" +
+          '<div class="record-stat"><b>' + (card.bestVolume != null ? esc(itNum(card.bestVolume)) + ' <small>kg</small>' : "—") + "</b><span>Miglior volume" + (card.bestVolumeDate ? " · " + itDateShort(card.bestVolumeDate) : "") + "</span></div>" +
+          '<div class="record-stat"><b>' + (card.isFirst ? "—" : (card.deltaKg != null ? (card.deltaKg > 0 ? "+" : "") + esc(itNum(card.deltaKg)) + " kg" : "—")) + "</b><span>" + (card.isFirst ? "Primo record" : ("Sul precedente" + (card.prevDate ? " · " + itDateShort(card.prevDate) : ""))) + "</span></div>" +
+          "</div>";
+        var points = card.points || [];
+        charts = '<div class="chart-card"><h3>Andamento del carico</h3>' + svgChart(points, "maxLoad", cssVar("--chalk-text", "#2f6b10")) + "</div>" +
+          '<div class="chart-card"><h3>Volume per sessione</h3>' + svgChart(points, "volume", cssVar("--chalk-text", "#2f6b10")) + "</div>";
+      } else {
+        var totSess = sessList.length || (histEntry && histEntry.points ? histEntry.points.length : 0);
+        var totMin = sessList.reduce(function (a, s) { return a + (s.totalReps || 0); }, 0);
+        stats = '<div class="record-detail-stats">' +
+          '<div class="record-stat"><b>' + totSess + '</b><span>Sessioni</span></div>' +
+          '<div class="record-stat"><b>' + esc(itNum(totMin)) + (isCardio ? ' <small>min</small>' : ' <small>rip</small>') + '</b><span>Totale registrato</span></div>' +
+          "</div>";
+      }
+
+      var seenDates = {};
+      var sessionRows = sessList.map(function (s) {
+        seenDates[s.date] = true;
+        var isPr = card && card.maxLoadDate && s.date === card.maxLoadDate && s.maxLoad != null && Math.abs(s.maxLoad - card.maxLoad) < 1e-6;
+        var setsTxt = s.sets.map(function (st) { return formatSetShort(st, isCardio); }).join(" · ");
+        var metaBits = [];
+        if (s.tonnage > 0) metaBits.push("Volume " + itNum(s.tonnage) + " kg");
+        if (s.notes.length) metaBits.push(s.notes.join(" · "));
+        return '<div class="detail-session-row">' +
+          '<div class="detail-session-head"><strong>' + esc(itDate(s.date)) + (s.code ? " · Scheda " + esc(s.code) : "") + "</strong>" + (isPr ? '<span class="pr-badge">PR</span>' : "") + "</div>" +
+          '<p class="detail-session-sets">' + esc(setsTxt || "—") + "</p>" +
+          (metaBits.length ? '<p class="detail-session-meta">' + esc(metaBits.join(" · ")) + "</p>" : "") +
+          "</div>";
+      });
+
+      var olderPoints = ((card && card.points) || (histEntry && histEntry.points) || []).filter(function (p) { return !seenDates[p.date]; }).slice().reverse();
+      olderPoints.forEach(function (p) {
+        var meta = [];
+        if (p.maxLoad != null) meta.push("Carico max " + itNum(p.maxLoad) + " kg");
+        if (p.volume != null && p.volume > 0) meta.push("Volume " + itNum(p.volume) + " kg");
+        if (p.sets != null) meta.push(seriesWord(p.sets));
+        sessionRows.push('<div class="detail-session-row"><div class="detail-session-head"><strong>' + esc(itDate(p.date)) + '</strong></div><p class="detail-session-sets">' + esc(meta.join(" · ") || "—") + "</p></div>");
+      });
+
+      var listBlock = sessionRows.length
+        ? '<div class="record-section"><h3>Tutte le volte</h3><div class="detail-session-list">' + sessionRows.join("") + "</div></div>"
         : emptyState("Ancora pochi dati", "Serve almeno una sessione di questo esercizio.");
-      var codes = (card.codes || []).map(function (c) { return "Scheda " + c; }).join(" · ");
-      return '<section class="history records-detail"><div class="history-top"><h2>' + esc(card.name) + '</h2><button class="ghost" type="button" data-action="back">Indietro</button></div>' +
-        '<p class="muted">' + esc(card.muscle) + (codes ? " · " + esc(codes) : "") + "</p>" +
-        stats + loadChart + volChart + table + "</section>";
+
+      var title = (card && card.name) || (histEntry && histEntry.name) || name;
+      var muscle = (card && card.muscle) || cat.muscle || "";
+      var codes = ((card && card.codes) || cat.codes || []).map(function (c) { return "Scheda " + c; }).join(" · ");
+      var subLine = [muscle, codes].filter(Boolean).join(" · ");
+      return '<section class="history records-detail"><div class="history-top"><h2>' + esc(title) + '</h2><button class="ghost" type="button" data-action="back">Indietro</button></div>' +
+        (subLine ? '<p class="muted">' + esc(subLine) + "</p>" : "") +
+        stats + charts + listBlock + "</section>";
     }
 
     function showRecordToast(list) {
@@ -5818,7 +6277,12 @@
         return {
           name: item.name,
           sets: (item.sets || []).map(function (set) {
-            return { id: set.id, serie: set.serie, reps: set.reps, kg: set.kg, rir: set.rir || "", note: set.note || "" };
+            return {
+              id: set.id, serie: set.serie,
+              reps: set.reps == null ? "" : formatEditable(set.reps),
+              kg: set.kg == null ? "" : formatEditable(set.kg),
+              rir: set.rir || "", note: set.note || ""
+            };
           })
         };
       });
@@ -5827,21 +6291,134 @@
       render();
     }
 
+    function applyLocalSessionUpdate(session, sets) {
+      if (!data || !data.recent || !session) return;
+      var byId = {};
+      (sets || []).forEach(function (s) { byId[String(s.id)] = s; });
+      var target = data.recent.find(function (r) {
+        return r === session || (r.rowIds && session.rowIds && r.rowIds[0] === session.rowIds[0]);
+      });
+      if (!target) return;
+      var totalTon = 0, totalSets = 0, nextDetail = [];
+      (target.items || []).forEach(function (it) {
+        var exTon = 0, exSets = 0, isCardio = /cardio/i.test(it.name);
+        (it.sets || []).forEach(function (st) {
+          var upd = byId[String(st.id)];
+          if (upd) {
+            var nr = parseNum(upd.reps);
+            var nk = String(upd.kg == null ? "" : upd.kg).trim() === "" ? null : parseNum(upd.kg);
+            if (nr != null) st.reps = Math.round(nr * 100) / 100;
+            st.kg = nk == null ? null : Math.round(nk * 100) / 100;
+            st.rir = String(upd.rir || "");
+            st.note = String(upd.note || "");
+          }
+          exSets += 1; totalSets += 1;
+          if (!isCardio && st.reps != null && st.kg != null) {
+            var v = Number(st.reps) * Number(st.kg);
+            if (isFinite(v)) exTon += v;
+          }
+        });
+        exTon = Math.round(exTon * 10) / 10;
+        totalTon += exTon;
+        nextDetail.push({ name: it.name, sets: exSets, tonnage: exTon });
+      });
+      target.sets = totalSets;
+      target.tonnage = Math.round(totalTon * 10) / 10;
+      target.detail = nextDetail;
+      cacheState(data);
+      invalidateViews();
+    }
+
+    function applyLocalSessionDelete(session) {
+      if (!data || !data.recent || !session) return;
+      data.recent = data.recent.filter(function (r) {
+        return r !== session && !(r.rowIds && session.rowIds && r.rowIds[0] === session.rowIds[0]);
+      });
+      if (data.recent.length) {
+        var top = data.recent[0];
+        data.last = { code: top.code, name: top.name, date: top.date };
+      } else {
+        data.last = null;
+      }
+      cacheState(data);
+      invalidateViews();
+    }
+
+    function applyLocalSessionRestore(snap) {
+      if (!data || !snap) return;
+      if (!data.recent) data.recent = [];
+      var w = workoutOf(snap.workout);
+      var totalSets = 0, totalTon = 0, detail = [];
+      var items = (snap.exercises || []).map(function (ex) {
+        var exTon = 0, isCardio = /cardio/i.test(ex.name);
+        var sets = (ex.sets || []).map(function (st, i) {
+          var r = parseNum(st.reps);
+          var k = String(st.kg == null ? "" : st.kg).trim() === "" ? null : parseNum(st.kg);
+          if (!isCardio && r != null && k != null) exTon += r * k;
+          totalSets += 1;
+          return { id: "local-" + Date.now() + "-" + i, serie: i + 1, reps: r, kg: k, rir: st.rir || "", note: st.note || "" };
+        });
+        exTon = Math.round(exTon * 10) / 10;
+        totalTon += exTon;
+        detail.push({ name: ex.name, sets: sets.length, tonnage: exTon });
+        return { name: ex.name, sets: sets };
+      });
+      data.recent.unshift({
+        date: snap.date, name: (w && w.name) || snap.workout, code: snap.workout,
+        sets: totalSets, exercises: items.length, tonnage: Math.round(totalTon * 10) / 10,
+        detail: detail, rowIds: [], items: items
+      });
+      data.recent.sort(function (a, b) { return a.date > b.date ? -1 : a.date < b.date ? 1 : 0; });
+      if (data.recent.length) {
+        var top = data.recent[0];
+        data.last = { code: top.code, name: top.name, date: top.date };
+      }
+      cacheState(data);
+      invalidateViews();
+    }
+
+    function hideUndoToast() {
+      var toast = document.getElementById("undoToast");
+      if (toast) toast.hidden = true;
+      if (undoToastTimer) { clearTimeout(undoToastTimer); undoToastTimer = null; }
+      undoDeletedSession = null;
+    }
+
+    function showUndoToast(labelText, snapshot) {
+      undoDeletedSession = snapshot;
+      var toast = document.getElementById("undoToast");
+      var label = document.getElementById("undoToastText");
+      if (!toast || !label) return;
+      label.textContent = labelText;
+      toast.hidden = false;
+      if (undoToastTimer) clearTimeout(undoToastTimer);
+      undoToastTimer = setTimeout(function () { hideUndoToast(); }, 8000);
+    }
+
     async function saveSessionEdit() {
       if (saving || !editSession || !editDraft) return;
-      var sets = [];
-      var i;
-      var j;
+      var sets = [], i, j;
       for (i = 0; i < editDraft.length; i++) {
         for (j = 0; j < editDraft[i].sets.length; j++) {
           var set = editDraft[i].sets[j];
+          var repsVal = parseNum(set.reps);
+          if (repsVal == null || repsVal < 0 || repsVal > 999) {
+            errorText = "Ripetizioni non valide in «" + editDraft[i].name + "», serie " + (j + 1) + ".";
+            render(true);
+            return;
+          }
+          var kgStr = String(set.kg == null ? "" : set.kg).trim();
+          var kgVal = kgStr === "" ? null : parseNum(kgStr);
+          if (kgStr !== "" && (kgVal == null || kgVal < 0 || kgVal > 999)) {
+            errorText = "Carico non valido in «" + editDraft[i].name + "», serie " + (j + 1) + ".";
+            render(true);
+            return;
+          }
           sets.push({ id: set.id, reps: set.reps, kg: set.kg, rir: set.rir, note: set.note });
         }
       }
       var payload = { requestId: newRequestId(), rowIds: editSession.rowIds.slice(), sets: sets };
-      saving = true;
-      errorText = "";
-      render(true);
+      saving = true; errorText = ""; render(true);
       try {
         if (!navigator.onLine) throw new Error("offline");
         var res = await rpc("updateSession", payload);
@@ -5852,15 +6429,15 @@
           return;
         }
         if (res.state) mergeState(res.state);
-        editSession = null;
-        editDraft = null;
-        view = "history";
-        errorText = "Sessione aggiornata.";
+        editSession = null; editDraft = null; view = "history";
+        errorText = res.replayed ? "Questa modifica era già stata salvata." : "Sessione aggiornata.";
         render();
       } catch (err) {
         saving = false;
+        applyLocalSessionUpdate(editSession, sets);
+        editSession = null; editDraft = null; view = "history";
         errorText = queueOrThrow("updateSession", payload, err);
-        render(true);
+        render();
       }
     }
 
@@ -5872,13 +6449,20 @@
         return;
       }
       if (!alreadyConfirmed) {
-        var yes = await ask("Vuoi eliminare la sessione " + session.code + " del " + itDate(session.date) + "? Le serie spariscono dal diario. Non si può annullare.", "Elimina");
+        var yes = await ask("Vuoi eliminare la sessione " + session.code + " del " + itDate(session.date) + "? Le serie verranno tolte dal diario.", "Elimina");
         if (!yes) return;
       }
+      var snapshot = {
+        date: session.date, workout: session.code,
+        exercises: (session.items || []).map(function (it) {
+          return {
+            name: it.name, skipped: false,
+            sets: (it.sets || []).map(function (st) { return { reps: st.reps, kg: st.kg, rir: st.rir || "", note: st.note || "" }; })
+          };
+        })
+      };
       var payload = { requestId: newRequestId(), rowIds: session.rowIds.slice(), confirm: true };
-      saving = true;
-      errorText = "";
-      render(true);
+      saving = true; errorText = ""; render(true);
       try {
         if (!navigator.onLine) throw new Error("offline");
         var res = await rpc("deleteSession", payload);
@@ -5889,16 +6473,115 @@
           return;
         }
         if (res.state) mergeState(res.state);
-        editSession = null;
-        editDraft = null;
-        view = "history";
-        errorText = res.replayed ? "Questa sessione era già stata tolta." : "Sessione eliminata.";
+        editSession = null; editDraft = null; view = "history";
+        errorText = res.replayed ? "Questa sessione era già stata tolta." : "";
         render();
+        if (!res.replayed && snapshot.exercises.length) showUndoToast("Sessione " + snapshot.workout + " eliminata.", snapshot);
       } catch (err) {
         saving = false;
+        applyLocalSessionDelete(session);
+        editSession = null; editDraft = null; view = "history";
         errorText = queueOrThrow("deleteSession", payload, err);
-        render(true);
+        render();
+        if (snapshot.exercises.length) showUndoToast("Eliminazione in coda.", snapshot);
       }
+    }
+
+    async function undoDeleteSession() {
+      var snap = undoDeletedSession;
+      if (!snap || !snap.exercises || !snap.exercises.length || saving) return;
+      hideUndoToast();
+      var payload = { requestId: newRequestId(), date: snap.date, workout: snap.workout, confirmDuplicate: true, exercises: snap.exercises };
+      saving = true; errorText = ""; render(true);
+      try {
+        if (!navigator.onLine) throw new Error("offline");
+        var res = await rpc("saveSession", payload);
+        saving = false;
+        if (!res || !res.ok) {
+          errorText = (res && res.error) || "Ripristino non riuscito.";
+          render(true);
+          return;
+        }
+        if (res.state) mergeState(res.state);
+        view = "history"; errorText = "Sessione ripristinata."; render();
+      } catch (err) {
+        saving = false;
+        applyLocalSessionRestore(snap);
+        view = "history"; errorText = queueOrThrow("saveSession", payload, err); render();
+      }
+    }
+
+    async function repeatSessionByIndex(index) {
+      var session = ((data && data.recent) || [])[Number(index)];
+      if (!session || !session.code) {
+        errorText = "Non trovo i dettagli di questa sessione.";
+        render(true);
+        return;
+      }
+      var code = session.code;
+      var existing = drafts[code];
+      var hasDone = !!(existing && existing.some(function (ex) {
+        return !ex.skipped && (ex.sets || []).some(function (s) { return s.done; });
+      }));
+      if (hasDone) {
+        var yes = await ask("Hai già delle serie segnate nella scheda " + code + ". Vuoi sostituire la bozza con questa sessione?", "Sostituisci");
+        if (!yes) return;
+      }
+      var workout = workoutOf(code);
+      var baseExercises = (workout && workout.exercises) || [];
+      var itemMap = {};
+      (session.items || []).forEach(function (it) { itemMap[String(it.name || "").toLowerCase()] = it; });
+      var used = {};
+      var nextDraft = baseExercises.map(function (ex) {
+        var key = String(ex.name || "").toLowerCase();
+        var match = itemMap[key];
+        if (match) used[key] = true;
+        var setsSource = match && match.sets && match.sets.length ? match.sets : (ex.sets || []);
+        var draft = {
+          name: ex.name, muscle: ex.muscle, hint: ex.hint, kind: ex.kind,
+          source: match ? "log" : ex.source, lastLine: ex.lastLine || "",
+          lastDate: session.date || ex.lastDate || "",
+          lastSets: cloneSets(match ? match.sets : (ex.lastSets || [])),
+          prevDate: ex.prevDate || "", prevSets: cloneSets(ex.prevSets || []),
+          targetSets: cloneSets(ex.targetSets || []),
+          progression: ex.progression || emptyProgression(),
+          skipped: !match,
+          sets: setsSource.map(function (set) {
+            return {
+              reps: set.reps == null ? "" : formatEditable(set.reps),
+              kg: set.kg == null ? "" : formatEditable(set.kg),
+              rir: set.rir || "", note: set.note || "", done: false
+            };
+          })
+        };
+        return enrichExercise(draft);
+      });
+      (session.items || []).forEach(function (it) {
+        var key = String(it.name || "").toLowerCase();
+        if (used[key]) return;
+        var isCardio = /cardio/i.test(it.name);
+        var draft = {
+          name: it.name, muscle: isCardio ? "Cardio" : "Extra", hint: "",
+          kind: isCardio ? "cardio" : "strength", source: "log", lastLine: "",
+          lastDate: session.date || "", lastSets: cloneSets(it.sets || []),
+          prevDate: "", prevSets: [], targetSets: [], progression: emptyProgression(),
+          skipped: false,
+          sets: (it.sets || []).map(function (set) {
+            return {
+              reps: set.reps == null ? "" : formatEditable(set.reps),
+              kg: set.kg == null ? "" : formatEditable(set.kg),
+              rir: set.rir || "", note: set.note || "", done: false
+            };
+          })
+        };
+        nextDraft.push(enrichExercise(draft));
+      });
+      drafts[code] = nextDraft;
+      selected = code;
+      if (data && data.today) dateValue = data.today;
+      requestId = ""; errorText = "";
+      editorNotice = "Bozza precompilata dalla sessione " + code + " del " + itDateShort(session.date) + ".";
+      view = "editor"; viewNeedsPaint.editor = true; render();
     }
 
     function mergeState(state) {
@@ -5939,6 +6622,24 @@
       if (input.id === "weightKg") { weightKg = input.value; return; }
       if (input.id === "weightNote") { weightNote = input.value; return; }
       if (input.id === "chartExercise") { chartExercise = input.value; viewNeedsPaint.charts = true; viewNeedsPaint.report = true; render(true); return; }
+      if (input.id === "historySearch") {
+        historyQuery = input.value || "";
+        var listEl = document.getElementById("historyList");
+        if (listEl) listEl.innerHTML = paintHistoryList();
+        var clearEl = document.querySelector('[data-action="history-clear-search"]');
+        if (historyQuery && !clearEl && input.parentNode) {
+          var b = document.createElement("button");
+          b.className = "history-clear";
+          b.type = "button";
+          b.setAttribute("data-action", "history-clear-search");
+          b.setAttribute("aria-label", "Pulisci ricerca");
+          b.textContent = "×";
+          input.parentNode.appendChild(b);
+        } else if (!historyQuery && clearEl) {
+          clearEl.remove();
+        }
+        return;
+      }
       if (input.id === "reportMonth") { reportMonth = input.value; render(true); return; }
       if (input.id === "howtoVideo") { howtoVideoDraft = input.value; return; }
       if (updateReminderFromInput(input)) return;
@@ -5973,7 +6674,7 @@
         if (action === "back" && view === "report") { view = "history"; errorText = ""; render(); return; }
         if (action === "back" && view === "settings") { view = "editor"; errorText = ""; render(); return; }
         if (action === "back" && view === "howto") { view = "editor"; howtoName = ""; errorText = ""; render(); return; }
-        if (action === "back" && view === "record-detail") { recordDetailName = ""; view = "records"; errorText = ""; render(); return; }
+        if (action === "back" && view === "record-detail") { recordDetailName = ""; view = detailReturnView || "records"; detailReturnView = "records"; errorText = ""; render(); return; }
         if (!data) { view = "error"; render(); return; }
         view = "editor"; errorText = ""; prs = [];
         if (action === "again") requestId = "";
@@ -6065,6 +6766,31 @@
       if (action === "delete-session") { deleteSessionByIndex(button.dataset.index, false); return; }
       if (action === "delete-session-edit") { deleteSessionByIndex(null, false); return; }
       if (action === "save-session-edit") { saveSessionEdit(); return; }
+      if (action === "repeat-session") { repeatSessionByIndex(button.dataset.index); return; }
+      if (action === "undo-delete") { undoDeleteSession(); return; }
+      if (action === "undo-dismiss") { hideUndoToast(); return; }
+      if (action === "dismiss-editor-notice") { editorNotice = ""; viewNeedsPaint.editor = true; render(true); return; }
+      if (action === "history-code") {
+        historyCode = button.getAttribute("data-code") || "all";
+        viewNeedsPaint.history = true; haptic(10); render(true); return;
+      }
+      if (action === "history-period") {
+        historyPeriod = button.getAttribute("data-period") || "all";
+        viewNeedsPaint.history = true; haptic(10); render(true); return;
+      }
+      if (action === "history-clear-search") {
+        historyQuery = ""; viewNeedsPaint.history = true; render(true); return;
+      }
+      if (action === "history-reset") {
+        historyQuery = ""; historyCode = "all"; historyPeriod = "all"; historyExercise = "all";
+        viewNeedsPaint.history = true; haptic(10); render(true); return;
+      }
+      if (action === "history-exercise") {
+        recordDetailName = button.getAttribute("data-name") || "";
+        if (!recordDetailName) return;
+        detailReturnView = "history"; view = "record-detail"; viewNeedsPaint["record-detail"] = true;
+        haptic(10); render(); return;
+      }
       if (action === "history") { view = "history"; errorText = ""; render(); return; }
       if (action === "charts") { view = "charts"; errorText = ""; render(); return; }
       if (action === "chart-period") {
@@ -6124,6 +6850,7 @@
       if (action === "record-detail") {
         recordDetailName = button.getAttribute("data-name") || "";
         if (!recordDetailName) return;
+        detailReturnView = "records";
         view = "record-detail";
         viewNeedsPaint["record-detail"] = true;
         errorText = "";
@@ -6312,6 +7039,7 @@
         selected = data.suggested || selected;
       }
       requestId = "";
+      editorNotice = "";
       view = "confirm";
       render();
       showRecordToast(prs);
@@ -6478,6 +7206,12 @@
     document.body.addEventListener("click", onClick);
     document.body.addEventListener("input", onInput);
     document.body.addEventListener("change", function (event) {
+      if (event.target && event.target.id === "historyExercise") {
+        historyExercise = event.target.value || "all";
+        viewNeedsPaint.history = true;
+        render(true);
+        return;
+      }
       var target = event.target;
       if (target && (target.id === "howtoCamera" || target.id === "howtoGallery")) onHowtoPhoto(event);
     });
@@ -6602,6 +7336,8 @@
           persistQueue: persistQueue,
           initQueue: initQueue,
           getRecordModel: function () { return getRecordModel(); },
+          getHistoryModel: function () { return getHistoryModel(); },
+          repeatSessionByIndex: repeatSessionByIndex,
           getChartsModel: function () { return getChartsModel(); },
           openWeightSub: openWeightSub,
           linearRegression: linearRegression,
