@@ -53,15 +53,20 @@
       --line: rgba(246, 243, 234, 0.12);
       --ink: #f6f3ea;
       --muted: #b4af9f;
-      --faint: #8d887a;
+      --faint: #9a9586;
       --red: #ff4d2e;
       --red-press: #ff6a51;
       --red-ink: #2a0904;
       --chalk: #d4f05a;
+      --chalk-text: #d4f05a;
       --chalk-deep: #b6d63a;
       --down: #ffb199;
       --shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
       --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.28);
+      --shadow-primary: 0 8px 18px var(--glow);
+      --plate-ring: inset 0 0 0 2px rgba(0, 0, 0, 0.28);
+      --offline-bg: #8a1f1a;
+      --offline-ink: #fff5f1;
       --ghost-bg: rgba(255, 255, 255, 0.04);
       --banner-bg: #2c2618;
       --banner-ink: #f6e6c2;
@@ -93,6 +98,7 @@
       --r-lg: 22px;
       --r-xl: 28px;
       --r-full: 999px;
+      --fs-2xs: 0.68rem;
       --fs-xs: 0.72rem;
       --fs-sm: 0.84rem;
       --fs-md: 1rem;
@@ -111,15 +117,20 @@
       --line: rgba(22, 20, 15, 0.12);
       --ink: #16140f;
       --muted: #5a5448;
-      --faint: #736c60;
-      --red: #e0351d;
+      --faint: #6b6458;
+      --red: #d4321b;
       --red-press: #c42f18;
       --red-ink: #fff5f1;
       --chalk: #2f6b10;
+      --chalk-text: #2f6b10;
       --chalk-deep: #24550b;
       --down: #9a3412;
       --shadow: 0 12px 30px rgba(40, 30, 10, 0.1);
       --shadow-soft: 0 4px 14px rgba(40, 30, 10, 0.08);
+      --shadow-primary: 0 8px 18px var(--glow);
+      --plate-ring: inset 0 0 0 2px rgba(40, 30, 10, 0.25);
+      --offline-bg: #8a1f0c;
+      --offline-ink: #fff5f1;
       --ghost-bg: rgba(22, 20, 15, 0.05);
       --banner-bg: #f3e6c4;
       --banner-ink: #3a2c0c;
@@ -138,7 +149,7 @@
       --toast-ink: #5a140c;
       --bar-track: rgba(22, 20, 15, 0.12);
       --chart-label: #5a5448;
-      --glow: rgba(224, 53, 29, 0.14);
+      --glow: rgba(212, 50, 27, 0.14);
       color-scheme: light;
     }
     * { box-sizing: border-box; }
@@ -160,7 +171,7 @@
     button, input, select, textarea { font: inherit; color: inherit; }
     button { cursor: pointer; }
     button, input { -webkit-tap-highlight-color: transparent; }
-    a { color: var(--chalk); }
+    a { color: var(--chalk-text); }
     .shell {
       width: min(560px, 100%);
       margin: 0 auto;
@@ -177,12 +188,12 @@
     .plate {
       width: 40px;
       height: 40px;
-      border-radius: 50%;
+      border-radius: var(--r-full);
       background:
         radial-gradient(circle at 50% 50%, var(--ink) 0 16%, transparent 17%),
         radial-gradient(circle at 50% 50%, var(--red) 0 58%, transparent 59%),
         radial-gradient(circle at 50% 50%, var(--bg) 0 72%, var(--red) 73% 100%);
-      box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.28);
+      box-shadow: var(--plate-ring);
       flex: none;
     }
     .eyebrow {
@@ -193,7 +204,7 @@
       letter-spacing: 0.16em;
       text-transform: uppercase;
     }
-    h1 { margin: 0; font-size: 1.4rem; font-weight: 750; letter-spacing: -0.04em; }
+    h1 { margin: 0; font-size: var(--fs-xl); font-weight: 750; letter-spacing: -0.04em; }
     .ver {
       display: inline-block;
       margin-left: 8px;
@@ -201,7 +212,7 @@
       border-radius: var(--r-full);
       background: var(--chalk);
       color: var(--on-chalk);
-      font-size: 0.68rem;
+      font-size: var(--fs-2xs);
       font-weight: 700;
       letter-spacing: 0.06em;
       vertical-align: middle;
@@ -236,7 +247,7 @@
       display: flex;
       gap: 10px;
       align-items: center;
-      font-size: 0.92rem;
+      font-size: var(--fs-sm);
       box-shadow: var(--shadow-soft);
     }
     .banner p { margin: 0; flex: 1; }
@@ -280,12 +291,12 @@
       border: 1px solid var(--line);
       box-shadow: var(--shadow-soft);
     }
-    .rest-set .rest-label { margin-right: auto; color: var(--muted); font-size: 0.95rem; font-weight: 600; }
+    .rest-set .rest-label { margin-right: auto; color: var(--muted); font-size: var(--fs-sm); font-weight: 600; }
     .rest-set strong {
       min-width: 3.4rem;
       text-align: center;
       font-variant-numeric: tabular-nums;
-      font-size: 1.2rem;
+      font-size: var(--fs-lg);
       font-weight: 750;
       color: var(--ink);
     }
@@ -302,8 +313,8 @@
       box-shadow: var(--shadow-soft);
       transition: background var(--ease), color var(--ease), border-color var(--ease), transform var(--ease);
     }
-    .choice strong { display: block; font-size: 1.85rem; letter-spacing: -0.06em; line-height: 1; font-weight: 750; }
-    .choice span { display: block; margin-top: 6px; color: var(--muted); font-size: 0.76rem; line-height: 1.2; font-weight: 550; }
+    .choice strong { display: block; font-size: var(--fs-3xl); letter-spacing: -0.06em; line-height: 1; font-weight: 750; }
+    .choice span { display: block; margin-top: 6px; color: var(--muted); font-size: var(--fs-xs); line-height: 1.2; font-weight: 550; }
     .choice.is-on { background: var(--chalk); color: var(--on-chalk); border-color: var(--chalk); }
     .choice.is-on span { color: var(--on-chalk); opacity: 0.9; }
     .choice.is-on .badge { background: var(--on-chalk); color: var(--chalk); }
@@ -315,13 +326,13 @@
       color: var(--on-chalk);
       border-radius: var(--r-full);
       padding: 2px 7px;
-      font-size: 0.62rem;
+      font-size: var(--fs-2xs);
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
     .focus { margin: 10px 0 2px; color: var(--ink); font-weight: 650; }
-    .last-line { margin: 0 0 8px; color: var(--muted); font-size: 0.92rem; }
+    .last-line { margin: 0 0 8px; color: var(--muted); font-size: var(--fs-sm); }
     .session-progress { margin: 0 0 10px; }
     .session-progress p { margin: 0 0 6px; font-size: var(--fs-sm); font-weight: 650; color: var(--muted); }
     .session-progress .macro-bar, .progress-track {
@@ -362,8 +373,8 @@
     }
     .card h3, .chart-card h3, .macro-today h3 { margin: 2px 0 4px; font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.03em; }
     .hint, .source { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
-    .source { margin-bottom: 6px; font-size: 0.78rem; }
-    .text-btn, .secondary, .primary, .icon-btn, .step { min-height: 48px; border-radius: 14px; }
+    .source { margin-bottom: 6px; font-size: var(--fs-xs); }
+    .text-btn, .secondary, .primary, .icon-btn, .step { min-height: 48px; border-radius: var(--r-md); }
     .text-btn { padding: 0 12px; background: var(--card-2); font-weight: 650; }
     .set {
       background: var(--card-2);
@@ -378,29 +389,29 @@
       padding: 0;
       background: transparent;
       color: var(--muted);
-      font-size: 1.4rem;
+      font-size: var(--fs-xl);
     }
     .grids { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .grids.one { grid-template-columns: 1fr; }
-    .field { display: flex; flex-direction: column; gap: 6px; color: var(--faint); font-size: 0.75rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; }
+    .field { display: flex; flex-direction: column; gap: 6px; color: var(--faint); font-size: var(--fs-xs); font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; }
     .stepper {
       display: grid;
       grid-template-columns: 48px 1fr 48px;
       align-items: center;
       min-height: 60px;
-      border-radius: 16px;
+      border-radius: var(--r-md);
       background: var(--field-bg);
       overflow: hidden;
       border: 1px solid var(--line);
     }
-    .step { font-size: 1.55rem; font-weight: 600; background: transparent; min-height: 60px; }
+    .step { font-size: var(--fs-xl); font-weight: 600; background: transparent; min-height: 60px; }
     .stepper input, .extra input {
       width: 100%;
       min-height: 56px;
       border: 0;
       background: transparent;
       text-align: center;
-      font-size: 1.15rem;
+      font-size: var(--fs-lg);
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.02em;
@@ -409,9 +420,9 @@
     .extra input {
       text-align: left;
       padding: 0 12px;
-      font-size: 1rem;
+      font-size: var(--fs-md);
       font-weight: 500;
-      border-radius: 12px;
+      border-radius: var(--r-sm);
       background: var(--field-bg);
       border: 1px solid var(--line);
     }
@@ -434,23 +445,28 @@
       border-top: 1px solid var(--line);
       z-index: 12;
     }
-    .bar p { margin: 0; flex: 1; text-align: left; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 650; font-size: 0.8rem; line-height: 1.25; }
+    .bar p { margin: 0; flex: 1; text-align: left; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 650; font-size: var(--fs-xs); line-height: 1.25; }
     .bar .primary { width: auto; flex: 0 0 auto; min-width: 46%; padding: 0 14px; min-height: 48px; }
     .primary {
       width: 100%;
       background: var(--red);
-      color: white;
+      color: var(--red-ink);
       font-weight: 750;
-      font-size: 1.08rem;
+      font-size: var(--fs-lg);
       letter-spacing: -0.02em;
-      box-shadow: 0 8px 18px rgba(255, 77, 46, 0.28);
+      box-shadow: var(--shadow-primary);
       transition: transform var(--ease), background var(--ease), opacity var(--ease);
     }
+    .primary:hover, .primary:active { background: var(--red-press); }
     .primary:disabled { opacity: 0.45; box-shadow: none; }
+    .danger, .ghost.danger {
+      color: var(--red);
+      border-color: var(--red);
+    }
     .secondary { padding: 0 16px; background: var(--card-2); font-weight: 650; }
-    .stat { margin: 18px 0; padding: 16px; border-radius: 20px; background: var(--card); box-shadow: var(--shadow-soft); }
-    .stat b { display: block; font-size: 2rem; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; font-weight: 750; }
-    .up { color: var(--chalk); }
+    .stat { margin: 18px 0; padding: 16px; border-radius: var(--r-lg); background: var(--card); box-shadow: var(--shadow-soft); }
+    .stat b { display: block; font-size: var(--fs-3xl); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; font-weight: 750; }
+    .up { color: var(--chalk-text); }
     .down { color: var(--down); }
     .confirm-actions, .history-top { margin-top: 16px; }
     .session {
@@ -458,7 +474,7 @@
       text-align: left;
       background: var(--card);
       border: 1px solid var(--line);
-      border-radius: 18px;
+      border-radius: var(--r-lg);
       padding: 0;
       margin: 0 0 10px;
       box-shadow: var(--shadow-soft);
@@ -492,7 +508,7 @@
       margin-bottom: calc(8px + env(safe-area-inset-bottom));
       box-shadow: var(--shadow);
     }
-    .modal-card p { margin: 0 0 14px; font-size: 1.1rem; }
+    .modal-card p { margin: 0 0 14px; font-size: var(--fs-lg); }
     .modal-actions { display: grid; grid-template-columns: 1fr 1fr; }
     .alert { color: var(--alert); margin: 8px 0 0; font-weight: 650; }
     @media (min-width: 900px) {
@@ -508,7 +524,7 @@
       border-radius: var(--r-full);
       background: var(--chalk);
       color: var(--on-chalk);
-      font-size: 0.7rem;
+      font-size: var(--fs-2xs);
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -522,7 +538,7 @@
       background: var(--ghost-bg);
       color: var(--muted);
       border: 1px solid var(--line);
-      font-size: 0.7rem;
+      font-size: var(--fs-2xs);
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -535,7 +551,7 @@
       gap: 12px;
       margin: 0 0 12px;
       padding: 10px 12px;
-      border-radius: 20px;
+      border-radius: var(--r-lg);
       background: var(--card);
       border: 1px solid var(--line);
       box-shadow: var(--shadow-soft);
@@ -549,7 +565,7 @@
     .timer.is-done { border-color: var(--chalk); background: var(--done-bg); }
     .timer.is-done .timer-prog { stroke: var(--chalk); }
     .timer .time {
-      font-size: 1.65rem;
+      font-size: var(--fs-2xl);
       font-weight: 750;
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.04em;
@@ -558,15 +574,15 @@
     .timer .timer-actions { margin-left: auto; display: flex; gap: 6px; }
     .timer .timer-actions button { min-width: 48px; min-height: 44px; }
     .set.is-done { box-shadow: inset 3px 0 0 var(--chalk); background: var(--done-bg); }
-    .last-load, .progress-hint { margin: 0 0 4px; color: var(--muted); font-size: 0.82rem; line-height: 1.3; }
+    .last-load, .progress-hint { margin: 0 0 4px; color: var(--muted); font-size: var(--fs-sm); line-height: 1.3; }
     .last-load {
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-    .progress-hint.up { color: var(--chalk); }
-    .prog-rule { margin: 0 0 12px; color: var(--muted); font-size: 0.78rem; line-height: 1.4; }
+    .progress-hint.up { color: var(--chalk-text); }
+    .prog-rule { margin: 0 0 12px; color: var(--muted); font-size: var(--fs-xs); line-height: 1.4; }
     .prog-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; }
     .prog-chip {
       display: inline-flex;
@@ -574,10 +590,10 @@
       min-height: 32px;
       padding: 0 10px;
       border: 0;
-      border-radius: 999px;
+      border-radius: var(--r-full);
       background: var(--chalk);
       color: var(--on-chalk);
-      font-size: 0.8rem;
+      font-size: var(--fs-xs);
       font-weight: 700;
       letter-spacing: 0;
       cursor: pointer;
@@ -599,7 +615,7 @@
       padding: 0;
       margin: 0;
       color: var(--muted);
-      font-size: 0.75rem;
+      font-size: var(--fs-xs);
       font-weight: 550;
       line-height: 1.3;
       opacity: 0.8;
@@ -607,14 +623,14 @@
       cursor: pointer;
       min-height: 0;
     }
-    .last-time:focus, .last-time:hover { color: var(--chalk); opacity: 1; }
+    .last-time:focus, .last-time:hover { color: var(--chalk-text); opacity: 1; }
     .offline-badge {
       min-height: 28px;
       padding: 0 8px;
       border-radius: var(--r-full);
-      background: #8a1f1a;
-      color: #fff;
-      font-size: 0.68rem;
+      background: var(--offline-bg);
+      color: var(--offline-ink);
+      font-size: var(--fs-2xs);
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -624,7 +640,7 @@
     .pending-pill {
       text-transform: none;
       letter-spacing: 0;
-      font-size: 0.68rem;
+      font-size: var(--fs-2xs);
       line-height: 1.15;
       text-align: center;
       max-width: 9.8rem;
@@ -634,17 +650,17 @@
     .celebrate {
       margin: 0 0 14px;
       padding: 14px;
-      border-radius: 20px;
+      border-radius: var(--r-lg);
       background: var(--done-bg);
       border: 1px solid var(--chalk);
     }
-    .celebrate h3 { margin: 0 0 8px; color: var(--chalk); }
+    .celebrate h3 { margin: 0 0 8px; color: var(--chalk-text); }
     .celebrate li { margin: 0 0 6px; }
     .chart-card h3 { margin: 0 0 8px; }
     .chart-wrap { overflow: hidden; }
     .chart { width: 100%; height: 150px; display: block; }
-    .chart-legend { display: flex; gap: 12px; margin: 6px 0 0; color: var(--muted); font-size: 0.8rem; }
-    .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 99px; margin-right: 4px; }
+    .chart-legend { display: flex; gap: 12px; margin: 6px 0 0; color: var(--muted); font-size: var(--fs-xs); }
+    .swatch { display: inline-block; width: 10px; height: 10px; border-radius: var(--r-full); margin-right: 4px; }
     .form-grid { display: grid; gap: 10px; }
     .form-grid label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: var(--fs-sm); font-weight: 650; }
     .weight-list { margin-top: 16px; }
@@ -653,7 +669,7 @@
       display: flex;
       gap: 4px;
       padding: 4px;
-      border-radius: 16px;
+      border-radius: var(--r-md);
       border: 1px solid var(--line);
       background: var(--card-2);
     }
@@ -662,7 +678,7 @@
     .theme-picks button {
       min-height: 44px;
       border: 0;
-      border-radius: 12px;
+      border-radius: var(--r-sm);
       background: transparent;
       color: var(--ink);
       font-weight: 600;
@@ -685,25 +701,25 @@
       min-width: 40px;
       min-height: 44px;
       padding: 0 4px;
-      font-size: 0.82rem;
+      font-size: var(--fs-sm);
       font-weight: 650;
     }
-    .plan-note, .plan-totals { margin: 0 0 12px; color: var(--muted); font-size: 0.9rem; }
+    .plan-note, .plan-totals { margin: 0 0 12px; color: var(--muted); font-size: var(--fs-sm); }
     .meal-card.is-done { border-color: var(--chalk); }
     .meal-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
-    .meal-head h3 { margin: 0; font-size: 1.15rem; }
-    .meal-macros { margin: 4px 0 0; color: var(--muted); font-size: 0.8rem; }
+    .meal-head h3 { margin: 0; font-size: var(--fs-lg); }
+    .meal-macros { margin: 4px 0 0; color: var(--muted); font-size: var(--fs-xs); }
     .foods { margin: 8px 0 0; padding: 0; list-style: none; }
     .foods li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
-    .foods .qty { color: var(--chalk); font-variant-numeric: tabular-nums; flex: none; font-weight: 700; }
-    .foods .food-note { display: block; color: var(--muted); font-size: 0.84rem; margin-top: 2px; }
+    .foods .qty { color: var(--chalk-text); font-variant-numeric: tabular-nums; flex: none; font-weight: 700; }
+    .foods .food-note { display: block; color: var(--muted); font-size: var(--fs-sm); margin-top: 2px; }
     .meal-note { margin: 8px 0 0; color: var(--muted); }
     .check-meal { min-height: 44px; margin-top: 2px; flex: none; }
     .plan-upload { margin: 0 0 16px; }
     .plan-upload .file-btn { width: 100%; }
     .plan-progress, .plan-warnings { margin: 8px 0; }
     .plan-preview { margin-top: 10px; }
-    .plan-preview h3 { margin: 0 0 8px; font-size: 1.05rem; }
+    .plan-preview h3 { margin: 0 0 8px; font-size: var(--fs-lg); }
     .plan-preview .day-sum { margin: 0 0 8px; padding: 8px 0; border-top: 1px solid var(--line); }
     .plan-preview .day-sum strong { display: block; }
     .plan-actions { display: flex; gap: 8px; margin-top: 12px; }
@@ -719,10 +735,10 @@
       gap: 10px;
       align-items: flex-start;
       padding: 12px 14px;
-      border-radius: 16px;
+      border-radius: var(--r-md);
       background: var(--toast-bg);
       color: var(--toast-ink);
-      font-size: 0.9rem;
+      font-size: var(--fs-sm);
       box-shadow: var(--shadow);
     }
     .error-toast p { margin: 0; flex: 1; word-break: break-word; }
@@ -732,12 +748,12 @@
       width: 100%;
       margin: 4px 0 2px;
       min-height: 36px;
-      border-radius: 10px;
+      border-radius: var(--r-sm);
       border: 1px solid var(--line);
       background: var(--ghost-bg);
       padding: 6px 8px;
       color: inherit;
-      font-size: 0.86rem;
+      font-size: var(--fs-sm);
     }
     .macro-today { margin: 0 0 14px; }
     .macro-today h3 { margin: 0 0 6px; }
@@ -748,7 +764,7 @@
       overflow: hidden;
       margin: 8px 0;
     }
-    .macro-split { margin: 0; color: var(--muted); font-size: 0.86rem; }
+    .macro-split { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
     .session-actions { display: flex; gap: 8px; margin: 10px 0 0; }
     .session-actions button { flex: 1; }
     .remind-row {
@@ -762,16 +778,16 @@
     .remind-row label { display: flex; align-items: center; gap: 8px; margin: 0; }
     .remind-row input[type="time"] {
       min-height: 44px;
-      border-radius: 12px;
+      border-radius: var(--r-sm);
       border: 1px solid var(--line);
       background: var(--card);
       padding: 0 10px;
       color: inherit;
     }
-    .limit-note { font-size: 0.88rem; color: var(--muted); }
+    .limit-note { font-size: var(--fs-sm); color: var(--muted); }
     .report-block { margin: 0 0 16px; }
     .report-block h3 { margin: 0 0 8px; }
-    .report-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .report-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
     .report-table th, .report-table td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
     .report-table td:last-child, .report-table th:last-child { text-align: right; }
     .theme-picks { margin: 8px 0 0; }
@@ -783,11 +799,11 @@
       margin: 6px 0 2px;
       padding: 0 14px;
       border-radius: var(--r-full);
-      border: 1px solid var(--chalk);
+      border: 1px solid var(--chalk-text);
       background: transparent;
-      color: var(--chalk);
+      color: var(--chalk-text);
       font-weight: 700;
-      font-size: 0.88rem;
+      font-size: var(--fs-sm);
     }
     .howto-frame {
       position: relative;
@@ -833,9 +849,9 @@
       gap: 2px;
       min-height: 52px;
       padding: 4px 2px;
-      border-radius: 14px;
+      border-radius: var(--r-md);
       color: var(--muted);
-      font-size: 0.68rem;
+      font-size: var(--fs-2xs);
       font-weight: 650;
       letter-spacing: 0.01em;
       transition: background var(--ease), color var(--ease);
@@ -851,8 +867,8 @@
       padding: 36px 16px;
       color: var(--muted);
     }
-    .empty svg { width: 56px; height: 56px; margin: 0 auto 12px; stroke: var(--chalk); fill: none; stroke-width: 1.6; display: block; }
-    .empty h3 { margin: 0 0 6px; color: var(--ink); font-size: 1.15rem; }
+    .empty svg { width: 56px; height: 56px; margin: 0 auto 12px; stroke: var(--chalk-text); fill: none; stroke-width: 1.8; display: block; }
+    .empty h3 { margin: 0 0 6px; color: var(--ink); font-size: var(--fs-lg); }
     .empty p { margin: 0; }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -885,7 +901,7 @@
         <div class="plate" aria-hidden="true"></div>
         <div>
           <p class="eyebrow">Christian</p>
-          <h1>Palestra <span class="ver">v3.2</span></h1>
+          <h1>Palestra <span class="ver">v3.2.1</span></h1>
         </div>
       </div>
       <div class="header-tools">
@@ -925,7 +941,7 @@
       <div class="timer-actions">
         <button class="ghost" type="button" data-action="rest-minus" aria-label="Togli 15 secondi">−15s</button>
         <button class="ghost" type="button" data-action="rest-plus" aria-label="Aggiungi 15 secondi">+15s</button>
-        <button class="ghost" type="button" data-action="rest-skip">Stop</button>
+        <button class="ghost" type="button" data-action="rest-skip">Ferma</button>
       </div>
     </div>
     <main id="app"></main>
@@ -957,7 +973,7 @@
       <p id="modalText"></p>
       <div class="modal-actions">
         <button class="secondary" type="button" id="modalNo">Annulla</button>
-        <button class="primary" type="button" id="modalYes">Aggiungi</button>
+        <button class="primary" type="button" id="modalYes">Conferma</button>
       </div>
     </div>
   </div>
@@ -2092,7 +2108,7 @@
         }).join("");
         return '<details class="session"><summary><strong>' + esc(session.code) + " · " + esc(itDate(session.date)) + '</strong><span class="muted">' + esc(seriesWord(session.sets)) + " · " + esc(itNum(session.tonnage)) + " kg</span></summary><div class=\"detail\">" + lines +
           '<div class="session-actions"><button class="secondary" type="button" data-action="edit-session" data-index="' + idx + '">Modifica</button>' +
-          '<button class="ghost" type="button" data-action="delete-session" data-index="' + idx + '">Elimina</button></div></div></details>';
+          '<button class="ghost danger" type="button" data-action="delete-session" data-index="' + idx + '">Elimina</button></div></div></details>';
       }).join("") : emptyState("Ancora nessuna sessione", "Quando salvi un allenamento, lo trovi qui.");
       return '<section class="history"><div class="history-top"><h2>Ultime sessioni</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
         '<div class="session-actions no-print" style="margin:0 0 14px"><button class="secondary" type="button" data-action="report">Esporta riepilogo</button></div>' +
@@ -2125,8 +2141,8 @@
       return '<svg class="chart" viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="Andamento">' +
         '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>' +
         '<circle cx="' + X(last.x).toFixed(1) + '" cy="' + Y(last.y).toFixed(1) + '" r="3.5" fill="' + color + '"></circle>' +
-        '<text x="' + pad + '" y="14" fill="' + cssVar("--chart-label", "#b3ad9f") + '" font-size="10">' + esc(itDate(first.date)) + "</text>" +
-        '<text x="' + (w - pad) + '" y="14" fill="' + cssVar("--chart-label", "#b3ad9f") + '" font-size="10" text-anchor="end">' + esc(itNum(last.y)) + "</text>" +
+        '<text x="' + pad + '" y="14" fill="' + cssVar("--chart-label", "#b4af9f") + '" font-size="10">' + esc(itDate(first.date)) + "</text>" +
+        '<text x="' + (w - pad) + '" y="14" fill="' + cssVar("--chart-label", "#b4af9f") + '" font-size="10" text-anchor="end">' + esc(itNum(last.y)) + "</text>" +
         "</svg>";
     }
 
@@ -2141,7 +2157,7 @@
       return '<section class="history"><div class="history-top"><h2>Grafici</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
         '<label class="date">Esercizio<select id="chartExercise">' + options + "</select></label>" +
         '<article class="card chart-card"><h3>Carico massimo</h3>' + svgChart(current.points, "maxLoad", cssVar("--red", "#ff4d2e")) + "</article>" +
-        '<article class="card chart-card"><h3>Volume (serie × rip × kg)</h3>' + svgChart(current.points, "volume", cssVar("--chalk", "#d6ef6a")) + "</article></section>";
+        '<article class="card chart-card"><h3>Volume (serie × rip × kg)</h3>' + svgChart(current.points, "volume", cssVar("--chalk-text", "#d4f05a")) + "</article></section>";
     }
 
     function weekdayNameIt(iso) {
@@ -2472,7 +2488,7 @@
     function paintWeightLog() {
       var weights = (data && data.weights) || [];
       var points = weights.map(function (item) { return { date: item.date, kg: item.kg }; });
-      var chart = points.length ? '<article class="card chart-card"><h3>Andamento del peso</h3>' + svgChart(points, "kg", cssVar("--chalk", "#d6ef6a")) + "</article>" : emptyState("Ancora nessun peso", "Registra il primo peso per vedere l’andamento.");
+      var chart = points.length ? '<article class="card chart-card"><h3>Andamento del peso</h3>' + svgChart(points, "kg", cssVar("--chalk-text", "#d4f05a")) + "</article>" : emptyState("Ancora nessun peso", "Registra il primo peso per vedere l’andamento.");
       var rows = weights.slice().reverse().slice(0, 12).map(function (item) {
         return "<div><span>" + esc(itDate(item.date)) + "</span><span>" + (item.kg != null ? esc(itNum(item.kg)) + " kg" : "—") + (item.note ? " · " + esc(item.note) : "") + "</span></div>";
       }).join("");
@@ -3142,8 +3158,8 @@
           (on ? '<span class="seg-check" aria-hidden="true">✓</span>' : "") + esc(label) + "</button>";
       }
       return '<section class="history"><div class="history-top"><h2>Promemoria e altro</h2><button class="ghost" type="button" data-action="back">Chiudi</button></div>' +
-        '<article class="card"><h3>Tema</h3><p class="muted">Scegli come appare l’app. Auto segue le impostazioni del telefono.</p>' +
-        '<div class="theme-picks" role="radiogroup" aria-label="Tema">' + themeBtn("auto", "Auto") + themeBtn("light", "Chiaro") + themeBtn("dark", "Scuro") + "</div></article>" +
+        '<article class="card"><h3>Tema</h3><p class="muted">Scegli come appare l’app. Automatico segue le impostazioni del telefono.</p>' +
+        '<div class="theme-picks" role="radiogroup" aria-label="Tema">' + themeBtn("auto", "Automatico") + themeBtn("light", "Chiaro") + themeBtn("dark", "Scuro") + "</div></article>" +
         '<article class="card"><h3>Promemoria</h3>' +
         '<p class="limit-note">Le notifiche dell’app arrivano in modo affidabile solo mentre Palestra è aperta (o almeno in esecuzione). Su Android, senza un servizio di push, il telefono non può svegliarsi da solo a un orario fissato. Per non perdere i pasti o la pesata, aggiungi gli orari al calendario: funziona anche a telefono spento.</p>' +
         '<p class="muted">Permesso notifiche: ' + esc(permLabel) + ".</p>" +
@@ -3276,7 +3292,7 @@
         '<div class="report-block"><h3>Nuovi record di carico</h3>' + prBody + "</div>" +
         (options ? '<div class="report-block"><h3>Carichi · ' + esc(currentName) + '</h3><label class="date no-print">Esercizio<select id="chartExercise">' + options + "</select></label>" +
           (loadPoints.length ? svgChart(loadPoints, "maxLoad", cssVar("--red", "#ff4d2e")) : '<p class="muted">Nessun carico di questo esercizio nel mese.</p>') + "</div>" : "") +
-        '<div class="report-block"><h3>Andamento del peso</h3>' + (weights.length ? svgChart(weights, "kg", cssVar("--chalk", "#d6ef6a")) : '<p class="muted">Nessuna pesata in questo mese.</p>') + "</div>" +
+        '<div class="report-block"><h3>Andamento del peso</h3>' + (weights.length ? svgChart(weights, "kg", cssVar("--chalk-text", "#d4f05a")) : '<p class="muted">Nessuna pesata in questo mese.</p>') + "</div>" +
         '<div class="report-block"><h3>Aderenza ai pasti</h3>' + adhBody + "</div></section>";
     }
 
@@ -3297,7 +3313,7 @@
         (errorText ? '<p class="alert">' + esc(errorText) + "</p>" : "") +
         cards +
         '<div class="confirm-actions"><button class="primary" type="button" data-action="save-session-edit"' + (saving ? " disabled" : "") + ">" + (saving ? "Salvo…" : "Salva modifiche") + "</button></div>" +
-        '<div class="confirm-actions"><button class="ghost" type="button" data-action="delete-session-edit">Elimina sessione</button></div></section>';
+        '<div class="confirm-actions"><button class="ghost danger" type="button" data-action="delete-session-edit">Elimina sessione</button></div></section>';
     }
 
     function openSessionEdit(index) {
@@ -3366,7 +3382,7 @@
         return;
       }
       if (!alreadyConfirmed) {
-        var yes = await ask("Vuoi eliminare la sessione " + session.code + " del " + itDate(session.date) + "? Le serie spariscono dal diario. Non si può annullare.");
+        var yes = await ask("Vuoi eliminare la sessione " + session.code + " del " + itDate(session.date) + "? Le serie spariscono dal diario. Non si può annullare.", "Elimina");
         if (!yes) return;
       }
       var payload = { requestId: newRequestId(), rowIds: session.rowIds.slice(), confirm: true };
@@ -3614,10 +3630,12 @@
       if (action === "save-weight") saveWeight();
     }
 
-    function ask(message) {
+    function ask(message, confirmLabel) {
       return new Promise(function (resolve) {
         modalResolver = resolve;
         document.getElementById("modalText").textContent = message;
+        var yes = document.getElementById("modalYes");
+        if (yes) yes.textContent = confirmLabel || "Conferma";
         document.getElementById("modal").hidden = false;
       });
     }
